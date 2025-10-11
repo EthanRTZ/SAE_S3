@@ -77,7 +77,7 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(13, 71, 161, 0.4);
+  background: rgba(42, 81, 226, 0.4);
   z-index: -1;
 }
 
@@ -93,7 +93,7 @@ export default {
 }
 
 .main-title {
-  color: #ffd700;
+  color: #FCDC1E;
   font-size: 4.5rem;
   font-weight: 700;
   margin: 0 0 20px 0;
@@ -133,29 +133,29 @@ export default {
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
-  color: #0d47a1;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(45deg, #FCDC1E, #FFE55C);
+  color: #2A51E2;
+  box-shadow: 0 4px 15px rgba(252, 220, 30, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
-  background: linear-gradient(45deg, #ffed4e, #ffd700);
+  box-shadow: 0 6px 20px rgba(252, 220, 30, 0.4);
+  background: linear-gradient(45deg, #FFE55C, #FCDC1E);
 }
 
 .btn-secondary {
   background: transparent;
-  color: #ffd700;
-  border: 2px solid #ffd700;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+  color: #FCDC1E;
+  border: 2px solid #FCDC1E;
+  box-shadow: 0 4px 15px rgba(252, 220, 30, 0.2);
 }
 
 .btn-secondary:hover {
-  background: #ffd700;
-  color: #0d47a1;
+  background: #FCDC1E;
+  color: #2A51E2;
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(252, 220, 30, 0.4);
 }
 
 /* Responsive Design */

@@ -72,7 +72,7 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  background: rgba(13, 71, 161, 0.95);
+  background: rgba(42, 81, 226, 0.95);
   backdrop-filter: blur(10px);
   z-index: 1000;
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
@@ -89,7 +89,7 @@ body {
 }
 
 .nav-logo h2 {
-  color: #ffd700;
+  color: #FCDC1E;
   font-size: 1.8rem;
   font-weight: 700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -112,14 +112,14 @@ body {
 }
 
 .nav-link:hover {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
+  color: #FCDC1E;
+  background: rgba(252, 220, 30, 0.1);
   transform: translateY(-2px);
 }
 
 .nav-link.router-link-active {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.2);
+  color: #FCDC1E;
+  background: rgba(252, 220, 30, 0.2);
 }
 
 /* Mobile Menu */
@@ -133,7 +133,7 @@ body {
 .bar {
   width: 25px;
   height: 3px;
-  background: #ffd700;
+  background: #FCDC1E;
   margin: 3px 0;
   transition: 0.3s;
   border-radius: 2px;
@@ -142,7 +142,7 @@ body {
 .nav-menu-mobile {
   display: none;
   flex-direction: column;
-  background: rgba(13, 71, 161, 0.98);
+  background: rgba(42, 81, 226, 0.98);
   padding: 20px;
   position: absolute;
   top: 70px;
@@ -163,16 +163,16 @@ body {
   text-decoration: none;
   padding: 15px 0;
   font-size: 1.2rem;
-  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  border-bottom: 1px solid rgba(252, 220, 30, 0.2);
   transition: color 0.3s ease;
 }
 
 .nav-link-mobile:hover {
-  color: #ffd700;
+  color: #FCDC1E;
 }
 
 .nav-link-mobile.router-link-active {
-  color: #ffd700;
+  color: #FCDC1E;
 }
 
 /* Main Content */
