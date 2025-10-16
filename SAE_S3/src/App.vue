@@ -80,16 +80,21 @@ body {
 }
 
 .nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+  width: 100%;
+  margin: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   height: 64px;
 }
 
-.nav-logo h2 {
+.nav-logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 24px;
+}
+
+  .nav-logo h2 {
   color: #FCDC1E;
   font-size: 2rem;
   font-weight: 800;
@@ -106,6 +111,7 @@ body {
 .nav-menu {
   display: flex;
   gap: 24px;
+  margin-left: 480px;
 }
 
 .nav-link {
