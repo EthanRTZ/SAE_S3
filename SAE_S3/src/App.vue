@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import logoIcon from '../media/logo-icon.png'
 
 const isMenuOpen = ref(false)
 
@@ -14,7 +15,9 @@ const toggleMenu = () => {
     <nav class="navbar">
       <div class="nav-container">
         <div class="nav-logo">
-          <h2>Golden Coast</h2>
+          <router-link to="/" class="nav-logo-link" aria-label="Accueil">
+            <img :src="logoIcon" alt="Golden Coast" class="logo-icon" />
+          </router-link>
         </div>
         
         <!-- Desktop Menu -->
@@ -75,8 +78,8 @@ body {
   background: #2046b3ee;
   z-index: 1000;
   border-bottom: 2px solid #FCDC1E;
-  box-shadow: 0 2px 16px rgba(32, 70, 179, 0.08);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 16px rgba(32, 70, 179, 0.06); /* plus subtil */
+  backdrop-filter: blur(6px);
 }
 
 .nav-container {
@@ -84,64 +87,69 @@ body {
   margin: 0;
   display: flex;
   align-items: center;
+  justify-content: space-between; /* logo à gauche, menu à droite */
   height: 64px;
+  padding: 0 12px; /* colle le contenu aux bords */
 }
 
 .nav-logo {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  margin-left: 24px;
+  margin-left: 8px; /* logo plus à gauche */
 }
 
-  .nav-logo h2 {
-  color: #FCDC1E;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 12px #2046b3;
-  transition: transform 0.3s, text-shadow 0.3s;
+/* Nouvel affichage du logo en image */
+.logo-icon {
+  height: 44px; /* ajuster si besoin */
+  width: auto;
+  display: block;
   cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+  -webkit-user-drag: none;
+  margin-right: 6px;
 }
-.nav-logo h2:hover {
-  transform: scale(1.07);
-  text-shadow: 0 4px 24px #FCDC1E, 0 0 8px #2046b3;
+.logo-icon:hover {
+  transform: translateY(-1px); /* très discret */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));
 }
 
 .nav-menu {
   display: flex;
-  gap: 24px;
-  margin-left: 480px;
+  gap: 18px;
+  margin-left: auto; /* pousse les boutons complètement à droite */
+  align-items: center;
+  padding-right: 8px; /* laisse un peu d'espace du bord */
 }
 
 .nav-link {
   color: #fff;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.1rem;
-  padding: 9px 22px;
-  border-radius: 24px;
+  font-size: 1.05rem;
+  padding: 8px 16px;
+  border-radius: 14px;
   border: 2px solid transparent;
-  background: none;
+  background: transparent;
   transition:
-    color 0.2s,
-    background 0.2s,
-    border-color 0.2s,
-    box-shadow 0.2s,
-    transform 0.2s;
+    color 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
+/* style épuré : suppression du scale/fondu prononcé */
 .nav-link:hover,
 .nav-link.router-link-active {
   color: #2046b3;
   background: #FCDC1E;
   border-color: #FCDC1E;
-  box-shadow: 0 4px 16px #FCDC1E44;
-  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 6px 12px rgba(252,220,30,0.10); /* subtil */
+  transform: none; /* pas de scale */
 }
 
 .nav-link.router-link-active {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Mobile Menu */
@@ -153,10 +161,10 @@ body {
   border-radius: 8px;
   background: none;
   border: 2px solid #FCDC1E;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.12s, border-color 0.12s;
 }
 .nav-toggle:hover {
-  background: #FCDC1E22;
+  background: rgba(252,220,30,0.12);
   border-color: #FCDC1E;
 }
 
@@ -211,6 +219,20 @@ body {
   font-weight: 800;
 }
 
+/* Reset / style du lien autour du logo */
+.nav-logo .nav-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 0;
+}
+.nav-logo .nav-logo-link:focus {
+  outline: 2px solid rgba(252,220,30,0.95);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 /* Main Content */
 main {
   margin-top: 64px;
@@ -234,6 +256,7 @@ main {
   
   .nav-container {
     padding: 0 12px;
+    justify-content: space-between;
   }
   
   .nav-logo h2 {

@@ -3,7 +3,7 @@
     <!-- Video Background -->
     <div class="video-background">
       <video autoplay muted loop playsinline>
-        <source src="/fond.mp4" type="video/mp4">
+        <source src="/media/fond.mp4" type="video/mp4">
         <!-- Fallback image if video doesn't load -->
         <div class="fallback-image"></div>
       </video>
