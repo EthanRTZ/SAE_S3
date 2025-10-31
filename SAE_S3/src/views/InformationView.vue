@@ -84,7 +84,7 @@ export default {
 <style scoped>
 
 .information {
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
   display: flex;
   align-items: stretch;
   justify-content: center;

@@ -235,9 +235,11 @@ body {
 
 /* Main Content */
 main {
-  margin-top: 64px;
-  min-height: calc(100vh - 64px);
+  margin-top: 0; /* retire l'espace pour coller le contenu en haut */
+  min-height: 100vh;
   background: transparent;
+  /* Si tu préfères que le contenu commence sous la navbar (sans "décaler" le layout),
+     remplace margin-top par : padding-top: 64px; */
 }
 
 /* Responsive Design */
