@@ -32,10 +32,10 @@ CREATE TABLE artiste (
                          style_musique VARCHAR(100) NOT NULL,
                          description TEXT,
                          pays_origine VARCHAR(100),
-                         site_web VARCHAR(255),
                          photo_url VARCHAR(255),
                          cachet DECIMAL(10,2),
-                         date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                         date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                         lien_deezer VARCHAR(255)
 );
 
 -- Table des prestataires
@@ -97,15 +97,15 @@ USE golden_coast;
 INSERT INTO rôles (nom_rôle)
 VALUES ('public'), ('prestataire'), ('organisateur');
 
--- Données de test pour les artistes
-INSERT INTO artiste (nom, style_musique, description, pays_origine, site_web, photo_url, cachet)
+-- Table Artistes (avec lien Deezer ajouté)
+INSERT INTO artiste (nom, style_musique, description, pays_origine, site_web, photo_url, cachet, lien_deezer)
 VALUES
-    ('Booba', 'Rap français', 'Légende du rap hexagonal, tête d’affiche du Golden Coast 2024.', 'France', 'https://boobaofficial.com', 'booba.jpg', 60000.00),
-    ('SCH', 'Rap français', 'Artiste majeur programmé au Golden Coast 2024.', 'France', 'https://schrap.com', 'sch.jpg', 50000.00),
-    ('SDM', 'Rap français', 'Nouvelle génération, présent au Golden Coast 2024.', 'France', 'https://sdmrap.com', 'sdm.jpg', 30000.00),
-    ('Josman', 'Rap français', 'Confirmé pour la programmation du Golden Coast.', 'France', 'https://josmanmusic.com', 'josman.jpg', 25000.00),
-    ('Ninho', 'Rap français', 'Figure du rap français, annoncé au Golden Coast 2024.', 'France', 'https://ninhoofficial.com', 'ninho.jpg', 55000.00),
-    ('Gims', 'Pop / Rap français', 'Artiste programmé à l’édition 2025 du Golden Coast.', 'France', 'https://gims.com', 'gims.jpg', 65000.00);
+    ('Booba', 'Rap français', 'Légende du rap hexagonal, tête d’affiche du Golden Coast 2024.', 'France', 'booba.jpg', 60000.00, 'https://www.deezer.com/fr/artist/390'),
+    ('SCH', 'Rap français', 'Artiste majeur programmé au Golden Coast 2024.', 'France','sch.jpg', 50000.00, 'https://www.deezer.com/fr/artist/162665'),
+    ('SDM', 'Rap français', 'Nouvelle génération, présent au Golden Coast 2024.', 'France','sdm.jpg', 30000.00, 'https://www.deezer.com/fr/artist/604107'),
+    ('Josman', 'Rap français', 'Confirmé pour la programmation du Golden Coast.', 'France','josman.jpg', 25000.00, 'https://www.deezer.com/fr/artist/7365500'),
+    ('Ninho', 'Rap français', 'Figure du rap français, annoncé au Golden Coast 2024.', 'France','ninho.jpg', 55000.00, 'https://www.deezer.com/fr/artist/5542343'),
+    ('Gims', 'Pop / Rap français', 'Artiste programmé à l’édition 2025 du Golden Coast.', 'France','gims.jpg', 65000.00, 'https://www.deezer.com/fr/artist/4429712');
 
 -- Données de test pour les prestataires
 INSERT INTO prestataire (nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url)
@@ -126,3 +126,17 @@ VALUES
     (4, 'Bar principal', 'Espace boisson et cocktails', 12.00),
     (5, 'Dégustation whisky', 'Espace promotion Jack Daniel’s', 15.00),
     (6, 'Bar Red Bull', 'Boissons énergisantes et espace détente', 8.00);
+
+-- Données de test pour les utilisateurs
+INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, id_rôle)
+VALUES
+    ('admin', 'admin@goldencoast.com', '$2y$10$ABCDEFG1234567890HASHADMIN', 3),
+    ('prestataire_demo', 'prestataire@goldencoast.com', '$2y$10$ZYXWVUT9876543210HASHPREST', 2),
+    ('visiteur', 'visiteur@goldencoast.com', '$2y$10$QWERTY0987654321HASHVISITEUR', 1);
+
+-- Données de test pour les sessions (tokens fictifs)
+INSERT INTO session_authentification (id_utilisateur, token, date_expiration, actif)
+VALUES
+    (1, 'token_admin_123456789', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE),
+    (2, 'token_prestataire_987654321', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE),
+    (3, 'token_visiteur_456789123', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE);
