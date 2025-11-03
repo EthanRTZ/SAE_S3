@@ -24,6 +24,7 @@ const toggleMenu = () => {
         <div class="nav-menu">
           <router-link to="/" class="nav-link">Accueil</router-link>
           <router-link to="/information" class="nav-link">Information</router-link>
+          <router-link to="/programmation" class="nav-link">Programmation</router-link>
           <router-link to="/prestataire" class="nav-link">Prestataire</router-link>
           <router-link to="/carte" class="nav-link">Carte</router-link>
           <router-link to="/reservation" class="nav-link">Réservation</router-link>
@@ -41,6 +42,7 @@ const toggleMenu = () => {
       <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
         <router-link to="/" class="nav-link-mobile" @click="toggleMenu">Accueil</router-link>
         <router-link to="/information" class="nav-link-mobile" @click="toggleMenu">Information</router-link>
+        <router-link to="/programmation" class="nav-link-mobile" @click="toggleMenu">Programmation</router-link>
         <router-link to="/prestataire" class="nav-link-mobile" @click="toggleMenu">Prestataire</router-link>
         <router-link to="/carte" class="nav-link-mobile" @click="toggleMenu">Carte</router-link>
         <router-link to="/reservation" class="nav-link-mobile" @click="toggleMenu">Réservation</router-link>
