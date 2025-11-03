@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS utilisateurs;
 DROP TABLE IF EXISTS rôles;
 DROP TABLE IF EXISTS artiste;
 DROP TABLE IF EXISTS prestataire;
+DROP TABLE IF EXISTS programmation;
+DROP TABLE IF EXISTS scene;
 
 -- Table des rôles
 CREATE TABLE rôles (
@@ -91,6 +93,28 @@ CREATE TABLE session_authentification (
                                           FOREIGN KEY (id_utilisateur) REFERENCES utilisateurs(id_utilisateur)
 );
 
+-- Table des scènes
+CREATE TABLE scene (
+                       id_scene INT AUTO_INCREMENT PRIMARY KEY,
+                       nom_scene VARCHAR(100) NOT NULL UNIQUE,
+                       description TEXT,
+                       capacite_estimee INT,
+                       localisation VARCHAR(100)
+);
+
+-- Table de programmation des artistes
+CREATE TABLE programmation (
+                               id_programmation INT AUTO_INCREMENT PRIMARY KEY,
+                               id_artiste INT NOT NULL,
+                               id_scene INT NOT NULL,
+                               date_evenement DATE NOT NULL,
+                               heure_debut TIME NOT NULL,
+                               heure_fin TIME NOT NULL,
+                               FOREIGN KEY (id_artiste) REFERENCES artiste(id_artiste),
+                               FOREIGN KEY (id_scene) REFERENCES scene(id_scene)
+);
+
+
 USE golden_coast;
 
 -- Données de test pour les rôles
@@ -117,6 +141,13 @@ VALUES
     ('Jack Daniel’s', 'Boissons / Spiritueux', 'Partenaire officiel du Golden Coast avec un bar éphémère.', 'contact@jackdaniels.com', '+33 1 87 65 43 21', 'https://jackdaniels.com', 'jackdaniels.jpg'),
     ('Red Bull', 'Boissons énergisantes', 'Partenaire énergie et animation du festival.', 'info@redbull.com', '+43 1 87 65 90 12', 'https://redbull.com', 'redbull.jpg');
 
+INSERT INTO scene (nom_scene, description, capacite_estimee, localisation)
+VALUES
+    ('Mothership', 'La scène principale du festival, dédiée aux têtes d’affiche.', 20000, 'Zone A'),
+    ('Zero Gravity', 'Scène électro et trap avec effets lumineux spectaculaires.', 15000, 'Zone B'),
+    ('Cargo', 'Scène secondaire, ambiance chill et concerts en fin d’après-midi.', 10000, 'Zone C'),
+    ('ANTDT Club', 'Scène club en plein air, dédiée aux afters et DJ sets nocturnes.', 8000, 'Zone D');
+
 -- Données de test pour les services
 INSERT INTO services (id_prestataire, nom_service, description, prix_estime)
 VALUES
@@ -140,3 +171,12 @@ VALUES
     (1, 'token_admin_123456789', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE),
     (2, 'token_prestataire_987654321', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE),
     (3, 'token_visiteur_456789123', DATE_ADD(NOW(), INTERVAL 7 DAY), TRUE);
+
+INSERT INTO programmation (id_artiste, id_scene, date_evenement, heure_debut, heure_fin)
+VALUES
+    (1, 1, '2025-08-15', '21:30:00', '23:00:00'),  -- Booba sur Mothership
+    (2, 1, '2025-08-15', '19:30:00', '21:00:00'),  -- SCH sur Mothership
+    (3, 2, '2025-08-15', '18:00:00', '19:00:00'),  -- SDM sur Zero Gravity
+    (4, 3, '2025-08-16', '17:00:00', '18:30:00'),  -- Josman sur Cargo
+    (5, 1, '2025-08-16', '22:00:00', '23:30:00'),  -- Ninho sur Mothership
+    (6, 4, '2025-08-16', '23:45:00', '01:00:00');  -- Gims sur ANTDT Club
