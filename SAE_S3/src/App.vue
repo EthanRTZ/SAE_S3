@@ -237,7 +237,7 @@ body {
 
 /* Main Content */
 main {
-  margin-top: 0; /* retire l'espace pour coller le contenu en haut */
+  padding-top: 64px; /* Ajoute un espace sous la navbar pour éviter que le contenu soit masqué */
   min-height: 100vh;
   background: transparent;
   /* Si tu préfères que le contenu commence sous la navbar (sans "décaler" le layout),

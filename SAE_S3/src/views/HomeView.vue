@@ -21,21 +21,57 @@
         </div>
       </div>
     </div>
+
+    <!-- Carrousel des artistes -->
+    <div class="carousel">
+      <div
+        class="carousel-container"
+        :style="{ transform: `translateX(-${currentIndex * (100 / visibleCards)}%)` }"
+      >
+        <div
+          class="carousel-slide"
+          v-for="(artist, index) in artists"
+          :key="index"
+        >
+          <img :src="artist.img" :alt="artist.name" class="carousel-image" />
+          <p class="carousel-name">{{ artist.name }}</p>
+        </div>
+      </div>
+      <button class="carousel-button prev" @click="prevSlide">❮</button>
+      <button class="carousel-button next" @click="nextSlide">❯</button>
+    </div>
   </div>
 </template>
 
 <script>
+import { ref } from 'vue';
+
 export default {
   name: 'HomeView',
-  mounted() {
-    // Ensure video plays on mobile devices
-    const video = this.$el.querySelector('video');
-    if (video) {
-      video.play().catch(e => {
-        console.log('Video autoplay failed:', e);
-      });
-    }
-  }
+  setup() {
+    const artists = [
+      { name: 'Booba', img: '/media/artistes/booba.jpg' },
+      { name: 'SCH', img: '/media/artistes/sch.jpg' },
+      { name: 'SDM', img: '/media/artistes/sdm.jpg' },
+      { name: 'Josman', img: '/media/artistes/josman.jpg' },
+      { name: 'Ninho', img: '/media/artistes/ninho.jpg' },
+      { name: 'Gims', img: '/media/artistes/gims.jpg' },
+    ];
+
+    const visibleCards = 3; // Nombre de cartes visibles en même temps
+    const currentIndex = ref(0);
+
+    const nextSlide = () => {
+      currentIndex.value = (currentIndex.value + 1) % artists.length;
+    };
+
+    const prevSlide = () => {
+      currentIndex.value =
+        (currentIndex.value - 1 + artists.length) % artists.length;
+    };
+
+    return { artists, currentIndex, nextSlide, prevSlide, visibleCards };
+  },
 };
 </script>
 
@@ -45,8 +81,8 @@ export default {
   min-height: 100vh;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 /* Video Background */
@@ -83,9 +119,9 @@ export default {
 
 /* Content */
 .home-content {
-  width: 50%;
-  padding: 0 60px;
   z-index: 1;
+  text-align: center;
+  padding: 20px;
 }
 
 .text-container {
@@ -114,8 +150,7 @@ export default {
 .cta-buttons {
   display: flex;
   gap: 20px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn {
@@ -127,35 +162,86 @@ export default {
   transition: all 0.3s ease;
   border: 2px solid transparent;
   cursor: pointer;
-  display: inline-block;
-  text-align: center;
-  min-width: 150px;
 }
 
 .btn-primary {
   background: linear-gradient(45deg, #FCDC1E, #FFE55C);
   color: #2A51E2;
-  box-shadow: 0 4px 15px rgba(252, 220, 30, 0.3);
-}
-
-.btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(252, 220, 30, 0.4);
-  background: linear-gradient(45deg, #FFE55C, #FCDC1E);
 }
 
 .btn-secondary {
   background: transparent;
   color: #FCDC1E;
   border: 2px solid #FCDC1E;
-  box-shadow: 0 4px 15px rgba(252, 220, 30, 0.2);
 }
 
-.btn-secondary:hover {
-  background: #FCDC1E;
-  color: #2A51E2;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(252, 220, 30, 0.4);
+/* Carrousel Styles */
+.carousel {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 30vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.carousel-container {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  width: calc(100% * (6 / 3)); /* Ajuste la largeur en fonction du nombre total d'éléments et des cartes visibles */
+  height: 100%;
+}
+
+.carousel-slide {
+  flex: 0 0 calc(100% / 3); /* Ajuste la largeur de chaque carte */
+  text-align: center;
+  padding: 10px;
+}
+
+.carousel-image {
+  width: 100%;
+  height: auto;
+  max-height: 70%;
+  border-radius: 12px;
+}
+
+.carousel-name {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fcdc1e;
+}
+
+.carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.carousel-button.prev {
+  left: 10px;
+}
+
+.carousel-button.next {
+  right: 10px;
+}
+
+.carousel-button:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* Responsive Design */
