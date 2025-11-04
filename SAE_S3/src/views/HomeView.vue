@@ -51,11 +51,11 @@ export default {
   setup() {
     const artists = [
       { name: 'Booba', img: '/media/artistes/booba.jpg' },
-      { name: 'SCH', img: '/media/artistes/sch.jpg' },
-      { name: 'SDM', img: '/media/artistes/sdm.jpg' },
-      { name: 'Josman', img: '/media/artistes/josman.jpg' },
-      { name: 'Ninho', img: '/media/artistes/ninho.jpg' },
-      { name: 'Gims', img: '/media/artistes/gims.jpg' },
+      { name: 'SCH', img: '/media/artistes/SCH.jpg' },
+      { name: 'SDM', img: '/media/artistes/SDM.jpg' },
+      { name: 'Josman', img: '/media/artistes/Josman.jpg' },
+      { name: 'Ninho', img: '/media/artistes/Ninho.jpg' },
+      { name: 'Gims', img: '/media/artistes/Gims.jpg' },
     ];
 
     const visibleCards = 3; // Nombre de cartes visibles en même temps
