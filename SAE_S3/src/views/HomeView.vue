@@ -1,45 +1,87 @@
 <template>
   <div class="home">
-    <!-- Video Background -->
-    <div class="video-background">
-      <video autoplay muted loop playsinline>
+    <!-- Hero Section avec Vidéo -->
+    <div class="hero-section">
+      <video autoplay muted loop playsinline class="hero-video">
         <source src="/media/fond.mp4" type="video/mp4">
-        <!-- Fallback image if video doesn't load -->
-        <div class="fallback-image"></div>
       </video>
-      <div class="video-overlay"></div>
-    </div>
-    
-    <!-- Content -->
-    <div class="home-content">
-      <div class="text-container">
-        <h1 class="main-title">Golden Coast</h1>
-        <p class="subtitle">Découvrez la beauté de la côte dorée</p>
-        <div class="cta-buttons">
-          <router-link to="/information" class="btn btn-primary">En savoir plus</router-link>
-          <router-link to="/reservation" class="btn btn-secondary">Réserver</router-link>
+      <div class="hero-content">
+        <h1 class="hero-title">GOLDEN COAST FESTIVAL V3</h1>
+        <p class="hero-date">28 - 29 - 30 août 2026</p>
+        <p class="hero-location">CORCELLES-LES-MONTS • DIJON</p>
+        <div class="hero-buttons">
+          <router-link to="/reservation" class="btn-hero btn-primary">BILLETTERIE</router-link>
+          <router-link to="/information" class="btn-hero btn-secondary">INFOS PRATIQUES</router-link>
         </div>
       </div>
     </div>
 
-    <!-- Carrousel des artistes -->
-    <div class="carousel">
-      <div
-        class="carousel-container"
-        :style="{ transform: `translateX(-${currentIndex * (100 / visibleCards)}%)` }"
-      >
-        <div
-          class="carousel-slide"
-          v-for="(artist, index) in artists"
-          :key="index"
-        >
-          <img :src="artist.img" :alt="artist.name" class="carousel-image" />
-          <p class="carousel-name">{{ artist.name }}</p>
+    <!-- Section Présentation -->
+    <section class="about-section">
+      <div class="about-container">
+        <div class="about-content">
+          <h2 class="section-title">LE FESTIVAL</h2>
+          <div class="about-grid">
+            <div class="about-card">
+              <div class="card-icon">🎤</div>
+              <h3>100% RAP FR</h3>
+              <p>Le plus grand festival entièrement dédié au rap français avec les plus grandes têtes d'affiche et les talents émergents.</p>
+            </div>
+            <div class="about-card">
+              <div class="card-icon">🌳</div>
+              <h3>SITE NATUREL</h3>
+              <p>Un cadre exceptionnel à la Combe à la Serpent, offrant une expérience unique en pleine nature près de Dijon.</p>
+            </div>
+            <div class="about-card">
+              <div class="card-icon">👥</div>
+              <h3>52 000 FESTIVALIERS</h3>
+              <p>Une première édition couronnée de succès qui revient encore plus fort pour trois jours de culture urbaine.</p>
+            </div>
+          </div>
         </div>
       </div>
-      <button class="carousel-button prev" @click="prevSlide">❮</button>
-      <button class="carousel-button next" @click="nextSlide">❯</button>
-    </div>
+    </section>
+
+    <!-- Section Description -->
+    <section class="description-section">
+      <div class="description-container">
+        <p class="description-text">
+          Le Golden Coast Festival met à l'honneur la diversité du rap français, des légendes aux nouveaux talents,
+          dans une ambiance unique mêlant énergie, partage et passion. C'est bien plus qu'un festival :
+          un véritable rendez-vous incontournable pour tous les amateurs de rap et de culture urbaine.
+        </p>
+      </div>
+    </section>
+
+    <!-- Section Artistes -->
+    <section class="artists-section">
+      <div class="artists-container">
+        <h2 class="section-title">LA PROGRAMMATION</h2>
+        <div class="artists-grid">
+          <div
+            class="artist-card"
+            v-for="(artist, index) in artists"
+            :key="index"
+          >
+            <div class="artist-image-wrapper">
+              <img :src="artist.img" :alt="artist.name" class="artist-image" />
+              <div class="artist-overlay">
+                <span class="artist-name">{{ artist.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section CTA -->
+    <section class="cta-section">
+      <div class="cta-container">
+        <h2 class="cta-title">PRÊT À VIVRE L'EXPÉRIENCE ?</h2>
+        <p class="cta-text">Réservez vos billets dès maintenant et rejoignez-nous pour trois jours inoubliables !</p>
+        <router-link to="/reservation" class="btn-cta">RÉSERVER MA PLACE</router-link>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -58,257 +100,399 @@ export default {
       { name: 'Gims', img: '/media/artistes/Gims.jpg' },
     ];
 
-    const visibleCards = 3; // Nombre de cartes visibles en même temps
-    const currentIndex = ref(0);
-
-    const nextSlide = () => {
-      currentIndex.value = (currentIndex.value + 1) % artists.length;
-    };
-
-    const prevSlide = () => {
-      currentIndex.value =
-        (currentIndex.value - 1 + artists.length) % artists.length;
-    };
-
-    return { artists, currentIndex, nextSlide, prevSlide, visibleCards };
+    return { artists };
   },
 };
 </script>
 
 <style scoped>
-.home {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Video Background */
-.video-background {
+.home {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.hero-video {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -2;
-}
-
-.video-background video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 0;
 }
 
-.fallback-image {
-  width: 100%;
+.hero-content {
+  position: relative;
+  z-index: 2;
   height: 100%;
-  background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #42a5f5 100%);
-}
-
-.video-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(42, 81, 226, 0.4);
-  z-index: -1;
-}
-
-/* Content */
-.home-content {
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
   padding: 20px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
 }
 
-.text-container {
-  text-align: left;
-}
-
-.main-title {
+.hero-title {
+  font-size: 5rem;
+  font-weight: 900;
   color: #FCDC1E;
-  font-size: 4.5rem;
-  font-weight: 700;
-  margin: 0 0 20px 0;
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-  letter-spacing: 2px;
-  line-height: 1.1;
+  text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.8);
+  letter-spacing: 4px;
+  margin-bottom: 20px;
 }
 
-.subtitle {
+.hero-date {
+  font-size: 2rem;
   color: #ffffff;
-  font-size: 1.4rem;
-  font-weight: 300;
-  margin: 0 0 40px 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.hero-location {
+  font-size: 1.3rem;
+  color: #ffffff;
+  font-weight: 400;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.btn-hero {
+  padding: 18px 40px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.cta-buttons {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-}
-
-.btn {
-  padding: 15px 30px;
-  border-radius: 50px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-
 .btn-primary {
-  background: linear-gradient(45deg, #FCDC1E, #FFE55C);
-  color: #2A51E2;
+  background: #FCDC1E;
+  color: #000000;
+  border: 3px solid #FCDC1E;
+}
+
+.btn-primary:hover {
+  background: transparent;
+  color: #FCDC1E;
 }
 
 .btn-secondary {
   background: transparent;
-  color: #FCDC1E;
-  border: 2px solid #FCDC1E;
+  color: #ffffff;
+  border: 3px solid #ffffff;
 }
 
-/* Carrousel Styles */
-.carousel {
+.btn-secondary:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Section About */
+.about-section {
+  padding: 80px 20px;
+  background: url('/media/photo_accueil.png') center/cover no-repeat;
+  position: relative;
+}
+
+.about-section::before {
+  content: '';
   position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 0;
+}
+
+.about-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.section-title {
+  font-size: 3rem;
+  font-weight: 900;
+  text-align: center;
+  color: #0011E2;
+  margin-bottom: 60px;
+  letter-spacing: 2px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.about-card {
+  text-align: center;
+  padding: 40px 30px;
+  background: #f8f9fa;
+  border-radius: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 30px rgba(0, 17, 226, 0.2);
+}
+
+.card-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.about-card h3 {
+  font-size: 1.5rem;
+  color: #0011E2;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.about-card p {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Section Description */
+.description-section {
+  padding: 60px 20px;
+  background: #0011E2;
+}
+
+.description-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.description-text {
+  font-size: 1.4rem;
+  color: #ffffff;
+  line-height: 1.8;
+  text-align: center;
+  font-weight: 300;
+}
+
+/* Section Artistes */
+.artists-section {
+  padding: 80px 20px;
+  background: #1a1a1a;
+}
+
+.artists-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.artists-section .section-title {
+  color: #FCDC1E;
+}
+
+.artists-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.artist-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.artist-image-wrapper {
+  position: relative;
   width: 100%;
-  height: 30vh;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding-bottom: 100%;
   overflow: hidden;
 }
 
-.carousel-container {
-  display: flex;
-  transition: transform 0.5s ease-in-out;
-  width: calc(100% * (6 / 3)); /* Ajuste la largeur en fonction du nombre total d'éléments et des cartes visibles */
-  height: 100%;
-}
-
-.carousel-slide {
-  flex: 0 0 calc(100% / 3); /* Ajuste la largeur de chaque carte */
-  text-align: center;
-  padding: 10px;
-}
-
-.carousel-image {
-  width: 100%;
-  height: auto;
-  max-height: 70%;
-  border-radius: 12px;
-}
-
-.carousel-name {
-  margin-top: 10px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #fcdc1e;
-}
-
-.carousel-button {
+.artist-image {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
-.carousel-button.prev {
-  left: 10px;
+.artist-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  padding: 30px 20px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
 }
 
-.carousel-button.next {
-  right: 10px;
+.artist-card:hover .artist-image {
+  transform: scale(1.1);
 }
 
-.carousel-button:hover {
-  background: rgba(0, 0, 0, 0.8);
+.artist-card:hover .artist-overlay {
+  transform: translateY(0);
+}
+
+.artist-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #FCDC1E;
+  text-transform: uppercase;
+}
+
+/* Section CTA */
+.cta-section {
+  padding: 100px 20px;
+  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
+  text-align: center;
+}
+
+.cta-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.cta-title {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  margin-bottom: 20px;
+}
+
+.cta-text {
+  font-size: 1.3rem;
+  color: #ffffff;
+  margin-bottom: 40px;
+}
+
+.btn-cta {
+  display: inline-block;
+  padding: 20px 50px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: #FCDC1E;
+  color: #000000;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.btn-cta:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(252, 220, 30, 0.4);
 }
 
 /* Responsive Design */
 @media screen and (max-width: 1024px) {
-  .home-content {
-    width: 60%;
-    padding: 0 40px;
-  }
-  
-  .main-title {
+  .hero-title {
     font-size: 3.5rem;
   }
-  
-  .subtitle {
-    font-size: 1.2rem;
+
+  .about-grid,
+  .artists-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media screen and (max-width: 768px) {
-  .home {
-    justify-content: center;
+  .hero-title {
+    font-size: 2.5rem;
+    letter-spacing: 2px;
   }
-  
-  .home-content {
-    width: 90%;
-    padding: 0 20px;
-    text-align: center;
+
+  .hero-date {
+    font-size: 1.5rem;
   }
-  
-  .text-container {
-    text-align: center;
-  }
-  
-  .main-title {
-    font-size: 2.8rem;
-    letter-spacing: 1px;
-  }
-  
-  .subtitle {
+
+  .hero-location {
     font-size: 1.1rem;
   }
-  
-  .cta-buttons {
-    justify-content: center;
+
+  .hero-buttons {
     flex-direction: column;
-    align-items: center;
+    width: 100%;
+    max-width: 300px;
   }
-  
-  .btn {
-    width: 200px;
+
+  .btn-hero {
+    width: 100%;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .section-title {
+    font-size: 2.2rem;
+  }
+
+  .artists-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-title {
+    font-size: 2rem;
+  }
+
+  .cta-text {
+    font-size: 1.1rem;
   }
 }
 
 @media screen and (max-width: 480px) {
-  .main-title {
-    font-size: 2.2rem;
+  .hero-title {
+    font-size: 2rem;
   }
-  
-  .subtitle {
+
+  .hero-date {
+    font-size: 1.2rem;
+  }
+
+  .btn-hero {
+    padding: 15px 30px;
     font-size: 1rem;
   }
-  
-  .btn {
-    padding: 12px 25px;
-    font-size: 1rem;
-    min-width: 140px;
+
+  .section-title {
+    font-size: 1.8rem;
+  }
+
+  .description-text {
+    font-size: 1.1rem;
   }
 }
-
 </style>

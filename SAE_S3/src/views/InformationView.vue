@@ -35,9 +35,9 @@
           <!-- Remplacé : génération dynamique des cartes artistes -->
           <div class="artist-grid">
             <figure
-              class="artist-card"
-              v-for="artist in artists"
-              :key="artist.name"
+                class="artist-card"
+                v-for="artist in artists"
+                :key="artist.name"
             >
               <div class="artist-media">
                 <a :href="artist.spotify" target="_blank" rel="noopener noreferrer">
@@ -90,8 +90,8 @@ export default {
   justify-content: center;
 
   background:
-    radial-gradient(700px 260px at 12% 12%, rgba(255, 190, 60, 0.14), transparent 18%),
-    linear-gradient(180deg, rgba(2, 24, 80, 0.93) 0%, #010410 50%, #a68506 100%);
+      radial-gradient(700px 260px at 12% 12%, rgba(255, 190, 60, 0.14), transparent 18%),
+      linear-gradient(180deg, rgba(2, 24, 80, 0.93) 0%, #010410 50%, #a68506 100%);
   color: #f6f7fb;
   padding: 48px 16px;
   box-sizing: border-box;
