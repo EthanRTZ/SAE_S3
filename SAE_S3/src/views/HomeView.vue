@@ -11,7 +11,7 @@
         <p class="hero-location">CORCELLES-LES-MONTS • DIJON</p>
         <div class="hero-buttons">
           <router-link to="/reservation" class="btn-hero btn-primary">BILLETTERIE</router-link>
-          <router-link to="/information" class="btn-hero btn-secondary">INFOS PRATIQUES</router-link>
+          <router-link to="/programmation" class="btn-hero btn-secondary">Programmation</router-link>
         </div>
       </div>
     </div>
