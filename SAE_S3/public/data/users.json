@@ -1,0 +1,13 @@
+[
+  {
+    "email": "test@example.com",
+    "password": "test12",
+    "role": "user"
+  },
+  {
+    "email": "admin@gcfestival.fr",
+    "password": "admin2026",
+    "role": "admin"
+  }
+]
+

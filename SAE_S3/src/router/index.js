@@ -31,6 +31,16 @@ const routes = [
         name: 'reservation',
         component: ReservationView,
     },
+    {
+        path: '/login',
+        name: 'login',
+        component: () => import('@/views/LoginView.vue')
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        redirect: '/'
+    }
 ];
 
 const router = createRouter({

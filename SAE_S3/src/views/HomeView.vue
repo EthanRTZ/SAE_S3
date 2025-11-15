@@ -211,6 +211,22 @@ export default {
   color: #000000;
 }
 
+/* Style minimal pour le bouton Connexion ajouté */
+.btn-login {
+  background: transparent;
+  color: #FCDC1E;
+  border: 3px solid rgba(252,220,30,0.9);
+  padding: 18px 36px;
+  border-radius: 50px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+.btn-login:hover {
+  background: #FCDC1E;
+  color: #000;
+}
+
 /* Section About */
 .about-section {
   padding: 80px 20px;
@@ -471,25 +487,9 @@ export default {
 }
 
 @media screen and (max-width: 480px) {
-  .hero-title {
-    font-size: 2rem;
-  }
-
-  .hero-date {
-    font-size: 1.2rem;
-  }
-
-  .btn-hero {
-    padding: 15px 30px;
-    font-size: 1rem;
-  }
-
-  .section-title {
-    font-size: 1.8rem;
-  }
-
-  .description-text {
-    font-size: 1.1rem;
-  }
+  /* règles de secours pour très petits écrans */
+  .hero-title { font-size: 1.8rem; }
 }
+
+/* fin du style */
 </style>

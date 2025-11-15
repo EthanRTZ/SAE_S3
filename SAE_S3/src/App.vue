@@ -27,6 +27,9 @@ const toggleMenu = () => {
           <router-link to="/prestataire" class="nav-link">Prestataire</router-link>
           <router-link to="/carte" class="nav-link">Carte</router-link>
           <router-link to="/reservation" class="nav-link">Réservation</router-link>
+
+          <!-- BOUTON CONNEXION (desktop, placé à droite) -->
+          <router-link to="/login" class="login-btn">Connexion</router-link>
         </div>
         
         <!-- Mobile Menu Button -->
@@ -44,6 +47,9 @@ const toggleMenu = () => {
         <router-link to="/prestataire" class="nav-link-mobile" @click="toggleMenu">Prestataire</router-link>
         <router-link to="/carte" class="nav-link-mobile" @click="toggleMenu">Carte</router-link>
         <router-link to="/reservation" class="nav-link-mobile" @click="toggleMenu">Réservation</router-link>
+
+        <!-- BOUTON CONNEXION (mobile) -->
+        <router-link to="/login" class="login-btn-mobile" @click="toggleMenu">Connexion</router-link>
       </div>
     </nav>
     
@@ -264,5 +270,46 @@ main {
   .nav-logo h2 {
     font-size: 1.4rem;
   }
+}
+
+/* Styles pour le bouton Connexion (desktop) */
+.login-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  background: #FCDC1E;
+  color: #2046b3;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 2px solid transparent;
+  margin-left: 8px; /* espace entre les liens et le bouton */
+  transition: background 0.12s, transform 0.12s;
+}
+.login-btn:hover {
+  background: #fff176;
+  transform: translateY(-1px);
+}
+
+/* Styles pour le bouton Connexion (mobile) */
+.login-btn-mobile {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px 0;
+  background: #FCDC1E;
+  color: #2046b3;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 12px;
+  border: 2px solid transparent;
+}
+.login-btn-mobile:hover {
+  background: #fff176;
+}
+
+/* Assure que le bouton desktop reste visible dans la nav-menu */
+.nav-menu .login-btn {
+  align-self: center;
 }
 </style>
