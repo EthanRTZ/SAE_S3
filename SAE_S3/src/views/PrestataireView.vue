@@ -121,7 +121,7 @@ export default {
 <style scoped>
 .prestataire {
   min-height: calc(100vh - 70px);
-  background-color: white;
+  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
   padding: 88px 16px 24px; /* espace sous la navbar fixe */
 }
 

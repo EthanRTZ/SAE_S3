@@ -26,7 +26,7 @@
       </div>
 
       <div class="notes">
-        OUVERTURE DES PORTES — 13:00 • FERMETURE — 00:00
+        OUVERTURE DES PORTES — 13:00 • FERMETURE — 3:00
       </div>
     </div>
   </div>
@@ -75,7 +75,7 @@ export default {
 <style scoped>
 .programmation {
   min-height: calc(100vh - 70px);
-  background: #0b0b0b;
+  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
   padding: 88px 16px 24px;
 }
 
