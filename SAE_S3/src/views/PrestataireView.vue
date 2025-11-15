@@ -25,7 +25,6 @@
           <div class="contacts">
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
             <a v-if="p.email" :href="`mailto:${p.email}`" class="link">{{ p.email }}</a>
-            <a v-if="p.tel" :href="`tel:${p.tel}`" class="link">{{ p.tel }}</a>
           </div>
         </div>
       </div>
