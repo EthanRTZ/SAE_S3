@@ -25,7 +25,6 @@
           <div class="contacts">
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
             <a v-if="p.email" :href="`mailto:${p.email}`" class="link">{{ p.email }}</a>
-            <a v-if="p.tel" :href="`tel:${p.tel}`" class="link">{{ p.tel }}</a>
           </div>
         </div>
       </div>
@@ -121,7 +120,7 @@ export default {
 <style scoped>
 .prestataire {
   min-height: calc(100vh - 70px);
-  background-color: white;
+  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
   padding: 88px 16px 24px; /* espace sous la navbar fixe */
 }
 

@@ -26,7 +26,7 @@
       </div>
 
       <div class="notes">
-        OUVERTURE DES PORTES — 13:00 • FERMETURE — 00:00
+        OUVERTURE DES PORTES — 13:00 • FERMETURE — 3:00
       </div>
     </div>
   </div>
@@ -38,7 +38,7 @@ export default {
   data() {
     return {
       // Heures affichées en colonne de gauche
-      times: ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00'],
+      times: ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'],
       // Noms de scènes comme sur l'affiche
       stages: [
         { name: 'MOTHERSHIP', by: 'SNIPES' },
@@ -75,7 +75,7 @@ export default {
 <style scoped>
 .programmation {
   min-height: calc(100vh - 70px);
-  background: #0b0b0b;
+  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
   padding: 88px 16px 24px;
 }
 
