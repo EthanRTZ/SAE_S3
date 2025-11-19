@@ -7,8 +7,8 @@
       </video>
       <div class="hero-content">
         <h1 class="hero-title">GOLDEN COAST FESTIVAL V3</h1>
-        <p class="hero-date">28 - 29 - 30 août 2026</p>
-        <p class="hero-location">CORCELLES-LES-MONTS • DIJON</p>
+        <p class="hero-date"><strong>28 - 29 - 30 août 2026</strong></p>
+        <p class="hero-location"><strong>CORCELLES-LES-MONTS • DIJON</strong></p>
         <div class="hero-buttons">
           <router-link to="/reservation" class="btn-hero btn-primary">BILLETTERIE</router-link>
           <router-link to="/programmation" class="btn-hero btn-secondary">Programmation</router-link>
@@ -25,17 +25,17 @@
             <div class="about-card">
               <div class="card-icon">🎤</div>
               <h3>100% RAP FR</h3>
-              <p>Le plus grand festival entièrement dédié au rap français avec les plus grandes têtes d'affiche et les talents émergents.</p>
+              <p>Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d'affiche et les talents émergents.</p>
             </div>
             <div class="about-card">
               <div class="card-icon">🌳</div>
               <h3>SITE NATUREL</h3>
-              <p>Un cadre exceptionnel à la Combe à la Serpent, offrant une expérience unique en pleine nature près de Dijon.</p>
+              <p>Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.</p>
             </div>
             <div class="about-card">
               <div class="card-icon">👥</div>
               <h3>52 000 FESTIVALIERS</h3>
-              <p>Une première édition couronnée de succès qui revient encore plus fort pour trois jours de culture urbaine.</p>
+              <p>Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.</p>
             </div>
           </div>
         </div>
@@ -45,11 +45,20 @@
     <!-- Section Description -->
     <section class="description-section">
       <div class="description-container">
+        <p class="description-tag"><strong>Vibes urbaines • 28-29-30 août</strong></p>
+        <h2 class="description-title"><strong>Le rendez-vous des kids branchés rap FR</strong></h2>
         <p class="description-text">
-          Le Golden Coast Festival met à l'honneur la diversité du rap français, des légendes aux nouveaux talents,
-          dans une ambiance unique mêlant énergie, partage et passion. C'est bien plus qu'un festival :
-          un véritable rendez-vous incontournable pour tous les amateurs de rap et de culture urbaine.
+          <strong>Golden Coast</strong>, c'est ton spot de fin d'été : des beats lourds, un son <strong>trap & boom bap</strong> jusqu'au
+          dernier rayon, des <strong>scènes immersives</strong> et une <strong>ambiance chill</strong> où tu peux autant crier les couplets
+          que poser en crew. Entre <strong>show lasers, corner fripes, stands food street</strong> et <strong>afters cachés</strong>,
+          on a pensé chaque détail pour une génération qui veut <strong>vibrer fort, partager et créer ses propres souvenirs</strong>.
         </p>
+        <div class="description-highlights">
+          <span class="highlight-chip">Scènes 360°</span>
+          <span class="highlight-chip">Workshops & Freestyles</span>
+          <span class="highlight-chip">Chill zones neon</span>
+          <span class="highlight-chip">Aftershows secrets</span>
+        </div>
       </div>
     </section>
 
@@ -77,8 +86,8 @@
     <!-- Section CTA -->
     <section class="cta-section">
       <div class="cta-container">
-        <h2 class="cta-title">PRÊT À VIVRE L'EXPÉRIENCE ?</h2>
-        <p class="cta-text">Réservez vos billets dès maintenant et rejoignez-nous pour trois jours inoubliables !</p>
+        <h2 class="cta-title"><strong>PRÊT À VIVRE L'EXPÉRIENCE ?</strong></h2>
+        <p class="cta-text"><strong>Réservez vos billets dès maintenant</strong> et rejoignez-nous pour trois jours inoubliables !</p>
         <router-link to="/reservation" class="btn-cta">RÉSERVER MA PLACE</router-link>
       </div>
     </section>
@@ -298,20 +307,63 @@ export default {
 /* Section Description */
 .description-section {
   padding: 60px 20px;
-  background: #0011E2;
+  background: radial-gradient(circle at top, rgba(252, 220, 30, 0.25), transparent 55%), #000428;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .description-container {
   max-width: 900px;
   margin: 0 auto;
+  text-align: center;
+}
+
+.description-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: rgba(252, 220, 30, 0.15);
+  color: #FCDC1E;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.description-title {
+  font-size: 2.4rem;
+  color: #ffffff;
+  font-weight: 800;
+  margin-bottom: 20px;
+  line-height: 1.2;
 }
 
 .description-text {
   font-size: 1.4rem;
   color: #ffffff;
   line-height: 1.8;
-  text-align: center;
   font-weight: 300;
+  margin-bottom: 30px;
+}
+
+.description-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.highlight-chip {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 /* Section Artistes */
@@ -483,6 +535,15 @@ export default {
 
   .cta-text {
     font-size: 1.1rem;
+  }
+
+  .description-title {
+    font-size: 1.8rem;
+  }
+
+  .description-highlights {
+    flex-direction: column;
+    align-items: center;
   }
 }
 
