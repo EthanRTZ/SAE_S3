@@ -17,16 +17,23 @@
           <div v-for="t in times" :key="t" class="time-cell">{{ t }}</div>
         </div>
         <div v-for="s in stages" :key="s.name" class="stage-col">
-          <div v-for="(slot, idx) in schedule[s.name]" :key="idx" class="slot">
-            <div class="slot-time">{{ slot.start }} – {{ slot.end }}</div>
-            <div class="slot-artist">{{ slot.artist }}</div>
-            <div v-if="slot.style" class="slot-style">{{ slot.style }}</div>
+          <div class="stage-slot-container">
+            <div 
+              v-for="(slot, idx) in schedule[s.name]" 
+              :key="idx" 
+              class="slot"
+              :style="getSlotStyle(slot)"
+            >
+              <div class="slot-time">{{ slot.start }}–{{ slot.end }}</div>
+              <div class="slot-artist">{{ slot.artist }}</div>
+              <div v-if="slot.style" class="slot-style">{{ slot.style }}</div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="notes">
-        OUVERTURE DES PORTES — 13:00 • FERMETURE — 3:00
+        OUVERTURE DES PORTES — 15:00 • FERMETURE — 3:00
       </div>
     </div>
   </div>
@@ -38,7 +45,7 @@ export default {
   data() {
     return {
       // Heures affichées en colonne de gauche
-      times: ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'],
+      times: ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00'],
       // Noms de scènes comme sur l'affiche
       stages: [
         { name: 'MOTHERSHIP', by: 'SNIPES' },
@@ -68,7 +75,53 @@ export default {
       },
     }
   },
-  methods: {},
+  methods: {
+    // Convertit une heure (HH:MM) en minutes depuis minuit
+    timeToMinutes(time) {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    },
+    // Calcule le style de positionnement pour un créneau
+    getSlotStyle(slot) {
+      const startMinutes = this.timeToMinutes(slot.start);
+      let endMinutes = this.timeToMinutes(slot.end);
+      
+      // Si l'heure de fin est après minuit (ex: 00:00, 01:00, 02:00), ajouter 24h
+      if (endMinutes < startMinutes || (startMinutes >= 23 * 60 && endMinutes <= 2 * 60)) {
+        endMinutes = endMinutes + 24 * 60;
+      }
+      
+      // Heure de début de la grille (15:00 = 15*60 = 900 minutes)
+      const gridStartMinutes = this.timeToMinutes('15:00');
+      
+      // Position relative au début de la grille
+      let topMinutes = startMinutes - gridStartMinutes;
+      
+      // Si l'heure de début est après minuit, ajuster
+      if (topMinutes < 0) {
+        topMinutes = startMinutes + 24 * 60 - gridStartMinutes;
+      }
+      
+      // Durée du créneau
+      const duration = endMinutes - startMinutes;
+      
+      // Hauteur totale de la grille (de 15:00 à 03:00 = 12 heures = 720 minutes)
+      const gridHeightMinutes = 12 * 60; // 12 heures
+      
+      // Calcul en pourcentage
+      const topPercent = Math.max(0, (topMinutes / gridHeightMinutes) * 100);
+      const heightPercent = Math.min(100, (duration / gridHeightMinutes) * 100);
+      
+      return {
+        position: 'absolute',
+        top: `${topPercent}%`,
+        height: `${heightPercent}%`,
+        width: 'calc(100% - 20px)',
+        left: '10px',
+        right: '10px',
+      };
+    },
+  },
 }
 </script>
 
@@ -115,32 +168,65 @@ export default {
 .time-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  min-height: 720px;
+  justify-content: space-between;
 }
 .time-cell {
   color: #FCDC1E;
   font-weight: 800;
   text-align: right;
   padding-right: 6px;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
 }
 
 .stage-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  position: relative;
+  min-height: 720px; /* Hauteur correspondant à 12 heures (15:00 à 03:00) */
+}
+
+.stage-slot-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 720px;
 }
 
 .slot {
   background: #FCDC1E;
   color: #0b0b0b;
   border-radius: 10px;
-  padding: 10px;
+  padding: 8px 10px;
   border: 2px solid #FCDC1E;
   box-shadow: 0 6px 12px rgba(252, 220, 30, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  box-sizing: border-box;
+  gap: 2px;
 }
-.slot-time { font-weight: 800; font-size: 0.9rem; }
-.slot-artist { font-weight: 900; font-size: 1.05rem; }
-.slot-style { font-size: 0.85rem; opacity: 0.9; }
+.slot-time { 
+  font-weight: 700; 
+  font-size: 0.7rem; 
+  line-height: 1;
+  margin-bottom: 2px;
+  opacity: 0.85;
+}
+.slot-artist { 
+  font-weight: 900; 
+  font-size: 1.1rem; 
+  line-height: 1.2;
+  flex: 1;
+}
+.slot-style { 
+  font-size: 0.75rem; 
+  opacity: 0.8; 
+  margin-top: auto;
+}
 
 .notes {
   color: #FCDC1E;
