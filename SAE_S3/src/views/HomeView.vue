@@ -69,16 +69,32 @@
     <section class="artists-section">
       <div class="artists-container">
         <h2 class="section-title">LA PROGRAMMATION</h2>
-        <div class="artists-grid">
-          <div
-            class="artist-card"
-            v-for="(artist, index) in artists"
-            :key="index"
-          >
-            <div class="artist-image-wrapper">
-              <img :src="artist.img" :alt="artist.name" class="artist-image" />
-              <div class="artist-overlay">
-                <span class="artist-name">{{ artist.name }}</span>
+        <div class="carousel-wrapper">
+          <div class="carousel-track">
+            <!-- Première série d'artistes -->
+            <div
+              class="artist-card"
+              v-for="artist in artists"
+              :key="'first-' + artist.name"
+            >
+              <div class="artist-image-wrapper">
+                <img :src="artist.img" :alt="artist.name" class="artist-image" />
+                <div class="artist-overlay">
+                  <span class="artist-name">{{ artist.name }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Duplication pour boucle infinie -->
+            <div
+              class="artist-card"
+              v-for="artist in artists"
+              :key="'second-' + artist.name"
+            >
+              <div class="artist-image-wrapper">
+                <img :src="artist.img" :alt="artist.name" class="artist-image" />
+                <div class="artist-overlay">
+                  <span class="artist-name">{{ artist.name }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -369,25 +385,49 @@ export default {
   text-transform: uppercase;
 }
 
-/* Section Artistes */
+/* Section Artistes - Carrousel */
 .artists-section {
-  padding: 80px 20px;
+  padding: 80px 0;
   background: #1a1a1a;
+  overflow: hidden;
 }
 
 .artists-container {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
 .artists-section .section-title {
   color: #FCDC1E;
+  padding: 0 20px;
+  margin-bottom: 60px;
 }
 
-.artists-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.carousel-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.carousel-track {
+  display: flex;
   gap: 30px;
+  animation: scroll 40s linear infinite;
+  width: fit-content;
+  padding: 0 15px;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.carousel-wrapper:hover .carousel-track {
+  animation-play-state: paused;
 }
 
 .artist-card {
@@ -395,12 +435,15 @@ export default {
   overflow: hidden;
   border-radius: 15px;
   cursor: pointer;
+  flex-shrink: 0;
+  width: 400px;
+  height: 400px;
 }
 
 .artist-image-wrapper {
   position: relative;
   width: 100%;
-  padding-bottom: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -493,12 +536,20 @@ export default {
   .artists-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .artist-card {
+    width: 320px;
+    height: 320px;
+  }
+
+  .carousel-track {
+    gap: 25px;
+  }
 }
 
 @media screen and (max-width: 768px) {
   .hero-title {
     font-size: 2.5rem;
-    letter-spacing: 2px;
   }
 
   .hero-date {
@@ -506,17 +557,12 @@ export default {
   }
 
   .hero-location {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .hero-buttons {
     flex-direction: column;
-    width: 100%;
-    max-width: 300px;
-  }
-
-  .btn-hero {
-    width: 100%;
+    gap: 15px;
   }
 
   .about-grid {
@@ -528,31 +574,43 @@ export default {
     font-size: 2.2rem;
   }
 
-  .artists-grid {
-    grid-template-columns: 1fr;
-  }
-
   .cta-title {
     font-size: 2rem;
   }
 
-  .cta-text {
-    font-size: 1.1rem;
+  .artist-card {
+    width: 280px;
+    height: 280px;
   }
 
-  .description-title {
-    font-size: 1.8rem;
+  .carousel-track {
+    gap: 20px;
+    animation: scroll 30s linear infinite;
   }
 
-  .description-highlights {
-    flex-direction: column;
-    align-items: center;
+  .artist-name {
+    font-size: 1.5rem;
   }
 }
 
 @media screen and (max-width: 480px) {
   /* règles de secours pour très petits écrans */
-  .hero-title { font-size: 1.8rem; }
+  .hero-title {
+    font-size: 1.8rem;
+  }
+
+  .artist-card {
+    width: 240px;
+    height: 240px;
+  }
+
+  .carousel-track {
+    gap: 15px;
+  }
+
+  .artist-name {
+    font-size: 1.3rem;
+  }
 }
 
 /* fin du style */
