@@ -63,23 +63,27 @@
     </section>
 
     <section class="description-section">
-      <div class="description-container">
-        <p class="description-tag"><strong>Vibes urbaines • 28-29-30 août</strong></p>
-        <h2 class="description-title"><strong>Le rendez-vous des fans de rap</strong></h2>
+      <div class="description-container two-col">
+        <div class="description-left">
+          <h2 class="description-title"><strong>Le rendez-vous des fans de rap</strong></h2>
 
-        <p class="description-text">
-          Le <strong>Golden Coast Festival</strong>, c’est le spot idéal pour finir l’été et vivre pleinement la culture <strong>rap français</strong>.
-          Tu profites de <strong>beats lourds</strong>, d’un son <strong>trap & boom bap</strong> non-stop, de <strong>scènes immersives</strong>
-          et d’une <strong>ambiance chill</strong> pensée pour vibrer, partager et créer tes meilleurs souvenirs avec ton crew.
-          Entre <strong>shows laser</strong>, <strong>corners fripes</strong>, <strong>street-food</strong> et <strong>afters cachés</strong>,
-          tout est conçu pour offrir une expérience simple à vivre, claire à comprendre et impossible à oublier.
-        </p>
+          <p class="description-text">
+            Plonge au cœur de l’expérience Golden Coast Festival, l’événement rap français qui transforme la fin de l’été en un moment d’exception.<br/><br/>
+            Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap &amp; boom bap d’une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.<br/><br/>
+            Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>
+            Les afters confidentiels, réservés à ceux qui veulent prolonger l’instant, ajoutent une touche rare et privilégiée.<br/><br/>
+            Le Golden Coast Festival, c’est plus qu’un rendez-vous : c’est l’événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.
+          </p>
 
-        <div class="description-highlights">
-          <span class="highlight-chip"><strong>Scènes 360°</strong></span>
-          <span class="highlight-chip"><strong>Les plus grandes stars du rap français</strong></span>
-          <span class="highlight-chip"><strong>Zone chill</strong></span>
-          <span class="highlight-chip"><strong>Boissons & street-food</strong></span>
+          <div class="description-highlights">
+            <span class="highlight-chip"><strong>Les plus grandes stars du rap français</strong></span>
+            <span class="highlight-chip"><strong>Boissons & street-food</strong></span>
+          </div>
+        </div>
+
+        <div class="description-right">
+          <!-- Remplace cette image par celle de ton choix dans /media -->
+          <img src="/media/description.png" alt="Golden Coast Festival" class="description-image" />
         </div>
       </div>
     </section>
@@ -335,7 +339,7 @@ export default {
   font-size: 3rem;
   font-weight: 900;
   text-align: center;
-  color: #0011E2;
+  color: #ffd73e;
   margin-bottom: 60px;
   letter-spacing: 2px;
 }
@@ -349,7 +353,7 @@ export default {
 .about-card {
   text-align: center;
   padding: 40px 30px;
-  background: #f8f9fa;
+  background: #ffffff;
   border-radius: 15px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -380,9 +384,8 @@ export default {
 /* Section Description */
 .description-section {
   padding: 60px 20px;
-  background: radial-gradient(circle at top, rgba(252, 220, 30, 0.25), transparent 55%), #000428;
+  background: linear-gradient(to bottom, #6f47c1 0%, #1629bf 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .description-container {
@@ -413,10 +416,11 @@ export default {
   line-height: 1.2;
 }
 
+/* <-- CHANGED: taille du texte description augmentée et line-height ajusté --> */
 .description-text {
-  font-size: 1.4rem;
+  font-size: 1.3rem; /* augmenté depuis 1.05rem */
   color: #ffffff;
-  line-height: 1.8;
+  line-height: 1.75; /* un peu plus aéré */
   font-weight: 300;
   margin-bottom: 30px;
 }
@@ -442,7 +446,7 @@ export default {
 /* Section Artistes - Carrousel */
 .artists-section {
   padding: 80px 0;
-  background: #1a1a1a;
+  background: linear-gradient(to bottom, #1629bf 0%, #11338A 100%);
   overflow: hidden;
 }
 
@@ -540,7 +544,7 @@ export default {
 /* Section CTA */
 .cta-section {
   padding: 100px 20px;
-  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
+  background: linear-gradient(to bottom, #11338A 0%, #0b1e55 100%);
   text-align: center;
 }
 
@@ -645,6 +649,11 @@ export default {
   .artist-name {
     font-size: 1.5rem;
   }
+
+  /* <-- CHANGED: ajuste la taille sur tablettes --> */
+  .description-text {
+    font-size: 1.15rem; /* augmenté depuis 1rem */
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -664,6 +673,64 @@ export default {
 
   .artist-name {
     font-size: 1.3rem;
+  }
+
+  /* <-- CHANGED: ajuste la taille sur très petits écrans --> */
+  .description-text {
+    font-size: 1.05rem; /* augmenté depuis 0.95rem */
+  }
+}
+
+/* <-- CHANGED: mise en page 2 colonnes pour la description --> */
+.description-container.two-col {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  max-width: 1100px;
+}
+
+.description-left {
+  flex: 1;
+  text-align: left;
+}
+
+.description-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.description-image {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  object-fit: cover;
+}
+
+/* garde .description-text existant mais s'assure alignement gauche */
+.description-text {
+  text-align: left;
+  /* ...existing style kept... */
+}
+
+/* Responsive: empile les colonnes sur petits écrans */
+@media screen and (max-width: 900px) {
+  .description-container.two-col {
+    flex-direction: column;
+    gap: 20px;
+    padding: 0 20px;
+  }
+
+  .description-right {
+    width: 100%;
+  }
+
+  .description-image {
+    max-width: 100%;
+    height: auto;
   }
 }
 
