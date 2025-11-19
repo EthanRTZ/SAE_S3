@@ -183,10 +183,6 @@ export default {
   width: fit-content;
 }
 
-.marquee-section:hover .marquee-track {
-  animation-play-state: paused;
-}
-
 .marquee-item {
   font-size: 1.4rem;
   font-weight: 900;
