@@ -42,25 +42,28 @@
       </div>
     </section>
 
-    <!-- Section Description -->
     <section class="description-section">
       <div class="description-container">
         <p class="description-tag"><strong>Vibes urbaines • 28-29-30 août</strong></p>
-        <h2 class="description-title"><strong>Le rendez-vous des kids branchés rap FR</strong></h2>
+        <h2 class="description-title"><strong>Le rendez-vous des fans de rap</strong></h2>
+
         <p class="description-text">
-          <strong>Golden Coast</strong>, c'est ton spot de fin d'été : des beats lourds, un son <strong>trap & boom bap</strong> jusqu'au
-          dernier rayon, des <strong>scènes immersives</strong> et une <strong>ambiance chill</strong> où tu peux autant crier les couplets
-          que poser en crew. Entre <strong>show lasers, corner fripes, stands food street</strong> et <strong>afters cachés</strong>,
-          on a pensé chaque détail pour une génération qui veut <strong>vibrer fort, partager et créer ses propres souvenirs</strong>.
+          Le <strong>Golden Coast Festival</strong>, c’est le spot idéal pour finir l’été et vivre pleinement la culture <strong>rap français</strong>.
+          Tu profites de <strong>beats lourds</strong>, d’un son <strong>trap & boom bap</strong> non-stop, de <strong>scènes immersives</strong>
+          et d’une <strong>ambiance chill</strong> pensée pour vibrer, partager et créer tes meilleurs souvenirs avec ton crew.
+          Entre <strong>shows laser</strong>, <strong>corners fripes</strong>, <strong>street-food</strong> et <strong>afters cachés</strong>,
+          tout est conçu pour offrir une expérience simple à vivre, claire à comprendre et impossible à oublier.
         </p>
+
         <div class="description-highlights">
-          <span class="highlight-chip">Scènes 360°</span>
-          <span class="highlight-chip">Workshops & Freestyles</span>
-          <span class="highlight-chip">Chill zones neon</span>
-          <span class="highlight-chip">Aftershows secrets</span>
+          <span class="highlight-chip"><strong>Scènes 360°</strong></span>
+          <span class="highlight-chip"><strong>Les plus grandes stars du rap français</strong></span>
+          <span class="highlight-chip"><strong>Zone chill</strong></span>
+          <span class="highlight-chip"><strong>Boissons & street-food</strong></span>
         </div>
       </div>
     </section>
+
 
     <!-- Section Artistes -->
     <section class="artists-section">
