@@ -19,7 +19,20 @@
     <!-- Bandeau Marquee -->
     <div class="marquee-section">
       <div class="marquee-track">
-        <span class="marquee-item" v-for="n in 8" :key="'marquee-' + n">GOLDEN COAST •</span>
+        <span
+          class="marquee-item"
+          v-for="n in 10"
+          :key="'marquee-a-' + n"
+        >
+          GOLDEN COAST •
+        </span>
+        <span
+          class="marquee-item"
+          v-for="n in 10"
+          :key="'marquee-b-' + n"
+        >
+          GOLDEN COAST •
+        </span>
       </div>
     </div>
 
@@ -167,6 +180,7 @@ export default {
   padding: 18px 0;
   animation: marquee-scroll 12s linear infinite;
   white-space: nowrap;
+  width: fit-content;
 }
 
 .marquee-section:hover .marquee-track {
