@@ -16,6 +16,13 @@
       </div>
     </div>
 
+    <!-- Bandeau Marquee -->
+    <div class="marquee-section">
+      <div class="marquee-track">
+        <span class="marquee-item" v-for="n in 8" :key="'marquee-' + n">GOLDEN COAST •</span>
+      </div>
+    </div>
+
     <!-- Section Présentation -->
     <section class="about-section">
       <div class="about-container">
@@ -143,6 +150,43 @@ export default {
 .home {
   width: 100%;
   overflow-x: hidden;
+}
+
+/* Bandeau Marquee */
+.marquee-section {
+  width: 100%;
+  background: #FCDC1E;
+  border-top: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  gap: 25px;
+  padding: 18px 0;
+  animation: marquee-scroll 12s linear infinite;
+  white-space: nowrap;
+}
+
+.marquee-section:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-item {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #000000;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 /* Hero Section */
