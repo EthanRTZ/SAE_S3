@@ -168,16 +168,16 @@ export default {
 /* Bandeau Marquee */
 .marquee-section {
   width: 100%;
-  background: #FCDC1E;
-  border-top: 2px solid #000000;
-  border-bottom: 2px solid #000000;
+  background: #0011E2;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
 .marquee-track {
   display: flex;
   gap: 25px;
-  padding: 18px 0;
+  padding: 10px 0;
   animation: marquee-scroll 12s linear infinite;
   white-space: nowrap;
   width: fit-content;
@@ -190,8 +190,8 @@ export default {
 .marquee-item {
   font-size: 1.4rem;
   font-weight: 900;
-  letter-spacing: 3px;
-  color: #000000;
+  letter-spacing: 2px;
+  color: #FCDC1E;
 }
 
 @keyframes marquee-scroll {
