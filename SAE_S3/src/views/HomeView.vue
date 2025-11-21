@@ -20,16 +20,16 @@
     <div class="marquee-section">
       <div class="marquee-track">
         <span
-          class="marquee-item"
-          v-for="n in 10"
-          :key="'marquee-a-' + n"
+            class="marquee-item"
+            v-for="n in 10"
+            :key="'marquee-a-' + n"
         >
           GOLDEN COAST •
         </span>
         <span
-          class="marquee-item"
-          v-for="n in 10"
-          :key="'marquee-b-' + n"
+            class="marquee-item"
+            v-for="n in 10"
+            :key="'marquee-b-' + n"
         >
           GOLDEN COAST •
         </span>
@@ -69,10 +69,7 @@
 
           <p class="description-text">
             Plonge au cœur de l’expérience Golden Coast Festival, l’événement rap français qui transforme la fin de l’été en un moment d’exception.<br/><br/>
-            Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap &amp; boom bap d’une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.<br/><br/>
-            Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>
-            Les afters confidentiels, réservés à ceux qui veulent prolonger l’instant, ajoutent une touche rare et privilégiée.<br/><br/>
-            Le Golden Coast Festival, c’est plus qu’un rendez-vous : c’est l’événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.
+            Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap &amp; boom bap d’une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.
           </p>
 
           <div class="description-highlights">
@@ -82,8 +79,22 @@
         </div>
 
         <div class="description-right">
-          <!-- Remplace cette image par celle de ton choix dans /media -->
           <img src="/media/description.png" alt="Golden Coast Festival" class="description-image" />
+        </div>
+      </div>
+
+      <div class="description-container two-col">
+        <div class="description-right">
+          <img src="/media/accueil2.jpeg" alt="Ambiance Golden Coast" class="description-image" />
+        </div>
+
+        <div class="description-left">
+          <h2 class="description-title"><strong>Une immersion totale</strong></h2>
+
+          <p class="description-text">
+            Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>
+            Les afters confidentiels, réservés à ceux qui veulent prolonger l’instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c’est plus qu’un rendez-vous : c’est l’événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.
+          </p>
         </div>
       </div>
     </section>
@@ -97,9 +108,9 @@
           <div class="carousel-track">
             <!-- Première série d'artistes -->
             <div
-              class="artist-card"
-              v-for="artist in artists"
-              :key="'first-' + artist.name"
+                class="artist-card"
+                v-for="artist in artists"
+                :key="'first-' + artist.name"
             >
               <div class="artist-image-wrapper">
                 <img :src="artist.img" :alt="artist.name" class="artist-image" />
@@ -110,9 +121,9 @@
             </div>
             <!-- Duplication pour boucle infinie -->
             <div
-              class="artist-card"
-              v-for="artist in artists"
-              :key="'second-' + artist.name"
+                class="artist-card"
+                v-for="artist in artists"
+                :key="'second-' + artist.name"
             >
               <div class="artist-image-wrapper">
                 <img :src="artist.img" :alt="artist.name" class="artist-image" />
@@ -389,7 +400,7 @@ export default {
 }
 
 .description-container {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   text-align: center;
 }
@@ -681,12 +692,14 @@ export default {
   }
 }
 
-/* <-- CHANGED: mise en page 2 colonnes pour la description --> */
 .description-container.two-col {
   display: flex;
   align-items: center;
   gap: 40px;
-  max-width: 1100px;
+}
+
+.description-container.two-col + .description-container.two-col {
+  margin-top: 60px;
 }
 
 .description-left {
