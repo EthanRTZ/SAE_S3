@@ -4,57 +4,22 @@
 
     <!-- Panneau de filtres: afficher les zones + filtrer les pins par catégories/sous-catégories -->
     <div class="map-toolbar">
-      <!-- Toggles des zones -->
-      <label><input type="checkbox" v-model="showCircle" /> Cercle</label>
-      <label><input type="checkbox" v-model="showPolygon" /> Polygone</label>
+      <!-- Suppression des toggles Cercle / Polygone -->
 
-      <span style="margin-left:12px;">Types:</span>
+      <span>Types activités:</span>
 
-      <!-- Catégorie Restaurant (avec bouton pour enrouler/dérouler les sous-catégories) -->
-      <div class="type-group">
-        <label class="type-label">
-          <!-- Flèche pour enrouler/dérouler la liste des sous-catégories -->
-          <button
-            type="button"
-            class="collapse-btn"
-            :aria-expanded="!collapsed.restaurant"
-            @click.stop="toggleCollapse('restaurant')"
-            title="Afficher/masquer les sous-catégories"
-          >
-            <span class="arrow" :class="{ open: !collapsed.restaurant }">▸</span>
-          </button>
-          <!-- Case principale: active/désactive toutes les sous-catégories -->
-          <input type="checkbox" v-model="visibleTypes.restaurant._all" @change="syncTypeAll('restaurant')" />
-          Restaurant
+      <!-- Nouveau filtre dynamique -->
+      <div class="types-filter">
+        <label v-for="(val, type) in visibleTypes" :key="type" class="type-label">
+          <input type="checkbox" v-model="visibleTypes[type]" /> {{ type }}
         </label>
-        <!-- Sous-catégories de Restaurant (indentées) -->
-        <div class="sub" v-if="visibleTypes.restaurant" v-show="!collapsed.restaurant">
-          <label class="sub-item"><input type="checkbox" v-model="visibleTypes.restaurant.fastfood" /> Fast-food</label>
-          <label class="sub-item"><input type="checkbox" v-model="visibleTypes.restaurant.gourmet" /> Gastronomique</label>
-          <label class="sub-item"><input type="checkbox" v-model="visibleTypes.restaurant.cafe" /> Café</label>
-        </div>
       </div>
-
-      <!-- Catégorie Scène (avec bouton pour enrouler/dérouler) -->
-      <div class="type-group">
-        <label class="type-label">
-          <button
-            type="button"
-            class="collapse-btn"
-            :aria-expanded="!collapsed.scene"
-            @click.stop="toggleCollapse('scene')"
-            title="Afficher/masquer les sous-catégories"
-          >
-            <span class="arrow" :class="{ open: !collapsed.scene }">▸</span>
-          </button>
-          <input type="checkbox" v-model="visibleTypes.scene._all" @change="syncTypeAll('scene')" />
-          Scène
+      <!-- Ajout: filtre des types de zones -->
+      <span style="margin-left:12px;">Types zones:</span>
+      <div class="types-filter">
+        <label v-for="(val, zt) in visibleZoneTypes" :key="'zone-'+zt" class="type-label">
+          <input type="checkbox" v-model="visibleZoneTypes[zt]" /> {{ zt }}
         </label>
-        <!-- Sous-catégories de Scène -->
-        <div class="sub" v-if="visibleTypes.scene" v-show="!collapsed.scene">
-          <label class="sub-item"><input type="checkbox" v-model="visibleTypes.scene.indoor" /> Indoor</label>
-          <label class="sub-item"><input type="checkbox" v-model="visibleTypes.scene.outdoor" /> Outdoor</label>
-        </div>
       </div>
     </div>
 
@@ -71,36 +36,23 @@ export default {
       // Instance Leaflet de la carte
       map: null,
 
-      // Etats d’affichage des zones
-      showCircle: true,      // afficher/masquer le cercle
-      showPolygon: true,     // afficher/masquer le polygone
-      circleLayer: null,     // calque Leaflet du cercle
-      polygonLayer: null,    // calque Leaflet du polygone
+      // Activités chargées depuis le JSON
+      activities: [],
+      // Objet { type: boolean } pour le filtrage
+      visibleTypes: {},
+      // Dictionnaire id -> marker
+      markerLayers: {},
 
-      // Catégories visibles avec leurs sous-catégories (structure de filtre)
-      visibleTypes: {
-        restaurant: { _all: true, fastfood: true, gourmet: true, cafe: true },
-        scene:      { _all: true, indoor: true, outdoor: true },
-      },
-
-      // Données des marqueurs (exemples)
-      // Chaque marqueur a un type (categorie) et subType (sous-catégorie) pour le filtrage
-      markers: [
-        { id: 'm1', type: 'restaurant', subType: 'gourmet',  lat: 47.304164, lng: 4.965223, title: 'Restaurant gastro' },
-        { id: 'm2', type: 'restaurant', subType: 'fastfood', lat: 47.304500, lng: 4.965700, title: 'Fast-food' },
-        { id: 'm3', type: 'scene',      subType: 'outdoor',  lat: 47.304700, lng: 4.966000, title: 'Scène extérieure' },
-        { id: 'm4', type: 'scene',      subType: 'indoor',   lat: 47.303900, lng: 4.964900, title: 'Scène intérieure' },
-      ],
-      markerLayers: {}, // Dictionnaire id -> L.Marker pour manipuler facilement les calques
+      // Ajouts zones
+      zones: [],
+      visibleZoneTypes: {},
+      zoneLayers: {},
 
       // Référence à l’objet Leaflet (L) + vue initiale
       _L: null,
       lat: 47.304164,
       lng: 4.965223,
       zoom: 16.5,
-
-      // Etat d’enroulage/déroulage des sous-listes
-      collapsed: { restaurant: false, scene: false },
     };
   },
   mounted() {
@@ -141,7 +93,20 @@ export default {
         this._L = L;
 
         // 1) Crée la carte, centre la vue et autorise le zoom décimal (zoomSnap: 0)
-        this.map = L.map(this.$refs.mapContainer, { zoomSnap: 0 }).setView([this.lat, this.lng], this.zoom);
+        this.map = L.map(this.$refs.mapContainer, {
+          zoomSnap: 0,
+          zoomControl: false,        // enlève les boutons +
+          scrollWheelZoom: false,    // molette
+          doubleClickZoom: false,    // double-clic
+          touchZoom: false,          // pinch
+          boxZoom: false,            // shift + drag
+          keyboard: false,           // touches +/- ou flèches
+          dragging: false             // mettre false si carte totalement figée
+        }).setView([this.lat, this.lng], this.zoom);
+
+// Verrouiller le zoom (empêche tout changement programmatique)
+        this.map.setMinZoom(this.zoom);
+        this.map.setMaxZoom(this.zoom);
 
         // 2) Ajoute un fond de carte OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -149,134 +114,174 @@ export default {
           attribution: '&copy; OpenStreetMap',
         }).addTo(this.map);
 
-        // 3) Crée les zones (cercle + polygone) puis les ajoute selon leurs toggles
-        // Cercle: périmètre de 250 m autour des coordonnées
-        this.circleLayer = L.circle([this.lat, this.lng], {
-          radius: 250,
-          color: '#FCDC1E',
-          weight: 2,
-          fillColor: '#FCDC1E',
-          fillOpacity: 0.2,
-        }).bindPopup('Zone 250 m');
-        if (this.showCircle) this.circleLayer.addTo(this.map);
-
-        // Polygone: exemple de 4 points autour des coordonnées
-        this.polygonLayer = L.polygon(
-          [
-            [this.lat + 0.0012, this.lng + 0.0015],
-            [this.lat + 0.0012, this.lng - 0.0015],
-            [this.lat - 0.001,  this.lng - 0.0012],
-            [this.lat - 0.001,  this.lng + 0.0012],
-          ],
-          {
-            color: '#e74c3c',
-            weight: 2,
-            fillColor: '#e74c3c',
-            fillOpacity: 0.15,
-          }
-        ).bindPopup('Zone polygone');
-        if (this.showPolygon) this.polygonLayer.addTo(this.map);
-
-        // 4) Instancie les marqueurs (avec l’icône selon type/sous-type) puis applique le filtrage
-        this.initMarkers();
-        this.updateMarkersVisibility();
+        // Chargement des activités puis init des marqueurs
+        this.loadActivities();
+        this.loadZones();      // ajout
       })
       .catch((e) => console.error(e));
   },
   watch: {
-    // Quand on coche/décoche le cercle
-    showCircle(val) {
-      if (!this.map || !this.circleLayer) return;
-      val ? this.circleLayer.addTo(this.map) : this.map.removeLayer(this.circleLayer);
-    },
-    // Quand on coche/décoche le polygone
-    showPolygon(val) {
-      if (!this.map || !this.polygonLayer) return;
-      val ? this.polygonLayer.addTo(this.map) : this.map.removeLayer(this.polygonLayer);
-    },
-    // Filtrage: toute modification des catégories/sous-catégories met à jour l’affichage des marqueurs
+    // Mise à jour quand on coche/décoche un type
     visibleTypes: {
       deep: true,
       handler() {
         this.updateMarkersVisibility();
       },
     },
+    visibleZoneTypes: {
+      deep: true,
+      handler() {
+        this.updateZonesVisibility();
+      },
+    },
   },
   methods: {
-    // Coche/decoche toutes les sous-catégories d’un type à partir de la case “_all”
-    syncTypeAll(typeKey) {
-      const group = this.visibleTypes[typeKey];
-      if (!group) return;
-      const val = !!group._all;
-      Object.keys(group).forEach((k) => {
-        if (k !== '_all') group[k] = val;
-      });
-      this.updateMarkersVisibility();
+    // Charge le JSON et prépare les filtres + marqueurs
+    async loadActivities() {
+      try {
+        const res = await fetch('/data/activite.json');
+        this.activities = await res.json();
+        // Construit l’ensemble des types
+        const typeSet = new Set(this.activities.map(a => a.type).filter(Boolean));
+        const obj = {};
+        typeSet.forEach(t => { obj[t] = true; });
+        this.visibleTypes = obj;
+        this.initMarkers();
+        this.updateMarkersVisibility();
+      } catch (e) {
+        console.error('Erreur chargement activités', e);
+      }
+    },
+    // Ajout: chargement des zones
+    async loadZones() {
+      try {
+        const res = await fetch('/data/zone.json');
+        let data = await res.json();
+        // Ne garder que parking/camping
+        data = data.filter(z => ['parking', 'camping'].includes(z.type));
+        this.zones = data;
+        const typeSet = new Set(this.zones.map(z => z.type));
+        const obj = {};
+        typeSet.forEach(t => { obj[t] = true; });
+        this.visibleZoneTypes = obj;
+        this.initZones();
+        this.updateZonesVisibility();
+      } catch (e) {
+        console.error('Erreur chargement zones', e);
+      }
     },
 
-    // Retourne une icône SVG colorée en fonction du type/sous-type
-    // (divIcon sans fond/bordure grâce à la classe CSS pin-icon)
-    getIconForType(type, subType) {
+    // Couleur dérivée du nom du type (hash -> HSL)
+    colorFromType(type) {
+      const h = type.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+      return `hsl(${h},70%,45%)`;
+    },
+
+    // Génère une icône pour un type
+    getIconForType(type) {
       const L = this._L;
-      const colors = {
-        restaurant: { _color: '#e67e22', fastfood: '#f39c12', gourmet: '#d35400', cafe: '#c97b1a' },
-        scene:      { _color: '#8e44ad', indoor:  '#8e44ad',  outdoor: '#9b59b6' },
-      };
-      const palette = colors[type] || {};
-      const color = palette[subType] || palette._color || '#2c3e50';
+      const color = this.colorFromType(type || '');
       const svg = `
-        <svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2c-3.87 0-7 3.13-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="${color}"/>
+        <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" fill="${color}"/>
         </svg>
       `;
       return L.divIcon({
         html: svg,
         className: 'leaflet-div-icon pin-icon',
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -30],
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -28],
       });
     },
 
-    // Construit tous les marqueurs à partir des données (this.markers)
-    // et mémorise type/sous-type sur le calque pour le filtrage ultérieur
+    // Crée les marqueurs depuis activities
     initMarkers() {
       const L = this._L;
       if (!L || !this.map) return;
       this.markerLayers = {};
-      this.markers.forEach((m) => {
-        const icon = this.getIconForType(m.type, m.subType);
-        const layer = L.marker([m.lat, m.lng], { icon });
-        layer._pinType = m.type;       // type principal
-        layer._pinSubType = m.subType; // sous-catégorie
-        layer.bindPopup(`${m.title}`);
-        this.markerLayers[m.id] = layer;
+      let idx = 0;
+      this.activities.forEach(a => {
+        if (!a.coordone) return;
+        const parts = a.coordone.split(',').map(s => parseFloat(s.trim()));
+        if (parts.length !== 2 || parts.some(isNaN)) return;
+        const [lat, lng] = parts;
+        const icon = this.getIconForType(a.type);
+        const layer = L.marker([lat, lng], { icon });
+        const html = `
+          <div class="popup-activite">
+            <h3>${a.nom}</h3>
+            <p><strong>Type:</strong> ${a.type}</p>
+            ${a.description ? `<p>${a.description}</p>` : ''}
+          </div>
+        `;
+        layer._pinType = a.type;
+        layer.bindPopup(html);
+        const id = `act_${idx++}`;
+        this.markerLayers[id] = layer;
       });
     },
 
-    // Affiche ou cache les marqueurs selon le filtre visibleTypes
-    // Règle: le type doit être “_all” + la sous-catégorie doit être cochée
+    getZoneColor(type) {
+      if (type === 'parking') return '#0066FF';
+      if (type === 'camping') return '#2ECC71';
+      return '#888888';
+    },
+
+    // Ajout: création des polygones zones
+    initZones() {
+      const L = this._L;
+      if (!L || !this.map) return;
+      this.zoneLayers = {};
+      let idx = 0;
+      this.zones.forEach(z => {
+        if (!Array.isArray(z.coords) || z.coords.length < 3) return;
+        const latlngs = [];
+        for (const c of z.coords) {
+          const parts = String(c).split(',').map(s => parseFloat(s.trim()));
+          if (parts.length !== 2 || parts.some(isNaN)) return;
+          latlngs.push([parts[0], parts[1]]);
+        }
+        const color = this.getZoneColor(z.type);
+        const layer = L.polygon(latlngs, {
+          color,
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 0.25,
+        }).bindPopup(`${z.nom} (${z.type})`);
+        layer._zoneType = z.type;
+        this.zoneLayers[`zone_${idx++}`] = layer;
+      });
+    },
+
+    // Affiche/cache selon visibleTypes
     updateMarkersVisibility() {
       if (!this.map) return;
-      Object.values(this.markerLayers).forEach((layer) => {
+      Object.values(this.markerLayers).forEach(layer => {
         const t = layer._pinType;
-        const s = layer._pinSubType;
-        const group = this.visibleTypes[t];
-        const shouldShow = !!(group && group._all && group[s]);
+        const show = !!this.visibleTypes[t];
         const onMap = this.map.hasLayer(layer);
-        if (shouldShow && !onMap) layer.addTo(this.map);
-        if (!shouldShow && onMap) this.map.removeLayer(layer);
+        if (show && !onMap) layer.addTo(this.map);
+        if (!show && onMap) this.map.removeLayer(layer);
       });
     },
-
-    // Enroule/déroule l’affichage des sous-catégories d’une catégorie
-    toggleCollapse(key) {
-      this.collapsed[key] = !this.collapsed[key];
+    // Ajout: visibilité zones
+    updateZonesVisibility() {
+      if (!this.map) return;
+      Object.values(this.zoneLayers).forEach(layer => {
+        const t = layer._zoneType;
+        const show = !!this.visibleZoneTypes[t];
+        const onMap = this.map.hasLayer(layer);
+        if (show && !onMap) layer.addTo(this.map);
+        if (!show && onMap) this.map.removeLayer(layer);
+      });
     },
   },
   beforeUnmount() {
     // Nettoyage Leaflet
     if (this.map) {
+      Object.values(this.markerLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
+      Object.values(this.zoneLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       this.map.remove();
       this.map = null;
     }
@@ -365,5 +370,18 @@ export default {
 }
 .arrow.open {
   transform: rotate(90deg);
+}
+
+.types-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 600px;
+}
+.type-label {
+  font-weight: 600;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 </style>

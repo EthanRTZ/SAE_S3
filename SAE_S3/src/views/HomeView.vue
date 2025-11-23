@@ -141,7 +141,7 @@
     <section class="cta-section">
       <div class="cta-container">
         <h2 class="cta-title"><strong>PRÊT À VIVRE L'EXPÉRIENCE ?</strong></h2>
-        <p class="cta-text"><strong>Réservez vos billets dès maintenant</strong> et rejoignez-nous pour trois jours inoubliables !</p>
+        <p class="cta-text"><strong>Réservez tes billets dès maintenant</strong> et rejoignez-nous pour trois jours inoubliables !</p>
         <router-link to="/reservation" class="btn-cta">RÉSERVER MA PLACE</router-link>
       </div>
     </section>
