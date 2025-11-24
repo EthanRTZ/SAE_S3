@@ -223,7 +223,9 @@ export default {
 
 <style scoped>
 .programmation {
-  background: linear-gradient(to bottom, #1629bf 0%, #11338A 100%);
+  background: radial-gradient(circle at 15% 20%, rgba(252, 220, 30, 0.15), transparent 45%),
+  radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.08), transparent 50%),
+  linear-gradient(145deg, #051036 0%, #000428 65%, #02198b 100%);
   min-height: calc(100vh - 70px);
   padding: 88px 16px 24px;
 }

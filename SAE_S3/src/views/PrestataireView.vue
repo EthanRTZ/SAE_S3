@@ -3,8 +3,41 @@
     <div class="container">
       <h1 class="title">Prestataires</h1>
 
-      <div class="cards">
-        <div v-for="p in prestataires" :key="p.nom" class="card">
+      <div class="filter-bar">
+        <div class="filter-label">Filtrer par type</div>
+        <div class="chip-list">
+          <button
+            v-for="type in types"
+            :key="type"
+            type="button"
+            class="filter-chip"
+            :class="{ active: selectedTypes.includes(type) }"
+            @click="toggleType(type)"
+          >
+            {{ type }}
+            <span v-if="selectedTypes.includes(type)" class="chip-close" aria-hidden="true">×</span>
+          </button>
+        </div>
+        <button 
+          v-if="selectedTypes.length" 
+          type="button" 
+          class="clear-filters" 
+          @click="resetFilters"
+        >
+          Tout afficher
+        </button>
+      </div>
+
+      <div v-if="loading" class="loading-message">
+        Chargement des prestataires...
+      </div>
+
+      <div v-else-if="!filteredPrestataires.length" class="empty-state">
+        Aucun prestataire ne correspond à ce filtre.
+      </div>
+
+      <div v-else class="cards">
+        <div v-for="p in filteredPrestataires" :key="p.nom" class="card">
           <div class="card-header">
             <h2 class="card-title">{{ p.nom }}</h2>
             <span class="badge">{{ p.type }}</span>
@@ -24,7 +57,6 @@
 
           <div class="contacts">
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
-            <a v-if="p.email" :href="`mailto:${p.email}`" class="link">{{ p.email }}</a>
           </div>
         </div>
       </div>
@@ -38,77 +70,41 @@ export default {
   name: 'PrestataireView',
   data() {
     return {
-      prestataires: [
-        {
-          nom: 'OTacos',
-          type: 'Restauration rapide / Street-food',
-          description: 'Enseigne française présente parmi les stands food & beverage du festival.',
-          email: 'contact@otacos.com',
-          tel: '+33 1 23 45 67 89',
-          site: 'https://o-tacos.com',
-          services: [
-            { nom: 'Tacos & Burgers', description: 'Restauration rapide pour festivaliers', prix: 10.00 }
-          ]
-        },
-        {
-          nom: 'Free',
-          type: 'Télécommunications',
-          description: 'Opérateur télécom partenaire du festival pour la couverture réseau.',
-          email: 'partenariat@free.fr',
-          tel: '+33 1 98 76 54 32',
-          site: 'https://free.fr',
-          services: [
-            { nom: 'Réseau 5G', description: 'Connexion mobile et Wi-Fi sur site', prix: 0.00 }
-          ]
-        },
-        {
-          nom: 'Allianz',
-          type: 'Assurance / Prévention',
-          description: 'Partenaire prévention et sécurité du festival.',
-          email: 'contact@allianz.fr',
-          tel: '+33 1 45 67 89 10',
-          site: 'https://allianz.fr',
-          services: [
-            { nom: 'Sécurité & prévention', description: 'Sensibilisation sécurité routière et alcool', prix: 0.00 }
-          ]
-        },
-        {
-          nom: 'Poliakov',
-          type: 'Boissons / Spiritueux',
-          description: 'Sponsor officiel du bar principal du Golden Coast.',
-          email: 'contact@poliakov.fr',
-          tel: '+33 1 56 98 45 32',
-          site: 'https://poliakov.fr',
-          services: [
-            { nom: 'Bar principal', description: 'Espace boisson et cocktails', prix: 12.00 }
-          ]
-        },
-        {
-          nom: 'Jack Daniel’s',
-          type: 'Boissons / Spiritueux',
-          description: 'Partenaire officiel du Golden Coast avec un bar éphémère.',
-          email: 'contact@jackdaniels.com',
-          tel: '+33 1 87 65 43 21',
-          site: 'https://jackdaniels.com',
-          services: [
-            { nom: 'Dégustation whisky', description: 'Espace promotion Jack Daniel’s', prix: 15.00 }
-          ]
-        },
-        {
-          nom: 'Red Bull',
-          type: 'Boissons énergisantes',
-          description: 'Partenaire énergie et animation du festival.',
-          email: 'info@redbull.com',
-          tel: '+43 1 87 65 90 12',
-          site: 'https://redbull.com',
-          services: [
-            { nom: 'Bar Red Bull', description: 'Boissons énergisantes et espace détente', prix: 8.00 }
-          ]
-        }
-      ]
+      prestataires: [],
+      types: [],
+      selectedTypes: [],
+      loading: true,
     }
   },
+  async mounted() {
+    try {
+      const response = await fetch('/data/prestataires.json');
+      const data = await response.json();
+      this.prestataires = data.prestataires || [];
+      this.types = [...new Set(this.prestataires.map(p => p.type))];
+    } catch (error) {
+      console.error('Erreur lors du chargement des prestataires:', error);
+    } finally {
+      this.loading = false;
+    }
+  },
+  computed: {
+    filteredPrestataires() {
+      if (!this.selectedTypes.length) return this.prestataires;
+      return this.prestataires.filter(p => this.selectedTypes.includes(p.type));
+    },
+  },
   methods: {
+    toggleType(type) {
+      if (this.selectedTypes.includes(type)) {
+        this.selectedTypes = this.selectedTypes.filter(t => t !== type);
+      } else {
+        this.selectedTypes = [...this.selectedTypes, type];
+      }
+    },
+    resetFilters() {
+      this.selectedTypes = [];
+    },
     formatPrix(val) {
       if (val === 0) return 'gratuit';
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
@@ -120,25 +116,123 @@ export default {
 <style scoped>
 .prestataire {
   min-height: calc(100vh - 70px);
-  background: linear-gradient(135deg, #0011E2 0%, #000428 100%);
-  padding: 88px 16px 24px; /* espace sous la navbar fixe */
+  padding: 88px 16px 60px;
+  background: radial-gradient(circle at 15% 20%, rgba(252, 220, 30, 0.15), transparent 45%),
+              radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.08), transparent 50%),
+              linear-gradient(145deg, #051036 0%, #000428 65%, #02198b 100%);
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .title {
   color: #FCDC1E;
-  font-size: 2.4rem;
-  margin-bottom: 18px;
+  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  margin-bottom: 10px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 32px;
+  font-size: 1rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+  background: rgba(4, 16, 61, 0.65);
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.filter-label {
+  font-weight: 800;
+  color: #FCDC1E;
+  min-width: 160px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1;
+}
+
+.filter-chip {
+  border: 2px solid rgba(252, 220, 30, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: #FCDC1E;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.filter-chip:hover {
+  border-color: #FCDC1E;
+  box-shadow: 0 6px 18px rgba(252, 220, 30, 0.3);
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, #FCDC1E 0%, #f7d000 100%);
+  color: #0b0b0b;
+  border-color: transparent;
+  box-shadow: 0 12px 24px rgba(252, 220, 30, 0.45);
+}
+
+.chip-close {
+  margin-left: 6px;
+  font-weight: 900;
+}
+
+.clear-filters {
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #FCDC1E;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 18px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.clear-filters:hover {
+  background: #FCDC1E;
+  color: #021045;
+  box-shadow: 0 10px 20px rgba(252, 220, 30, 0.35);
+}
+
+.loading-message,
+.empty-state {
+  color: #FCDC1E;
+  font-weight: 800;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 1.1rem;
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 @media screen and (max-width: 980px) {
@@ -149,58 +243,76 @@ export default {
 }
 
 .card {
-  border: 2px solid #FCDC1E;
-  border-radius: 14px;
-  padding: 14px;
-  background: #fff;
-  box-shadow: 0 6px 12px rgba(32, 70, 179, 0.06);
+  border: 1px solid rgba(252, 220, 30, 0.25);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .card-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .card-title {
-  color: #2046b3;
-  font-size: 1.25rem;
+  color: #FCDC1E;
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+  flex: 1;
 }
 
 .badge {
-  background: #FCDC1E;
-  color: #2046b3;
+  background: rgba(252, 220, 30, 0.15);
+  color: #FCDC1E;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 4px 10px;
+  font-size: 0.78rem;
+  padding: 4px 12px;
   border-radius: 999px;
+  border: 1px solid rgba(252, 220, 30, 0.4);
+  max-width: 100%;
+  overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .description {
-  color: #333;
+  color: rgba(255, 255, 255, 0.75);
   margin-bottom: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .services h3 {
-  font-size: 1rem;
-  color: #2046b3;
-  margin: 8px 0 6px;
+  font-size: 0.95rem;
+  color: #FCDC1E;
+  margin: 10px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .services ul {
   list-style: none;
+  padding-left: 0;
 }
 
 .services li {
   margin: 4px 0;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .service-name { font-weight: 600; }
-.service-desc { color: #555; }
-.service-price { color: #2046b3; font-weight: 600; }
+.service-desc { color: rgba(255, 255, 255, 0.6); }
+.service-price { color: #FCDC1E; font-weight: 700; }
 
 .contacts {
   display: flex;
@@ -210,17 +322,19 @@ export default {
 }
 
 .link {
-  color: #2046b3;
+  color: #FCDC1E;
   text-decoration: none;
   font-weight: 700;
-  border: 2px solid #2046b3;
+  border: 1px solid rgba(252, 220, 30, 0.4);
   padding: 6px 10px;
   border-radius: 10px;
-  transition: all 0.12s ease;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
 }
 .link:hover {
-  color: #2046b3;
+  color: #021045;
   background: #FCDC1E;
   border-color: #FCDC1E;
+  box-shadow: 0 8px 16px rgba(252, 220, 30, 0.35);
 }
 </style>
