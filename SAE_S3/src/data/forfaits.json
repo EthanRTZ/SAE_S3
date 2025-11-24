@@ -12,8 +12,8 @@
     "label": "Forfait 2 jours",
     "stock": 80,
     "days": [
-      { "label": "Vendredi + Samedi", "stock": 40 },
-      { "label": "Samedi + Dimanche", "stock": 40 }
+      { "label": "Vendredi + Samedi", "stock": 40, "linkedDays": ["Vendredi", "Samedi"] },
+      { "label": "Samedi + Dimanche", "stock": 40, "linkedDays": ["Samedi", "Dimanche"] }
     ]
   },
   "threeDays": {

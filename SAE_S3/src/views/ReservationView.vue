@@ -14,7 +14,7 @@
                 id="oneDaySelect"
                 class="day-select"
                 v-model="selections.oneDay"
-                @change="clearDayError('oneDay')"
+                @change="handleSelectionChange('oneDay')"
               >
                 <option disabled value="">Sélectionne un jour</option>
                 <option
@@ -27,6 +27,19 @@
                 </option>
               </select>
               <p v-if="dayErrors.oneDay" class="day-error">{{ dayErrors.oneDay }}</p>
+              <div class="quantity-field">
+                <label class="select-label" for="qty-oneDay">Nombre de places</label>
+                <input
+                  id="qty-oneDay"
+                  class="quantity-input"
+                  type="number"
+                  min="1"
+                  :max="Math.max(1, getMaxQuantity('oneDay'))"
+                  v-model.number="quantities.oneDay"
+                  @input="handleQuantityChange('oneDay')"
+                />
+                <p class="quantity-hint">Disponible : {{ getMaxQuantity('oneDay') }}</p>
+              </div>
               <button
                 class="cta"
                 :disabled="!canReserve('oneDay')"
@@ -34,6 +47,18 @@
               >
                 Réserver 1 jour
               </button>
+              <div class="option-stocks">
+                <p class="option-stocks-title">Places restantes</p>
+                <ul>
+                  <li
+                    v-for="day in getDayOptions('oneDay')"
+                    :key="`${day.label}-count`"
+                    :class="{ 'out-of-stock': day.stock === 0 }"
+                  >
+                    {{ day.label }} : <strong>{{ day.stock }}</strong>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <div class="forfait">
@@ -43,7 +68,7 @@
                 id="twoDaySelect"
                 class="day-select"
                 v-model="selections.twoDays"
-                @change="clearDayError('twoDays')"
+                @change="handleSelectionChange('twoDays')"
               >
                 <option disabled value="">Sélectionne une combinaison</option>
                 <option
@@ -56,6 +81,19 @@
                 </option>
               </select>
               <p v-if="dayErrors.twoDays" class="day-error">{{ dayErrors.twoDays }}</p>
+              <div class="quantity-field">
+                <label class="select-label" for="qty-twoDays">Nombre de places</label>
+                <input
+                  id="qty-twoDays"
+                  class="quantity-input"
+                  type="number"
+                  min="1"
+                  :max="Math.max(1, getMaxQuantity('twoDays'))"
+                  v-model.number="quantities.twoDays"
+                  @input="handleQuantityChange('twoDays')"
+                />
+                <p class="quantity-hint">Disponible : {{ getMaxQuantity('twoDays') }}</p>
+              </div>
               <button
                 class="cta"
                 :disabled="!canReserve('twoDays')"
@@ -63,10 +101,36 @@
               >
                 Réserver 2 jours
               </button>
+              <div class="option-stocks">
+                <p class="option-stocks-title">Places restantes</p>
+                <ul>
+                  <li
+                    v-for="day in getDayOptions('twoDays')"
+                    :key="`${day.label}-count`"
+                    :class="{ 'out-of-stock': day.stock === 0 }"
+                  >
+                    {{ day.label }} : <strong>{{ day.stock }}</strong>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <div class="forfait">
               <p class="stock">Places restantes: {{ forfaits.threeDays.stock }}</p>
+              <div class="quantity-field">
+                <label class="select-label" for="qty-threeDays">Nombre de places</label>
+                <input
+                  id="qty-threeDays"
+                  class="quantity-input"
+                  type="number"
+                  min="1"
+                  :max="Math.max(1, getMaxQuantity('threeDays'))"
+                  v-model.number="quantities.threeDays"
+                  @input="handleQuantityChange('threeDays')"
+                />
+                <p class="quantity-hint">Disponible : {{ getMaxQuantity('threeDays') }}</p>
+              </div>
+              <p v-if="dayErrors.threeDays" class="day-error">{{ dayErrors.threeDays }}</p>
               <button class="cta" :disabled="!canReserve('threeDays')" @click="reserve('threeDays')">
                 Réserver 3 jours
               </button>
@@ -117,9 +181,15 @@ export default {
         oneDay: '',
         twoDays: ''
       },
+      quantities: {
+        oneDay: 1,
+        twoDays: 1,
+        threeDays: 1
+      },
       dayErrors: {
         oneDay: '',
-        twoDays: ''
+        twoDays: '',
+        threeDays: ''
       },
       requireLoginChecked: false,
       showAuthModal: false
@@ -135,6 +205,18 @@ export default {
     getSelectedOption(type) {
       return this.getDayOptions(type).find((option) => option.label === this.selections[type])
     },
+    findOneDayOption(label) {
+      return this.getDayOptions('oneDay').find((option) => option.label === label)
+    },
+    getThreeDayDependencyRefs() {
+      const deps = []
+      if (this.forfaits.threeDays) {
+        deps.push(this.forfaits.threeDays)
+      }
+      deps.push(...this.getDayOptions('oneDay'))
+      deps.push(...this.getDayOptions('twoDays'))
+      return deps
+    },
     formatOptionLabel(option) {
       return `${option.label} (${option.stock} places)`
     },
@@ -143,13 +225,64 @@ export default {
         this.dayErrors[type] = ''
       }
     },
+    handleSelectionChange(type) {
+      this.clearDayError(type)
+      this.sanitizeQuantity(type)
+    },
+    handleQuantityChange(type) {
+      this.clearDayError(type)
+      this.sanitizeQuantity(type)
+    },
+    getMaxQuantity(type) {
+      if (this.requiresDaySelection(type)) {
+        const selected = this.getSelectedOption(type)
+        if (!selected) {
+          return 0
+        }
+        if (
+          type === 'twoDays' &&
+          Array.isArray(selected.linkedDays) &&
+          selected.linkedDays.length > 0
+        ) {
+          const linkedDayStocks = selected.linkedDays.map((label) => {
+            const dayOption = this.findOneDayOption(label)
+            return dayOption ? dayOption.stock : 0
+          })
+          return Math.min(selected.stock, ...linkedDayStocks)
+        }
+        return selected.stock
+      }
+       if (type === 'threeDays') {
+         const stocks = this.getThreeDayDependencyRefs().map((ref) => ref?.stock ?? 0)
+         if (!stocks.length) {
+           return 0
+         }
+         return Math.min(...stocks)
+       }
+      return this.forfaits[type]?.stock ?? 0
+    },
+    sanitizeQuantity(type) {
+      const max = this.getMaxQuantity(type)
+      if (max === 0) {
+        this.quantities[type] = 1
+        return
+      }
+      if (!this.quantities[type] || this.quantities[type] < 1) {
+        this.quantities[type] = 1
+      } else if (this.quantities[type] > max) {
+        this.quantities[type] = max
+      }
+    },
     canReserve(type) {
       const forfait = this.forfaits[type]
       if (!forfait || forfait.stock === 0) {
         return false
       }
+      if (!this.quantities[type] || this.quantities[type] < 1) {
+        return false
+      }
       if (!this.requiresDaySelection(type)) {
-        return true
+        return this.getMaxQuantity(type) > 0
       }
       const selected = this.getSelectedOption(type)
       return Boolean(selected && selected.stock > 0)
@@ -170,24 +303,80 @@ export default {
         return
       }
 
+      const maxQty = this.getMaxQuantity(type)
+      this.sanitizeQuantity(type)
+      const requestedQty = Math.min(this.quantities[type], maxQty)
+      if (requestedQty <= 0) {
+        return
+      }
+
       if (this.requiresDaySelection(type)) {
         const selected = this.getSelectedOption(type)
         if (!selected) {
           this.dayErrors[type] = 'Choisis un jour avant de réserver.'
           return
         }
-        if (selected.stock === 0) {
-          this.dayErrors[type] = 'Plus de places pour cette option.'
+        let effectiveMax = selected.stock
+        if (
+          type === 'twoDays' &&
+          Array.isArray(selected.linkedDays) &&
+          selected.linkedDays.length > 0
+        ) {
+          const linkedDayStocks = selected.linkedDays.map((label) => {
+            const dayOption = this.findOneDayOption(label)
+            return dayOption ? dayOption.stock : 0
+          })
+          effectiveMax = Math.min(effectiveMax, ...linkedDayStocks)
+          const insufficient = selected.linkedDays.find((label, index) => linkedDayStocks[index] < requestedQty)
+          if (insufficient) {
+            this.dayErrors.twoDays = 'Pas assez de places sur ' + insufficient + '.'
+            return
+          }
+        }
+
+        if (effectiveMax < requestedQty) {
+          this.dayErrors[type] = 'Pas assez de places pour cette option.'
           return
         }
-        selected.stock -= 1
-        forfait.stock = Math.max(0, forfait.stock - 1)
-        this.selections[type] = ''
+        selected.stock -= requestedQty
+        forfait.stock = Math.max(0, forfait.stock - requestedQty)
+
+        if (type === 'twoDays' && Array.isArray(selected.linkedDays)) {
+          let oneDayDeduction = 0
+          selected.linkedDays.forEach((label) => {
+            const dayRef = this.findOneDayOption(label)
+            if (dayRef) {
+              dayRef.stock = Math.max(0, dayRef.stock - requestedQty)
+              oneDayDeduction += requestedQty
+            }
+          })
+          if (oneDayDeduction > 0) {
+            this.forfaits.oneDay.stock = Math.max(0, this.forfaits.oneDay.stock - oneDayDeduction)
+          }
+        }
+
+        this.sanitizeQuantity(type)
         return
       }
 
-      if (forfait.stock > 0) {
-        forfait.stock -= 1
+      if (type === 'threeDays') {
+        this.clearDayError('threeDays')
+        const dependencies = this.getThreeDayDependencyRefs()
+        const hasCapacity = dependencies.every((ref) => ref && ref.stock >= requestedQty)
+        if (!hasCapacity) {
+          this.dayErrors.threeDays = 'Pas assez de places disponibles sur les autres options.'
+          return
+        }
+        dependencies.forEach((ref) => {
+          ref.stock -= requestedQty
+        })
+        this.sanitizeQuantity(type)
+        return
+      }
+
+      if (forfait.stock >= requestedQty) {
+        forfait.stock -= requestedQty
+        this.sanitizeQuantity(type)
       }
     },
     closeAuthModal() {
@@ -302,6 +491,78 @@ h1 {
   color: #ff8a80;
   margin: 0;
   text-align: left;
+}
+
+.quantity-field {
+  width: 100%;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quantity-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 215, 80, 0.3);
+  background: rgba(1,4,16,0.4);
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #ffd166;
+  box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.35);
+}
+
+.quantity-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.option-stocks {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.option-stocks-title {
+  margin: 0 0 4px 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.5px;
+}
+
+.option-stocks ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.option-stocks li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.option-stocks li strong {
+  color: #ffd166;
+}
+
+.option-stocks li.out-of-stock strong {
+  color: #ff8a80;
 }
 
 .stock {
