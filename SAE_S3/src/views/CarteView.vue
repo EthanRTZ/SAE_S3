@@ -1,29 +1,36 @@
 <template>
   <div class="carte">
-    <h1>Carte</h1>
-
-    <!-- Panneau de filtres: afficher les zones + filtrer les pins par catégories/sous-catégories -->
-    <div class="map-toolbar">
-      <!-- Suppression des toggles Cercle / Polygone -->
-
-      <span>Types activités:</span>
-
-      <!-- Nouveau filtre dynamique -->
-      <div class="types-filter">
-        <label v-for="(val, type) in visibleTypes" :key="type" class="type-label">
-          <input type="checkbox" v-model="visibleTypes[type]" /> {{ type }}
-        </label>
-      </div>
-      <!-- Ajout: filtre des types de zones -->
-      <span style="margin-left:12px;">Types zones:</span>
-      <div class="types-filter">
-        <label v-for="(val, zt) in visibleZoneTypes" :key="'zone-'+zt" class="type-label">
-          <input type="checkbox" v-model="visibleZoneTypes[zt]" /> {{ zt }}
-        </label>
+    <div class="side-panel" :class="{ collapsed: panelCollapsed }">
+      <div v-show="!panelCollapsed" class="panel-content">
+        <h1>Carte</h1>
+        <div class="map-toolbar">
+          <span>Types activités:</span>
+          <div class="types-filter">
+            <label v-for="(val, type) in visibleTypes" :key="type" class="type-label">
+              <input type="checkbox" v-model="visibleTypes[type]" /> {{ type }}
+            </label>
+          </div>
+          <span style="margin-top:12px;">Types zones:</span>
+          <div class="types-filter">
+            <label v-for="(val, zt) in visibleZoneTypes" :key="'zone-'+zt" class="type-label">
+              <input type="checkbox" v-model="visibleZoneTypes[zt]" /> {{ zt }}
+            </label>
+          </div>
+          <!-- Nouveau bloc actions groupées -->
+          <div class="bulk-actions">
+            <button @click="selectAll">Tout cocher</button>
+            <button @click="deselectAll">Tout décocher</button>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- Conteneur Leaflet (la carte sera montée ici) -->
+    <button
+      v-if="showToggleButton"
+      class="toggle-panel-btn"
+      @click="togglePanel"
+      :aria-label="panelCollapsed ? 'Ouvrir filtres' : 'Fermer filtres'">
+      {{ panelCollapsed ? '❯' : '❮' }}
+    </button>
     <div ref="mapContainer" id="map"></div>
   </div>
 </template>
@@ -52,7 +59,10 @@ export default {
       _L: null,
       lat: 47.304164,
       lng: 4.965223,
-      zoom: 16.5,
+      zoom: 16.4,
+
+      // Panneau de filtres rétractable
+      panelCollapsed: false,
     };
   },
   mounted() {
@@ -91,22 +101,24 @@ export default {
     ensureLeaflet()
       .then((L) => {
         this._L = L;
-
-        // 1) Crée la carte, centre la vue et autorise le zoom décimal (zoomSnap: 0)
         this.map = L.map(this.$refs.mapContainer, {
-          zoomSnap: 0,
-          zoomControl: false,        // enlève les boutons +
-          scrollWheelZoom: false,    // molette
-          doubleClickZoom: false,    // double-clic
-          touchZoom: false,          // pinch
-          boxZoom: false,            // shift + drag
-          keyboard: false,           // touches +/- ou flèches
-          dragging: false             // mettre false si carte totalement figée
+          zoomControl: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: false,
+            touchZoom: 'center',
+            boxZoom: false,
+            keyboard: false,
+            dragging: true, // activé
+            maxBoundsViscosity: 1.0
         }).setView([this.lat, this.lng], this.zoom);
 
-// Verrouiller le zoom (empêche tout changement programmatique)
+        // Empêcher de dézoomer sous le zoom initial
         this.map.setMinZoom(this.zoom);
-        this.map.setMaxZoom(this.zoom);
+        this.map.setMaxZoom(19);
+
+        // Définir les limites à la zone initialement affichée
+        const initialBounds = this.map.getBounds();
+        this.map.setMaxBounds(initialBounds);
 
         // 2) Ajoute un fond de carte OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -133,6 +145,14 @@ export default {
       handler() {
         this.updateZonesVisibility();
       },
+    },
+  },
+  computed: {
+    // N’affiche le bouton que si la route correspond à la carte
+    showToggleButton() {
+      const r = this.$route;
+      if (!r) return true; // fallback si pas de router
+      return r.name === 'Carte' || /carte/i.test(r.path || '');
     },
   },
   methods: {
@@ -276,6 +296,18 @@ export default {
         if (!show && onMap) this.map.removeLayer(layer);
       });
     },
+    togglePanel() {
+      this.panelCollapsed = !this.panelCollapsed;
+      this.$nextTick(() => { if (this.map) this.map.invalidateSize(); });
+    },
+    selectAll() {
+      Object.keys(this.visibleTypes).forEach(k => { this.visibleTypes[k] = true; });
+      Object.keys(this.visibleZoneTypes).forEach(k => { this.visibleZoneTypes[k] = true; });
+    },
+    deselectAll() {
+      Object.keys(this.visibleTypes).forEach(k => { this.visibleTypes[k] = false; });
+      Object.keys(this.visibleZoneTypes).forEach(k => { this.visibleZoneTypes[k] = false; });
+    },
   },
   beforeUnmount() {
     // Nettoyage Leaflet
@@ -290,64 +322,87 @@ export default {
 </script>
 
 <style scoped>
+/* Layout plein écran avec panneau à gauche */
 .carte {
-  min-height: calc(100vh - 70px);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: white;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #fff;
 }
 
-.carte h1 {
-  color: #FCDC1E;
-  font-size: 3rem;
-  margin-bottom: 20px;
+/* Nouveau panneau latéral */
+.side-panel {
+  width: 300px;
+  min-width: 300px;
+  padding: 16px 18px 28px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  position: relative;
+  transition: width 0.25s ease;
 }
 
-/* Panneau de filtres au-dessus de la carte */
+.side-panel.collapsed {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+.side-panel .panel-content {
+  transition: opacity 0.2s ease;
+}
+
+.side-panel.collapsed .panel-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.side-panel h1 {
+  margin: 0 0 16px;
+  font-size: 2rem;
+}
+
+/* Barre de filtres intégrée (plus de position:absolute) */
 .map-toolbar {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-/* Bloc d’une catégorie et sa liste de sous-catégories */
-.type-group {
-  display: flex;
   flex-direction: column;
-  margin: 0 8px;
+  gap: 10px;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
+/* Carte à droite */
+#map {
+  flex: 1;
+  height: 100%;
+  width: 100%; /* ancien: calc(100% - 300px) */
+  transition: width 0.25s ease;
+}
+
+.side-panel.collapsed ~ #map {
+  width: 100%;
+}
+
+/* Filtres (inchangés) */
+.types-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .type-label {
   font-weight: 600;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-/* Sous-catégories indentées sous la catégorie */
-.sub {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-left: 24px;
-  margin-top: 4px;
-}
-
-.sub-item {
-  line-height: 1.2;
-}
-
-/* Conteneur Leaflet */
-#map {
-  width: 100%;
-  max-width: 1200px;
-  height: 800px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-/* Icônes SVG sans fond/bordure (pins custom) */
+/* Icônes et autres styles existants */
 :deep(.pin-icon) {
   background: transparent !important;
   border: none !important;
@@ -355,33 +410,59 @@ export default {
   padding: 0;
 }
 
-/* Bouton/flèche d’enroulage des sous-catégories */
-.collapse-btn {
-  background: none;
-  border: 0;
-  padding: 0 4px 0 0;
-  margin-right: 4px;
+/* Bouton unique bas gauche */
+.toggle-panel-btn {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 21px;
+  border: 1px solid #d0d0d0;
+  background: #fff;
   cursor: pointer;
+  font-size: 20px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  z-index: 1000;
+  transition: background .2s;
 }
-.arrow {
-  display: inline-block;
-  transition: transform 0.2s ease;
-}
-.arrow.open {
-  transform: rotate(90deg);
+.toggle-panel-btn:hover {
+  background: #f5f5f5;
 }
 
-.types-filter {
+/* Suppression anciennes classes .collapse-btn / .collapse-btn-inner */
+
+/* Nouveau style pour les boutons d'actions groupées */
+.bulk-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  max-width: 600px;
+  margin-top: 4px;
+  flex-wrap: wrap;
 }
-.type-label {
-  font-weight: 600;
-  background: #f5f5f5;
-  padding: 4px 8px;
+.bulk-actions button {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #d2d2d2;
   border-radius: 4px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.bulk-actions button:hover {
+  background: #f1f1f1;
+}
+
+@media (max-width: 700px) {
+  .toggle-panel-btn {
+    bottom: 12px;
+    left: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+  }
 }
 </style>
