@@ -117,9 +117,7 @@ export default {
 .prestataire {
   min-height: calc(100vh - 70px);
   padding: 88px 16px 60px;
-  background: radial-gradient(circle at 15% 20%, rgba(252, 220, 30, 0.15), transparent 45%),
-              radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.08), transparent 50%),
-              linear-gradient(145deg, #051036 0%, #000428 65%, #02198b 100%);
+  background: linear-gradient(to bottom, #6f47c1 0%, #1629bf 50%, #11338A 100%);
 }
 
 .container {

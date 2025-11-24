@@ -203,9 +203,7 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  background:
-    radial-gradient(700px 260px at 12% 12%, rgba(255, 190, 60, 0.14), transparent 18%),
-    linear-gradient(180deg, rgba(2, 24, 80, 0.93) 0%, #010410 50%, #a68506 100%);
+  background: linear-gradient(to bottom, #6f47c1 0%, #1629bf 50%, #11338A 100%);
   color: #f6f7fb;
   padding: 48px 16px;
   box-sizing: border-box;

@@ -137,6 +137,17 @@
       </div>
     </section>
 
+    <!-- Section Carte -->
+    <section class="map-section">
+      <div class="map-container">
+        <h2 class="section-title">LOCALISATION</h2>
+        <p class="map-intro">Retrouvez tous les points d'intérêt du festival : scènes, parkings, campings et plus encore.</p>
+        <div class="map-wrapper">
+          <CarteView />
+        </div>
+      </div>
+    </section>
+
     <!-- Section CTA -->
     <section class="cta-section">
       <div class="cta-container">
@@ -150,9 +161,13 @@
 
 <script>
 import { ref } from 'vue';
+import CarteView from './CarteView.vue';
 
 export default {
   name: 'HomeView',
+  components: {
+    CarteView,
+  },
   setup() {
     const artists = [
       { name: 'Booba', img: '/media/artistes/booba.jpg' },
@@ -550,6 +565,38 @@ export default {
   font-weight: 700;
   color: #FCDC1E;
   text-transform: uppercase;
+}
+
+/* Section Carte */
+.map-section {
+  padding: 80px 20px;
+  background: linear-gradient(to bottom, #11338A 0%, #0b1e55 100%);
+}
+
+.map-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.map-section .section-title {
+  color: #FCDC1E;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.map-intro {
+  text-align: center;
+  color: #ffffff;
+  font-size: 1.2rem;
+  margin-bottom: 40px;
+  font-weight: 300;
+}
+
+.map-wrapper {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 /* Section CTA */
