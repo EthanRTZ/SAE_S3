@@ -16,7 +16,10 @@
       </div>
 
       <!-- Grille: colonne heures + colonnes par scène -->
-      <div class="schedule-container">
+      <div v-if="loading" class="loading-message">
+        Chargement de la programmation...
+      </div>
+      <div v-else class="schedule-container">
         <!-- Colonne des heures à gauche -->
         <div class="time-col">
           <div class="time-header"></div>
@@ -58,7 +61,7 @@
               <div v-for="s in stages" :key="s.name" class="stage-col">
                 <div class="stage-slot-container">
                   <div 
-                    v-for="(slot, idx) in currentSchedule[s.name]" 
+                    v-for="(slot, idx) in (currentSchedule[s.name] || [])" 
                     :key="idx" 
                     class="slot"
                     :style="getSlotStyle(slot)"
@@ -93,102 +96,27 @@ export default {
       ],
       // Heures affichées en colonne de gauche
       times: ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00'],
-      // Noms de scènes comme sur l'affiche
-      stages: [
-        { name: 'MOTHERSHIP', by: 'SNIPES' },
-        { name: 'ZERO GRAVITY', by: 'DEEZER' },
-        { name: 'CARGO', by: 'JBL' },
-        { name: 'ANTDT CLUB', by: 'ANTDT' },
-      ],
-      // Programmation pour 3 jours
-      schedules: [
-        // JOUR 1 - VENDREDI
-        {
-          'MOTHERSHIP': [
-            { start: '16:00', end: '16:45', artist: 'Opening Act', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'SDM', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'SCH', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Booba', style: 'Rap français' },
-          ],
-          'ZERO GRAVITY': [
-            { start: '15:30', end: '16:15', artist: 'DJ Warm Up', style: 'Electro' },
-            { start: '17:00', end: '17:45', artist: 'Nekfeu', style: 'Rap français' },
-            { start: '19:00', end: '19:45', artist: 'Damso', style: 'Rap français' },
-            { start: '21:00', end: '21:45', artist: 'Vald', style: 'Rap' },
-            { start: '23:00', end: '00:30', artist: 'DJ Snake', style: 'Electro' },
-          ],
-          'CARGO': [
-            { start: '16:00', end: '16:45', artist: 'Lomepal', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'Josman', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'Orelsan', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Nekfeu', style: 'Rap français' },
-          ],
-          'ANTDT CLUB': [
-            { start: '15:00', end: '18:00', artist: 'DJ Set Morning', style: 'Club' },
-            { start: '19:00', end: '20:00', artist: 'Martin Solveig', style: 'House' },
-            { start: '22:00', end: '01:00', artist: 'After Party', style: 'Club' },
-          ],
-        },
-        // JOUR 2 - SAMEDI
-        {
-          'MOTHERSHIP': [
-            { start: '16:00', end: '16:45', artist: 'PNL', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'Ninho', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'Jul', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Gims', style: 'Pop / Rap' },
-          ],
-          'ZERO GRAVITY': [
-            { start: '15:30', end: '16:15', artist: 'Laylow', style: 'Rap français' },
-            { start: '17:00', end: '17:45', artist: 'Hamza', style: 'Rap français' },
-            { start: '19:00', end: '19:45', artist: 'Tiakola', style: 'Rap français' },
-            { start: '21:00', end: '21:45', artist: 'Gazo', style: 'Drill' },
-            { start: '23:00', end: '00:30', artist: 'David Guetta', style: 'Electro' },
-          ],
-          'CARGO': [
-            { start: '16:00', end: '16:45', artist: 'Soolking', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'Koba LaD', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'Freeze Corleone', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Kaaris', style: 'Rap français' },
-          ],
-          'ANTDT CLUB': [
-            { start: '15:00', end: '18:00', artist: 'DJ Set Afternoon', style: 'Club' },
-            { start: '19:00', end: '20:00', artist: 'Bob Sinclar', style: 'House' },
-            { start: '22:00', end: '01:00', artist: 'After Party', style: 'Club' },
-          ],
-        },
-        // JOUR 3 - DIMANCHE
-        {
-          'MOTHERSHIP': [
-            { start: '16:00', end: '16:45', artist: 'Maes', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'Niska', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'SCH', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Booba', style: 'Rap français' },
-          ],
-          'ZERO GRAVITY': [
-            { start: '15:30', end: '16:15', artist: 'Ziak', style: 'Rap français' },
-            { start: '17:00', end: '17:45', artist: 'Leto', style: 'Rap français' },
-            { start: '19:00', end: '19:45', artist: 'Ninho', style: 'Rap français' },
-            { start: '21:00', end: '21:45', artist: 'Damso', style: 'Rap français' },
-            { start: '23:00', end: '00:30', artist: 'Calvin Harris', style: 'Electro' },
-          ],
-          'CARGO': [
-            { start: '16:00', end: '16:45', artist: 'Gradur', style: 'Rap français' },
-            { start: '18:00', end: '18:45', artist: 'Josman', style: 'Rap français' },
-            { start: '20:00', end: '20:45', artist: 'Lacrim', style: 'Rap français' },
-            { start: '22:00', end: '23:00', artist: 'Rohff', style: 'Rap français' },
-          ],
-          'ANTDT CLUB': [
-            { start: '15:00', end: '18:00', artist: 'DJ Set Final', style: 'Club' },
-            { start: '19:00', end: '20:00', artist: 'Tchami', style: 'House' },
-            { start: '22:00', end: '01:00', artist: 'After Party Final', style: 'Club' },
-          ],
-        },
-      ],
+      // Données chargées depuis le JSON
+      stages: [],
+      schedules: [],
+      loading: true,
+    }
+  },
+  async mounted() {
+    try {
+      const response = await fetch('/data/programmation.json');
+      const data = await response.json();
+      this.stages = data.stages || [];
+      this.schedules = data.schedules || [];
+      this.loading = false;
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de programmation:', error);
+      this.loading = false;
     }
   },
   computed: {
     currentSchedule() {
-      return this.schedules[this.selectedDay];
+      return this.schedules[this.selectedDay] || {};
     },
   },
   methods: {
@@ -481,6 +409,14 @@ export default {
   text-align: center;
   margin-top: 16px;
   font-weight: 800;
+}
+
+.loading-message {
+  color: #FCDC1E;
+  text-align: center;
+  padding: 40px 20px;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
 @media screen and (max-width: 900px) {

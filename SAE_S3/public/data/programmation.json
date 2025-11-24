@@ -1,0 +1,89 @@
+{
+  "stages": [
+    { "name": "MOTHERSHIP", "by": "SNIPES" },
+    { "name": "ZERO GRAVITY", "by": "DEEZER" },
+    { "name": "CARGO", "by": "JBL" },
+    { "name": "ANTDT CLUB", "by": "ANTDT" }
+  ],
+  "schedules": [
+    {
+      "MOTHERSHIP": [
+        { "start": "16:00", "end": "16:45", "artist": "Opening Act", "style": "Rap français" },
+        { "start": "18:00", "end": "19:00", "artist": "SDM", "style": "Rap français" },
+        { "start": "20:00", "end": "21:00", "artist": "SCH", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Booba", "style": "Rap français" }
+      ],
+      "ZERO GRAVITY": [
+        { "start": "15:30", "end": "16:15", "artist": "DJ Warm Up", "style": "Electro" },
+        { "start": "17:00", "end": "17:45", "artist": "Nekfeu", "style": "Rap français" },
+        { "start": "19:00", "end": "19:45", "artist": "Damso", "style": "Rap français" },
+        { "start": "21:00", "end": "21:45", "artist": "Vald", "style": "Rap" },
+        { "start": "23:00", "end": "00:30", "artist": "DJ Snake", "style": "Electro" }
+      ],
+      "CARGO": [
+        { "start": "16:00", "end": "16:45", "artist": "Lomepal", "style": "Rap français" },
+        { "start": "18:00", "end": "18:45", "artist": "Josman", "style": "Rap français" },
+        { "start": "20:00", "end": "20:45", "artist": "Orelsan", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Nekfeu", "style": "Rap français" }
+      ],
+      "ANTDT CLUB": [
+        { "start": "15:00", "end": "18:00", "artist": "DJ Set Morning", "style": "Club" },
+        { "start": "18:30", "end": "21:30", "artist": "Martin Solveig", "style": "House" },
+        { "start": "22:00", "end": "01:00", "artist": "After Party", "style": "Club" }
+      ]
+    },
+    {
+      "MOTHERSHIP": [
+        { "start": "16:00", "end": "16:45", "artist": "PNL", "style": "Rap français" },
+        { "start": "18:00", "end": "18:45", "artist": "Ninho", "style": "Rap français" },
+        { "start": "20:00", "end": "20:45", "artist": "Jul", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Gims", "style": "Pop / Rap" }
+      ],
+      "ZERO GRAVITY": [
+        { "start": "15:30", "end": "16:15", "artist": "Laylow", "style": "Rap français" },
+        { "start": "17:00", "end": "17:45", "artist": "Hamza", "style": "Rap français" },
+        { "start": "19:00", "end": "19:45", "artist": "Tiakola", "style": "Rap français" },
+        { "start": "21:00", "end": "21:45", "artist": "Gazo", "style": "Drill" },
+        { "start": "23:00", "end": "00:30", "artist": "David Guetta", "style": "Electro" }
+      ],
+      "CARGO": [
+        { "start": "16:00", "end": "16:45", "artist": "Soolking", "style": "Rap français" },
+        { "start": "18:00", "end": "18:45", "artist": "Koba LaD", "style": "Rap français" },
+        { "start": "20:00", "end": "20:45", "artist": "Freeze Corleone", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Kaaris", "style": "Rap français" }
+      ],
+      "ANTDT CLUB": [
+        { "start": "15:00", "end": "18:00", "artist": "DJ Set Afternoon", "style": "Club" },
+        { "start": "19:00", "end": "20:00", "artist": "Bob Sinclar", "style": "House" },
+        { "start": "22:00", "end": "01:00", "artist": "After Party", "style": "Club" }
+      ]
+    },
+    {
+      "MOTHERSHIP": [
+        { "start": "16:00", "end": "16:45", "artist": "Maes", "style": "Rap français" },
+        { "start": "18:00", "end": "18:45", "artist": "Niska", "style": "Rap français" },
+        { "start": "20:00", "end": "20:45", "artist": "SCH", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Booba", "style": "Rap français" }
+      ],
+      "ZERO GRAVITY": [
+        { "start": "15:30", "end": "16:15", "artist": "Ziak", "style": "Rap français" },
+        { "start": "17:00", "end": "17:45", "artist": "Leto", "style": "Rap français" },
+        { "start": "19:00", "end": "19:45", "artist": "Ninho", "style": "Rap français" },
+        { "start": "21:00", "end": "21:45", "artist": "Damso", "style": "Rap français" },
+        { "start": "23:00", "end": "00:30", "artist": "Calvin Harris", "style": "Electro" }
+      ],
+      "CARGO": [
+        { "start": "16:00", "end": "16:45", "artist": "Gradur", "style": "Rap français" },
+        { "start": "18:00", "end": "18:45", "artist": "Josman", "style": "Rap français" },
+        { "start": "20:00", "end": "20:45", "artist": "Lacrim", "style": "Rap français" },
+        { "start": "22:00", "end": "23:00", "artist": "Rohff", "style": "Rap français" }
+      ],
+      "ANTDT CLUB": [
+        { "start": "15:00", "end": "18:00", "artist": "DJ Set Final", "style": "Club" },
+        { "start": "19:00", "end": "20:00", "artist": "Tchami", "style": "House" },
+        { "start": "22:00", "end": "01:00", "artist": "After Party Final", "style": "Club" }
+      ]
+    }
+  ]
+}
+
