@@ -1,0 +1,24 @@
+{
+  "oneDay": {
+    "label": "Forfait 1 jour",
+    "stock": 120,
+    "days": [
+      { "label": "Vendredi", "stock": 40 },
+      { "label": "Samedi", "stock": 40 },
+      { "label": "Dimanche", "stock": 40 }
+    ]
+  },
+  "twoDays": {
+    "label": "Forfait 2 jours",
+    "stock": 80,
+    "days": [
+      { "label": "Vendredi + Samedi", "stock": 40 },
+      { "label": "Samedi + Dimanche", "stock": 40 }
+    ]
+  },
+  "threeDays": {
+    "label": "Pass 3 jours",
+    "stock": 50
+  }
+}
+

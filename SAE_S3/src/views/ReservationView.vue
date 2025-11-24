@@ -8,22 +8,66 @@
 
           <div class="forfaits">
             <div class="forfait">
-              <p class="stock">Places restantes: {{ places.oneDay }}</p>
-              <button class="cta" :disabled="places.oneDay === 0" @click="reserve('oneDay')">
+              <p class="stock">Places restantes: {{ forfaits.oneDay.stock }}</p>
+              <label class="select-label" for="oneDaySelect">Choisis ton jour</label>
+              <select
+                id="oneDaySelect"
+                class="day-select"
+                v-model="selections.oneDay"
+                @change="clearDayError('oneDay')"
+              >
+                <option disabled value="">Sélectionne un jour</option>
+                <option
+                  v-for="day in getDayOptions('oneDay')"
+                  :key="day.label"
+                  :value="day.label"
+                  :disabled="day.stock === 0"
+                >
+                  {{ formatOptionLabel(day) }}
+                </option>
+              </select>
+              <p v-if="dayErrors.oneDay" class="day-error">{{ dayErrors.oneDay }}</p>
+              <button
+                class="cta"
+                :disabled="!canReserve('oneDay')"
+                @click="reserve('oneDay')"
+              >
                 Réserver 1 jour
               </button>
             </div>
 
             <div class="forfait">
-              <p class="stock">Places restantes: {{ places.twoDays }}</p>
-              <button class="cta" :disabled="places.twoDays === 0" @click="reserve('twoDays')">
+              <p class="stock">Places restantes: {{ forfaits.twoDays.stock }}</p>
+              <label class="select-label" for="twoDaySelect">Choisis tes jours</label>
+              <select
+                id="twoDaySelect"
+                class="day-select"
+                v-model="selections.twoDays"
+                @change="clearDayError('twoDays')"
+              >
+                <option disabled value="">Sélectionne une combinaison</option>
+                <option
+                  v-for="day in getDayOptions('twoDays')"
+                  :key="day.label"
+                  :value="day.label"
+                  :disabled="day.stock === 0"
+                >
+                  {{ formatOptionLabel(day) }}
+                </option>
+              </select>
+              <p v-if="dayErrors.twoDays" class="day-error">{{ dayErrors.twoDays }}</p>
+              <button
+                class="cta"
+                :disabled="!canReserve('twoDays')"
+                @click="reserve('twoDays')"
+              >
                 Réserver 2 jours
               </button>
             </div>
 
             <div class="forfait">
-              <p class="stock">Places restantes: {{ places.threeDays }}</p>
-              <button class="cta" :disabled="places.threeDays === 0" @click="reserve('threeDays')">
+              <p class="stock">Places restantes: {{ forfaits.threeDays.stock }}</p>
+              <button class="cta" :disabled="!canReserve('threeDays')" @click="reserve('threeDays')">
                 Réserver 3 jours
               </button>
             </div>
@@ -56,27 +100,94 @@
 </template>
 
 <script>
+import forfaitsData from '@/data/forfaits.json'
+
 export default {
   name: 'ReservationView',
   data() {
+    const forfaits = JSON.parse(JSON.stringify(forfaitsData))
+    Object.keys(forfaits).forEach((key) => {
+      if (Array.isArray(forfaits[key].days)) {
+        forfaits[key].stock = forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
+      }
+    })
     return {
-      places: {
-        oneDay: 120,
-        twoDays: 80,
-        threeDays: 50
+      forfaits,
+      selections: {
+        oneDay: '',
+        twoDays: ''
+      },
+      dayErrors: {
+        oneDay: '',
+        twoDays: ''
       },
       requireLoginChecked: false,
       showAuthModal: false
     }
   },
   methods: {
+    requiresDaySelection(type) {
+      return type === 'oneDay' || type === 'twoDays'
+    },
+    getDayOptions(type) {
+      return this.forfaits[type]?.days ?? []
+    },
+    getSelectedOption(type) {
+      return this.getDayOptions(type).find((option) => option.label === this.selections[type])
+    },
+    formatOptionLabel(option) {
+      return `${option.label} (${option.stock} places)`
+    },
+    clearDayError(type) {
+      if (this.dayErrors[type]) {
+        this.dayErrors[type] = ''
+      }
+    },
+    canReserve(type) {
+      const forfait = this.forfaits[type]
+      if (!forfait || forfait.stock === 0) {
+        return false
+      }
+      if (!this.requiresDaySelection(type)) {
+        return true
+      }
+      const selected = this.getSelectedOption(type)
+      return Boolean(selected && selected.stock > 0)
+    },
     reserve(type) {
       if (this.requireLoginChecked) {
         this.showAuthModal = true
         return
       }
-      if (this.places[type] > 0) {
-        this.places[type] = this.places[type] - 1
+
+      if (this.requiresDaySelection(type) && !this.selections[type]) {
+        this.dayErrors[type] = 'Choisis un jour avant de réserver.'
+        return
+      }
+
+      const forfait = this.forfaits[type]
+      if (!forfait || forfait.stock === 0) {
+        return
+      }
+
+      if (this.requiresDaySelection(type)) {
+        const selected = this.getSelectedOption(type)
+        if (!selected) {
+          this.dayErrors[type] = 'Choisis un jour avant de réserver.'
+          return
+        }
+        if (selected.stock === 0) {
+          this.dayErrors[type] = 'Plus de places pour cette option.'
+          return
+        }
+        selected.stock -= 1
+        forfait.stock = Math.max(0, forfait.stock - 1)
+        this.selections[type] = ''
+        return
+      }
+
+      if (forfait.stock > 0) {
+        forfait.stock -= 1
       }
     },
     closeAuthModal() {
@@ -161,6 +272,38 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 10px;
+}
+
+.select-label {
+  width: 100%;
+  font-size: 0.9rem;
+  color: #f8f6ed;
+  font-weight: 600;
+}
+
+.day-select {
+  width: 100%;
+  background: rgba(1,4,16,0.4);
+  border: 1px solid rgba(255, 215, 80, 0.3);
+  color: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.day-select:focus {
+  outline: none;
+  border-color: #ffd166;
+  box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.35);
+}
+
+.day-error {
+  width: 100%;
+  font-size: 0.85rem;
+  color: #ff8a80;
+  margin: 0;
+  text-align: left;
 }
 
 .stock {
