@@ -142,14 +142,8 @@
       <div class="map-container">
         <h2 class="section-title">LOCALISATION</h2>
         <p class="map-intro">Retrouvez tous les points d'intérêt du festival : scènes, parkings, campings et plus encore.</p>
-        <!-- pleine largeur avec cadre léger -->
-        <div class="map-frame">
-          <div class="map-inner">
-            <!-- wrapper étendu: la carte + filtre remplissent les côtés -->
-            <div class="map-content-wrapper">
-               <CarteView embedded />
-             </div>
-          </div>
+        <div class="map-wrapper">
+          <CarteView />
         </div>
       </div>
     </section>
@@ -232,7 +226,9 @@ import CarteView from './CarteView.vue';
 
 export default {
   name: 'HomeView',
-  components: { CarteView },
+  components: {
+    CarteView,
+  },
   setup() {
     const artists = [
       { name: 'Booba', img: '/media/artistes/booba.jpg' },
@@ -290,7 +286,7 @@ export default {
 
     // Gestion d'erreur image
     const handleImageError = (e) => {
-      e.target.src = '/media/placeholder-prestataire.jpg';
+      e.target.src = '/media/placeholder-prestataire.png';
     };
 
     onMounted(() => {
@@ -697,141 +693,77 @@ export default {
 
 /* Section Carte */
 .map-section {
-  padding: 80px 0; /* retire le padding latéral pour vraie pleine largeur */
+  padding: 80px 20px;
   background: linear-gradient(to bottom, #11338A 0%, #0b1e55 100%);
 }
 
 .map-container {
-  max-width: none;       /* pleine largeur */
-  margin: 0;             /* aligne avec bords */
-  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* titre et intro centrés avec marge fixe */
 .map-section .section-title {
   color: #FCDC1E;
   text-align: center;
   margin-bottom: 20px;
 }
+
 .map-intro {
   text-align: center;
   color: #ffffff;
   font-size: 1.2rem;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
   font-weight: 300;
 }
 
-/* Cadre autour de la zone carte */
-.map-frame {
-  width: 100%;
-  padding: 12px;
-  border-radius: 14px;
-  box-shadow: 0 16px 36px rgba(6,18,50,0.18);
-  background: linear-gradient(180deg,#ffffff 0%, #f7f9ff 100%);
+.map-wrapper {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* Conteneur interne: fixe la hauteur et masque dépassements */
-.map-inner {
-  border-radius: 10px;
-  overflow: hidden;
-  height: 520px; /* ajuste si besoin */
-  background: #eef3ff;
-  position: relative;
-}
-
-/* La carte doit remplir l'espace */
-.map-inner > * { height: 100%; width: 100%; display: block; }
-
-/* Force Leaflet à remplir l’espace */
-.map-inner ::v-deep #map,
-.map-inner ::v-deep .leaflet-container {
-  height: 100% !important;
-  width: 100% !important;
-  display: block;
-  box-sizing: border-box;
-  overflow: hidden;
-  border-radius: inherit;
-}
-
-/* CHANGED: le wrapper ne contraint plus la largeur, la carte + filtre occupent toute la zone */
-.map-content-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex; /* CarteView gère filtre à gauche + carte à droite via son flex interne */
-}
-
-/* Contraint le root de CarteView à cette largeur et pleine hauteur */
-.map-content-wrapper ::v-deep .carte {
-  width: 100%;
-  height: 100%;
-}
-
-/* (Optionnel) si besoin, on peut limiter UNIQUEMENT la carte interne, mais garder le filtre visible */
-/* .map-content-wrapper ::v-deep #map { max-width: 100%; } */
-
-/* Responsive: la hauteur de la carte */
-@media screen and (max-width: 1024px) {
-  .map-inner { height: 440px; }
-}
-@media screen and (max-width: 768px) {
-  .map-inner { height: 380px; }
-}
-@media screen and (max-width: 480px) {
-  .map-inner { height: 320px; }
-}
-
-/* CTA: PRÊT À VIVRE L'EXPÉRIENCE ? */
+/* Section CTA */
 .cta-section {
-  padding: 80px 20px;
-  background: linear-gradient(180deg, #0b1e55 0%, #051237 100%);
-  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 100px 20px;
+  background: linear-gradient(to bottom, #11338A 0%, #0b1e55 100%);
   text-align: center;
 }
+
 .cta-container {
-  max-width: 1100px;
+  max-width: 800px;
   margin: 0 auto;
 }
+
 .cta-title {
-  font-size: 2.6rem;
+  font-size: 3rem;
+  font-weight: 900;
   color: #FCDC1E;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-  text-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  margin-bottom: 20px;
 }
+
 .cta-text {
-  font-size: 1.2rem;
-  color: #e9ecff;
-  margin-bottom: 28px;
-  font-weight: 400;
+  font-size: 1.3rem;
+  color: #ffffff;
+  margin-bottom: 40px;
 }
+
 .btn-cta {
   display: inline-block;
-  padding: 16px 28px;
-  border-radius: 999px;
-  font-weight: 800;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  color: #0b1e55;
+  padding: 20px 50px;
+  font-size: 1.2rem;
+  font-weight: 700;
   background: #FCDC1E;
-  border: 2px solid #FCDC1E;
-  box-shadow: 0 10px 24px rgba(252,220,30,0.25);
+  color: #000000;
   text-decoration: none;
-  transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
 }
+
 .btn-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(252,220,30,0.35);
-  background: transparent;
-  color: #FCDC1E;
-}
-@media screen and (max-width: 768px) {
-  .cta-title { font-size: 2rem; }
-  .cta-text { font-size: 1.05rem; }
-}
-@media screen and (max-width: 480px) {
-  .cta-title { font-size: 1.8rem; }
-  .cta-text { font-size: 1rem; }
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(252, 220, 30, 0.4);
 }
 
 /* Section Prestataires */
