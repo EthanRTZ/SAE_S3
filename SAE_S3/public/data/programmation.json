@@ -7,83 +7,119 @@
   ],
   "schedules": [
     {
+      "day": "VEN 05/09",
       "MOTHERSHIP": [
-        { "start": "16:00", "end": "16:45", "artist": "Opening Act", "style": "Rap français" },
-        { "start": "18:00", "end": "19:00", "artist": "SDM", "style": "Rap français" },
-        { "start": "20:00", "end": "21:00", "artist": "SCH", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Booba", "style": "Rap français" }
+        { "start": "17:40", "end": "18:25", "artist": "JOLAGREEN23", "style": "Rap Français / Trap" },
+        { "start": "19:10", "end": "20:00", "artist": "JOK'AIR", "style": "Rap Français / R&B" },
+        { "start": "20:40", "end": "21:40", "artist": "SCH", "style": "Rap Français / Trap" },
+        { "start": "22:30", "end": "23:30", "artist": "IAM", "style": "Hip-hop Old School / Rap Français" },
+        { "start": "00:30", "end": "01:30", "artist": "HAMZA", "style": "Rap / Trap / Pop-rap" }
       ],
       "ZERO GRAVITY": [
-        { "start": "15:30", "end": "16:15", "artist": "DJ Warm Up", "style": "Electro" },
-        { "start": "17:00", "end": "17:45", "artist": "Nekfeu", "style": "Rap français" },
-        { "start": "19:00", "end": "19:45", "artist": "Damso", "style": "Rap français" },
-        { "start": "21:00", "end": "21:45", "artist": "Vald", "style": "Rap" },
-        { "start": "23:00", "end": "00:30", "artist": "DJ Snake", "style": "Electro" }
+        { "start": "17:00", "end": "17:40", "artist": "Sonny Rave", "style": "R&B / Soul" },
+        { "start": "18:20", "end": "19:10", "artist": "KEBLACK", "style": "R&B / Rap Français / Afrobeat" },
+        { "start": "19:40", "end": "20:40", "artist": "ALONZO", "style": "Rap Français" },
+        { "start": "21:10", "end": "22:00", "artist": "FRANGLISH", "style": "R&B / Rap Français" },
+        { "start": "22:30", "end": "23:15", "artist": "ZAMDANE", "style": "Rap / Trap" },
+        { "start": "23:40", "end": "00:30", "artist": "GREEN MONTANA", "style": "Rap Français / Cloud Rap" },
+        { "start": "01:30", "end": "02:20", "artist": "OBOY", "style": "Rap / Trap" }
       ],
       "CARGO": [
-        { "start": "16:00", "end": "16:45", "artist": "Lomepal", "style": "Rap français" },
-        { "start": "18:00", "end": "18:45", "artist": "Josman", "style": "Rap français" },
-        { "start": "20:00", "end": "20:45", "artist": "Orelsan", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Nekfeu", "style": "Rap français" }
+        { "start": "15:50", "end": "16:20", "artist": "NAOHS", "style": "Rap / R&B" },
+        { "start": "16:40", "end": "17:10", "artist": "SWAAYVE", "style": "Hip-hop / Cloud Rap" },
+        { "start": "17:30", "end": "18:00", "artist": "DENDEN", "style": "Rap / Trap" },
+        { "start": "18:30", "end": "19:10", "artist": "ARMA JACKSON", "style": "Rap Français" },
+        { "start": "19:50", "end": "20:35", "artist": "WALLACE CLEAVER", "style": "Rap / Underground" },
+        { "start": "21:30", "end": "22:15", "artist": "1PLIKÉ140", "style": "Drill / Rap Français" },
+        { "start": "22:40", "end": "23:20", "artist": "JRK 19", "style": "Rap Français" },
+        { "start": "23:50", "end": "00:30", "artist": "KEEQAID", "style": "Rap / Trap" },
+        { "start": "01:35", "end": "02:20", "artist": "YORSSY", "style": "Rap / R&B" }
       ],
       "ANTDT CLUB": [
-        { "start": "15:00", "end": "18:00", "artist": "DJ Set Morning", "style": "Club" },
-        { "start": "18:30", "end": "21:30", "artist": "Martin Solveig", "style": "House" },
-        { "start": "22:00", "end": "01:00", "artist": "After Party", "style": "Club" }
+        { "start": "18:30", "end": "19:20", "artist": "SHEIK LE FABULEUX", "style": "Rap / Humour" },
+        { "start": "19:30", "end": "21:00", "artist": "SWAVE", "style": "Hip-hop / Cloud Rap" },
+        { "start": "21:00", "end": "22:30", "artist": "ANDY4000", "style": "DJ / Electro Rap" },
+        { "start": "22:30", "end": "01:00", "artist": "SIXTION", "style": "Rap alternatif / Trap" },
+        { "start": "01:00", "end": "02:30", "artist": "URUMI", "style": "Rap / R&B" }
       ]
     },
     {
+      "day": "SAM 06/09",
       "MOTHERSHIP": [
-        { "start": "16:00", "end": "16:45", "artist": "PNL", "style": "Rap français" },
-        { "start": "18:00", "end": "18:45", "artist": "Ninho", "style": "Rap français" },
-        { "start": "20:00", "end": "20:45", "artist": "Jul", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Gims", "style": "Pop / Rap" }
+        { "start": "15:10", "end": "15:50", "artist": "GENEZIO", "style": "Rap / Trap" },
+        { "start": "16:15", "end": "17:05", "artist": "OXMO PUCCINO", "style": "Rap Poétique / Français" },
+        { "start": "17:45", "end": "18:35", "artist": "RIM’K", "style": "Rap Français / Trap" },
+        { "start": "19:10", "end": "20:00", "artist": "RILÈS", "style": "Rap Français / Pop" },
+        { "start": "20:50", "end": "21:40", "artist": "TAYC", "style": "R&B / Afrobeat" },
+        { "start": "22:20", "end": "23:30", "artist": "GIMS", "style": "Rap / Pop" },
+        { "start": "00:10", "end": "01:20", "artist": "GAZO", "style": "Rap / Drill" }
       ],
       "ZERO GRAVITY": [
-        { "start": "15:30", "end": "16:15", "artist": "Laylow", "style": "Rap français" },
-        { "start": "17:00", "end": "17:45", "artist": "Hamza", "style": "Rap français" },
-        { "start": "19:00", "end": "19:45", "artist": "Tiakola", "style": "Rap français" },
-        { "start": "21:00", "end": "21:45", "artist": "Gazo", "style": "Drill" },
-        { "start": "23:00", "end": "00:30", "artist": "David Guetta", "style": "Electro" }
+        { "start": "14:30", "end": "15:10", "artist": "AMK", "style": "Rap / R&B" },
+        { "start": "15:40", "end": "16:25", "artist": "ADÈLE CASTILLON", "style": "Pop / R&B" },
+        { "start": "17:00", "end": "17:50", "artist": "L2B", "style": "Rap Français" },
+        { "start": "18:30", "end": "19:30", "artist": "HIGH & FINES HERBES", "style": "Rap Alternatif" },
+        { "start": "20:10", "end": "21:00", "artist": "LA MANO 1.9", "style": "Rap Français / Trap" },
+        { "start": "21:40", "end": "22:30", "artist": "TIF", "style": "Rap / Trap" },
+        { "start": "23:30", "end": "00:20", "artist": "THEODORA", "style": "R&B / Pop" },
+        { "start": "01:20", "end": "02:20", "artist": "KORE", "style": "Rap / Trap" }
       ],
       "CARGO": [
-        { "start": "16:00", "end": "16:45", "artist": "Soolking", "style": "Rap français" },
-        { "start": "18:00", "end": "18:45", "artist": "Koba LaD", "style": "Rap français" },
-        { "start": "20:00", "end": "20:45", "artist": "Freeze Corleone", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Kaaris", "style": "Rap français" }
+        { "start": "13:40", "end": "14:10", "artist": "ILIANA", "style": "R&B / Pop" },
+        { "start": "14:30", "end": "15:10", "artist": "ZERATHEKIDD", "style": "Rap / Trap" },
+        { "start": "15:30", "end": "16:10", "artist": "THÉA", "style": "Pop / R&B" },
+        { "start": "16:35", "end": "17:15", "artist": "LE JUIICE", "style": "Rap Français" },
+        { "start": "17:40", "end": "18:15", "artist": "KHTEK", "style": "Rap Français" },
+        { "start": "18:15", "end": "18:50", "artist": "TAGNE", "style": "Rap / Trap" },
+        { "start": "19:20", "end": "20:00", "artist": "ASININE", "style": "Rap Français" },
+        { "start": "20:30", "end": "21:10", "artist": "VEN1", "style": "Rap / Trap" },
+        { "start": "21:40", "end": "22:20", "artist": "DINA AYADA", "style": "R&B / Pop" },
+        { "start": "23:30", "end": "00:10", "artist": "NONO LA GRINTA", "style": "Rap / Trap" },
+        { "start": "01:20", "end": "02:10", "artist": "TH", "style": "Rap / Trap" }
       ],
       "ANTDT CLUB": [
-        { "start": "15:00", "end": "18:00", "artist": "DJ Set Afternoon", "style": "Club" },
-        { "start": "19:00", "end": "20:00", "artist": "Bob Sinclar", "style": "House" },
-        { "start": "22:00", "end": "01:00", "artist": "After Party", "style": "Club" }
+        { "start": "15:30", "end": "16:50", "artist": "DARLEAN", "style": "Rap / Hip-hop" },
+        { "start": "17:00", "end": "18:30", "artist": "DJ ELFIGO", "style": "DJ / Electro Rap" },
+        { "start": "18:30", "end": "20:00", "artist": "TIGARAH", "style": "R&B / Pop" },
+        { "start": "20:00", "end": "22:00", "artist": "NAOMI", "style": "R&B / Pop" },
+        { "start": "22:00", "end": "00:00", "artist": "LIL ROSY & ZEPEQUENAI", "style": "Rap / Trap" },
+        { "start": "00:00", "end": "02:30", "artist": "MARABOUTAGE", "style": "Rap / Trap" }
       ]
     },
     {
+      "day": "DIM 07/09",
       "MOTHERSHIP": [
-        { "start": "16:00", "end": "16:45", "artist": "Maes", "style": "Rap français" },
-        { "start": "18:00", "end": "18:45", "artist": "Niska", "style": "Rap français" },
-        { "start": "20:00", "end": "20:45", "artist": "SCH", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Booba", "style": "Rap français" }
+        { "start": "14:40", "end": "15:25", "artist": "ELGRANDE TOTO", "style": "Rap / Trap" },
+        { "start": "16:10", "end": "17:10", "artist": "MC SOLAAR", "style": "Hip-hop / Rap Français" },
+        { "start": "17:50", "end": "18:50", "artist": "KAARIS", "style": "Rap / Trap" },
+        { "start": "19:40", "end": "20:40", "artist": "BIGFLO & OLI", "style": "Rap Français / Pop" },
+        { "start": "21:30", "end": "22:40", "artist": "NINHO & NISKA", "style": "Rap Français" }
       ],
       "ZERO GRAVITY": [
-        { "start": "15:30", "end": "16:15", "artist": "Ziak", "style": "Rap français" },
-        { "start": "17:00", "end": "17:45", "artist": "Leto", "style": "Rap français" },
-        { "start": "19:00", "end": "19:45", "artist": "Ninho", "style": "Rap français" },
-        { "start": "21:00", "end": "21:45", "artist": "Damso", "style": "Rap français" },
-        { "start": "23:00", "end": "00:30", "artist": "Calvin Harris", "style": "Electro" }
+        { "start": "14:00", "end": "14:40", "artist": "DANYL", "style": "Rap Français / R&B" },
+        { "start": "15:25", "end": "16:15", "artist": "ZIAK", "style": "Rap / Trap" },
+        { "start": "17:00", "end": "17:50", "artist": "LACRIM", "style": "Rap Français" },
+        { "start": "18:50", "end": "19:40", "artist": "LA FOUINE", "style": "Rap Français" },
+        { "start": "20:10", "end": "21:40", "artist": "VALD PANDEMONIUM RELOADED", "style": "Rap Français / Trap" }
       ],
       "CARGO": [
-        { "start": "16:00", "end": "16:45", "artist": "Gradur", "style": "Rap français" },
-        { "start": "18:00", "end": "18:45", "artist": "Josman", "style": "Rap français" },
-        { "start": "20:00", "end": "20:45", "artist": "Lacrim", "style": "Rap français" },
-        { "start": "22:00", "end": "23:00", "artist": "Rohff", "style": "Rap français" }
+        { "start": "13:30", "end": "14:00", "artist": "SHAO", "style": "Rap / R&B" },
+        { "start": "14:10", "end": "14:40", "artist": "GARÇON PRINTEMPS", "style": "Pop / Rap" },
+        { "start": "14:45", "end": "15:30", "artist": "TRIPTIK", "style": "Rap / Trap" },
+        { "start": "16:00", "end": "16:40", "artist": "JUSTE SHANI", "style": "R&B / Pop" },
+        { "start": "17:00", "end": "17:40", "artist": "MAIRO", "style": "Rap / Trap" },
+        { "start": "18:10", "end": "18:50", "artist": "H JEUNECRACK", "style": "Rap / Trap" },
+        { "start": "19:25", "end": "20:10", "artist": "DALÍ", "style": "Rap Français / Trap" },
+        { "start": "20:40", "end": "21:30", "artist": "THEODORT", "style": "Rap Français / Trap" }
       ],
       "ANTDT CLUB": [
-        { "start": "15:00", "end": "18:00", "artist": "DJ Set Final", "style": "Club" },
-        { "start": "19:00", "end": "20:00", "artist": "Tchami", "style": "House" },
-        { "start": "22:00", "end": "01:00", "artist": "After Party Final", "style": "Club" }
+        { "start": "15:30", "end": "16:30", "artist": "YANISS", "style": "Reggae / Rap" },
+        { "start": "16:30", "end": "18:00", "artist": "BLANKKA CLUB", "style": "DJ / Rap" },
+        { "start": "18:00", "end": "19:15", "artist": "TODIEFOR", "style": "DJ / Rap" },
+        { "start": "19:15", "end": "20:30", "artist": "MATOU", "style": "DJ / Rap" },
+        { "start": "20:30", "end": "22:00", "artist": "LORKESTRA", "style": "DJ / Rap" },
+        { "start": "22:00", "end": "23:15", "artist": "MARA", "style": "Rap / Trap" }
       ]
     }
   ]
 }
-

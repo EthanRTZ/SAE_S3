@@ -23,7 +23,7 @@
         <!-- Colonne des heures à gauche -->
         <div class="time-col">
           <div class="time-header"></div>
-          <div class="time-container">
+          <div class="time-container" :style="{ height: gridHeightPx }">
             <div 
               v-for="t in times" 
               :key="t" 
@@ -46,9 +46,9 @@
           </div>
 
           <!-- Grille des scènes -->
-          <div class="grid-wrapper">
+          <div class="grid-wrapper" :style="{ minHeight: gridHeightPx }">
             <!-- Lignes horizontales pour chaque heure -->
-            <div class="time-lines">
+            <div class="time-lines" :style="{ height: gridHeightPx }">
               <div 
                 v-for="t in times" 
                 :key="t" 
@@ -57,16 +57,20 @@
               ></div>
             </div>
             
-            <div class="grid">
-              <div v-for="s in stages" :key="s.name" class="stage-col">
-                <div class="stage-slot-container">
+            <div class="grid" :style="{ minHeight: gridHeightPx }">
+              <div 
+                v-for="s in stages" 
+                :key="s.name" 
+                class="stage-col"
+                :style="{ minHeight: gridHeightPx }"
+              >
+                <div class="stage-slot-container" :style="{ minHeight: gridHeightPx }">
                   <div 
                     v-for="(slot, idx) in (currentSchedule[s.name] || [])" 
                     :key="idx" 
                     class="slot"
                     :style="getSlotStyle(slot)"
                   >
-                    <div class="slot-time">{{ slot.start }}–{{ slot.end }}</div>
                     <div class="slot-artist">{{ slot.artist }}</div>
                   </div>
                 </div>
@@ -77,7 +81,7 @@
       </div>
 
       <div class="notes">
-        OUVERTURE DES PORTES — 15:00 • FERMETURE — 3:00
+        OUVERTURE DES PORTES — {{ openingTime }} • FERMETURE — {{ closingTime }}
       </div>
     </div>
   </div>
@@ -90,12 +94,10 @@ export default {
     return {
       selectedDay: 0,
       days: [
-        { label: 'Vendredi 15', date: '15/06' },
-        { label: 'Samedi 16', date: '16/06' },
-        { label: 'Dimanche 17', date: '17/06' },
+        { label: 'Vendredi 15', date: '15/06', opening: '15:00', closing: '03:00' },
+        { label: 'Samedi 16', date: '16/06', opening: '13:00', closing: '03:00' },
+        { label: 'Dimanche 17', date: '17/06', opening: '13:00', closing: '00:00' },
       ],
-      // Heures affichées en colonne de gauche
-      times: ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00','03:00'],
       // Données chargées depuis le JSON
       stages: [],
       schedules: [],
@@ -118,6 +120,30 @@ export default {
     currentSchedule() {
       return this.schedules[this.selectedDay] || {};
     },
+    currentDay() {
+      return this.days[this.selectedDay] || this.days[0];
+    },
+    openingTime() {
+      return this.currentDay?.opening || '15:00';
+    },
+    closingTime() {
+      return this.currentDay?.closing || '03:00';
+    },
+    gridRangeMinutes() {
+      const start = this.timeToMinutes(this.openingTime);
+      let end = this.timeToMinutes(this.closingTime);
+      if (end <= start) {
+        end += 24 * 60;
+      }
+      return end - start;
+    },
+    gridHeightPx() {
+      const range = this.gridRangeMinutes || 1;
+      return `${range}px`;
+    },
+    times() {
+      return this.generateTimes(this.openingTime, this.closingTime);
+    },
   },
   methods: {
     // Convertit une heure (HH:MM) en minutes depuis minuit
@@ -125,10 +151,29 @@ export default {
       const [hours, minutes] = time.split(':').map(Number);
       return hours * 60 + minutes;
     },
+    minutesToTime(totalMinutes) {
+      const minutesInDay = totalMinutes % (24 * 60);
+      const hours = Math.floor(minutesInDay / 60);
+      const minutes = minutesInDay % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    },
+    generateTimes(opening, closing) {
+      const times = [];
+      let current = this.timeToMinutes(opening);
+      let end = this.timeToMinutes(closing);
+      if (end < current) {
+        end += 24 * 60;
+      }
+      while (current <= end) {
+        times.push(this.minutesToTime(current));
+        current += 60;
+      }
+      return times;
+    },
     // Calcule le style de positionnement pour une heure
     getTimeStyle(time) {
       const timeMinutes = this.timeToMinutes(time);
-      const gridStartMinutes = this.timeToMinutes('15:00');
+      const gridStartMinutes = this.timeToMinutes(this.openingTime);
       
       // Position relative au début de la grille
       let topMinutes = timeMinutes - gridStartMinutes;
@@ -138,8 +183,7 @@ export default {
         topMinutes = timeMinutes + 24 * 60 - gridStartMinutes;
       }
       
-      // Hauteur totale de la grille (de 15:00 à 03:00 = 12 heures = 720 minutes)
-      const gridHeightMinutes = 12 * 60;
+      const gridHeightMinutes = this.gridRangeMinutes || 1;
       
       // Calcul en pourcentage
       const topPercent = Math.max(0, (topMinutes / gridHeightMinutes) * 100);
@@ -154,7 +198,7 @@ export default {
     // Calcule le style de positionnement pour une ligne d'heure
     getTimeLineStyle(time) {
       const timeMinutes = this.timeToMinutes(time);
-      const gridStartMinutes = this.timeToMinutes('15:00');
+      const gridStartMinutes = this.timeToMinutes(this.openingTime);
       
       // Position relative au début de la grille
       let topMinutes = timeMinutes - gridStartMinutes;
@@ -164,8 +208,7 @@ export default {
         topMinutes = timeMinutes + 24 * 60 - gridStartMinutes;
       }
       
-      // Hauteur totale de la grille (de 15:00 à 03:00 = 12 heures = 720 minutes)
-      const gridHeightMinutes = 12 * 60;
+      const gridHeightMinutes = this.gridRangeMinutes || 1;
       
       // Calcul en pourcentage
       const topPercent = Math.max(0, (topMinutes / gridHeightMinutes) * 100);
@@ -187,8 +230,7 @@ export default {
         endMinutes = endMinutes + 24 * 60;
       }
       
-      // Heure de début de la grille (15:00 = 15*60 = 900 minutes)
-      const gridStartMinutes = this.timeToMinutes('15:00');
+      const gridStartMinutes = this.timeToMinutes(this.openingTime);
       
       // Position relative au début de la grille
       let topMinutes = startMinutes - gridStartMinutes;
@@ -201,8 +243,7 @@ export default {
       // Durée du créneau
       const duration = endMinutes - startMinutes;
       
-      // Hauteur totale de la grille (de 15:00 à 03:00 = 12 heures = 720 minutes)
-      const gridHeightMinutes = 12 * 60; // 12 heures
+      const gridHeightMinutes = this.gridRangeMinutes || 1;
       
       // Calcul en pourcentage
       const topPercent = Math.max(0, (topMinutes / gridHeightMinutes) * 100);
@@ -372,7 +413,7 @@ export default {
   color: #0b0b0b;
   border-radius: 10px;
   padding: 2px 10px;
-  border: 2px solid #FCDC1E;
+  border: 1px solid #0b0b0b;
   box-shadow: 0 6px 12px rgba(252, 220, 30, 0.08);
   display: flex;
   flex-direction: column;

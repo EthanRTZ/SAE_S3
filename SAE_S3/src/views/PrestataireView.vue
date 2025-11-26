@@ -5,27 +5,45 @@
 
       <div class="filter-bar">
         <div class="filter-label">Filtrer par type</div>
-        <div class="chip-list">
+        <div class="filter-dropdown-wrapper">
           <button
-            v-for="type in types"
-            :key="type"
             type="button"
-            class="filter-chip"
-            :class="{ active: selectedTypes.includes(type) }"
-            @click="toggleType(type)"
+            class="filter-dropdown-toggle"
+            :class="{ active: selectedTypes.length > 0, open: isDropdownOpen }"
+            @click="toggleDropdown"
           >
-            {{ type }}
-            <span v-if="selectedTypes.includes(type)" class="chip-close" aria-hidden="true">×</span>
+            <span v-if="selectedTypes.length === 0">Tous les types</span>
+            <span v-else-if="selectedTypes.length === 1">{{ selectedTypes[0] }}</span>
+            <span v-else>{{ selectedTypes.length }} types sélectionnés</span>
+            <span class="dropdown-arrow">▼</span>
           </button>
+          <div v-if="isDropdownOpen" class="filter-dropdown-menu" @click.stop>
+            <div class="dropdown-options">
+              <label
+                v-for="type in types"
+                :key="type"
+                class="dropdown-option"
+                :class="{ selected: selectedTypes.includes(type) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedTypes.includes(type)"
+                  @change="toggleType(type)"
+                />
+                <span>{{ type }}</span>
+              </label>
+            </div>
+            <div v-if="selectedTypes.length" class="dropdown-actions">
+              <button
+                type="button"
+                class="clear-filters-small"
+                @click="resetFilters"
+              >
+                Réinitialiser
+              </button>
+            </div>
+          </div>
         </div>
-        <button 
-          v-if="selectedTypes.length" 
-          type="button" 
-          class="clear-filters" 
-          @click="resetFilters"
-        >
-          Tout afficher
-        </button>
       </div>
 
       <div v-if="loading" class="loading-message">
@@ -74,6 +92,7 @@ export default {
       types: [],
       selectedTypes: [],
       loading: true,
+      isDropdownOpen: false,
     }
   },
   async mounted() {
@@ -87,6 +106,11 @@ export default {
     } finally {
       this.loading = false;
     }
+    // Fermer le dropdown si on clique en dehors
+    document.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
   },
   computed: {
     filteredPrestataires() {
@@ -95,6 +119,16 @@ export default {
     },
   },
   methods: {
+    toggleDropdown(event) {
+      event.stopPropagation();
+      this.isDropdownOpen = !this.isDropdownOpen;
+    },
+    handleClickOutside(event) {
+      const dropdown = event.target.closest('.filter-dropdown-wrapper');
+      if (!dropdown && this.isDropdownOpen) {
+        this.isDropdownOpen = false;
+      }
+    },
     toggleType(type) {
       if (this.selectedTypes.includes(type)) {
         this.selectedTypes = this.selectedTypes.filter(t => t !== type);
@@ -142,8 +176,10 @@ export default {
 }
 
 .filter-bar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 16px;
   margin-bottom: 32px;
   background: rgba(4, 16, 61, 0.65);
@@ -152,6 +188,7 @@ export default {
   padding: 18px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(6px);
+  z-index: 100;
 }
 
 .filter-label {
@@ -162,60 +199,143 @@ export default {
   letter-spacing: 1px;
 }
 
-.chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.filter-dropdown-wrapper {
+  position: relative;
   flex: 1;
+  min-width: 200px;
 }
 
-.filter-chip {
+.filter-dropdown-toggle {
+  width: 100%;
   border: 2px solid rgba(252, 220, 30, 0.4);
   background: rgba(255, 255, 255, 0.06);
   color: #FCDC1E;
-  padding: 6px 18px;
-  border-radius: 999px;
+  padding: 10px 18px;
+  border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
 }
 
-.filter-chip:hover {
+.filter-dropdown-toggle:hover {
+  border-color: #FCDC1E;
+  box-shadow: 0 6px 18px rgba(252, 220, 30, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.filter-dropdown-toggle.active {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.2) 0%, rgba(247, 208, 0, 0.2) 100%);
+  border-color: #FCDC1E;
+}
+
+.filter-dropdown-toggle.open {
   border-color: #FCDC1E;
   box-shadow: 0 6px 18px rgba(252, 220, 30, 0.3);
 }
 
-.filter-chip.active {
-  background: linear-gradient(135deg, #FCDC1E 0%, #f7d000 100%);
-  color: #0b0b0b;
-  border-color: transparent;
-  box-shadow: 0 12px 24px rgba(252, 220, 30, 0.45);
+.dropdown-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  margin-left: 10px;
 }
 
-.chip-close {
-  margin-left: 6px;
-  font-weight: 900;
+.filter-dropdown-toggle.open .dropdown-arrow {
+  transform: rotate(180deg);
 }
 
-.clear-filters {
-  border: none;
-  background: rgba(255, 255, 255, 0.05);
+.filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: rgba(4, 16, 61, 0.95);
+  border: 2px solid rgba(252, 220, 30, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  max-height: 400px;
+  overflow-y: auto;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-options {
+  padding: 8px;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  gap: 10px;
+}
+
+.dropdown-option:hover {
+  background: rgba(252, 220, 30, 0.15);
+  color: #FCDC1E;
+}
+
+.dropdown-option.selected {
+  background: rgba(252, 220, 30, 0.25);
+  color: #FCDC1E;
+}
+
+.dropdown-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #FCDC1E;
+}
+
+.dropdown-option span {
+  flex: 1;
+}
+
+.dropdown-actions {
+  border-top: 1px solid rgba(252, 220, 30, 0.2);
+  padding: 8px;
+}
+
+.clear-filters-small {
+  width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   color: #FCDC1E;
   font-weight: 700;
   cursor: pointer;
-  padding: 8px 18px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.2s ease;
+  font-size: 0.85rem;
 }
 
-.clear-filters:hover {
+.clear-filters-small:hover {
   background: #FCDC1E;
   color: #021045;
-  box-shadow: 0 10px 20px rgba(252, 220, 30, 0.35);
+  box-shadow: 0 6px 16px rgba(252, 220, 30, 0.35);
 }
 
 .loading-message,
