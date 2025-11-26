@@ -4,6 +4,8 @@
       "nom": "OTacos",
       "type": "Restauration rapide / Street-food",
       "description": "Enseigne française présente parmi les stands food & beverage du festival.",
+      "image": "/media/prestataires/otacos.jpg",
+      "prixMoyen": 10,
       "email": "contact@otacos.com",
       "tel": "+33 1 23 45 67 89",
       "site": "https://o-tacos.com",
@@ -15,6 +17,8 @@
       "nom": "Free",
       "type": "Télécommunications",
       "description": "Opérateur télécom partenaire du festival pour la couverture réseau.",
+      "image": "/media/prestataires/free.jpg",
+      "prixMoyen": 0,
       "email": "partenariat@free.fr",
       "tel": "+33 1 98 76 54 32",
       "site": "https://free.fr",
@@ -26,6 +30,8 @@
       "nom": "Allianz",
       "type": "Assurance / Prévention",
       "description": "Partenaire prévention et sécurité du festival.",
+      "image": "/media/prestataires/allianz.jpg",
+      "prixMoyen": 0,
       "email": "contact@allianz.fr",
       "tel": "+33 1 45 67 89 10",
       "site": "https://allianz.fr",
@@ -37,6 +43,8 @@
       "nom": "Poliakov",
       "type": "Boissons / Spiritueux",
       "description": "Sponsor officiel du bar principal du Golden Coast.",
+      "image": "/media/prestataires/poliakov.jpg",
+      "prixMoyen": 12,
       "email": "contact@poliakov.fr",
       "tel": "+33 1 56 98 45 32",
       "site": "https://poliakov.fr",
@@ -45,20 +53,24 @@
       ]
     },
     {
-      "nom": "Jack Daniel’s",
+      "nom": "Jack Daniel's",
       "type": "Boissons / Spiritueux",
       "description": "Partenaire officiel du Golden Coast avec un bar éphémère.",
+      "image": "/media/prestataires/jackdaniels.jpg",
+      "prixMoyen": 15,
       "email": "contact@jackdaniels.com",
       "tel": "+33 1 87 65 43 21",
       "site": "https://jackdaniels.com",
       "services": [
-        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel’s", "prix": 15 }
+        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's", "prix": 15 }
       ]
     },
     {
       "nom": "Red Bull",
       "type": "Boissons énergisantes",
       "description": "Partenaire énergie et animation du festival.",
+      "image": "/media/prestataires/redbull.jpg",
+      "prixMoyen": 8,
       "email": "info@redbull.com",
       "tel": "+43 1 87 65 90 12",
       "site": "https://redbull.com",
@@ -70,17 +82,21 @@
       "nom": "Heetch",
       "type": "Mobilité / Transport",
       "description": "Service de VTC officiel offrant des trajets sécurisés pour les festivaliers.",
+      "image": "/media/prestataires/heetch.jpg",
+      "prixMoyen": 0,
       "email": "pro@heetch.com",
       "tel": "+33 1 70 95 25 25",
       "site": "https://heetch.com",
       "services": [
-        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l’entrée principale", "prix": 0 }
+        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale", "prix": 0 }
       ]
     },
     {
       "nom": "Decathlon",
       "type": "Equipements / Camping",
-      "description": "Fournisseur officiel d’équipements et d’accessoires camping.",
+      "description": "Fournisseur officiel d'équipements et d'accessoires camping.",
+      "image": "/media/prestataires/decathlon.jpg",
+      "prixMoyen": 25,
       "email": "event@decathlon.com",
       "tel": "+33 3 20 33 50 00",
       "site": "https://decathlon.fr",
@@ -91,7 +107,9 @@
     {
       "nom": "Veolia",
       "type": "Eau / Environnement",
-      "description": "Gestion de l’eau potable et du recyclage sur le site.",
+      "description": "Gestion de l'eau potable et du recyclage sur le site.",
+      "image": "/media/prestataires/veolia.jpg",
+      "prixMoyen": 0,
       "email": "contact.evenement@veolia.com",
       "tel": "+33 1 71 75 00 00",
       "site": "https://www.veolia.com",
@@ -103,17 +121,21 @@
       "nom": "Securitas",
       "type": "Sécurité / Protection",
       "description": "Agence sécurité, contrôle des accès et soutien aux équipes internes.",
+      "image": "/media/prestataires/securitas.jpg",
+      "prixMoyen": 0,
       "email": "evenements@securitas.fr",
       "tel": "+33 1 49 92 12 34",
       "site": "https://www.securitas.fr",
       "services": [
-        { "nom": "Contrôle d’accès", "description": "Agents filtrage & patrouilles", "prix": null }
+        { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles", "prix": null }
       ]
     },
     {
       "nom": "Spotify",
       "type": "Média / Streaming",
       "description": "Partenaire média avec playlists exclusives Golden Coast.",
+      "image": "/media/prestataires/spotify.jpg",
+      "prixMoyen": 0,
       "email": "events@spotify.com",
       "tel": "+46 8 578 479 00",
       "site": "https://spotify.com",
@@ -125,6 +147,8 @@
       "nom": "Happn",
       "type": "Animation / Expérience",
       "description": "Activation matchmaking & espace chill pour les festivaliers.",
+      "image": "/media/prestataires/happn.jpg",
+      "prixMoyen": 5,
       "email": "partners@happn.com",
       "tel": "+33 1 84 16 17 30",
       "site": "https://www.happn.com",
@@ -134,4 +158,3 @@
     }
   ]
 }
-

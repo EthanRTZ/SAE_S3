@@ -162,11 +162,72 @@
         <router-link to="/reservation" class="btn-cta">RÉSERVER MA PLACE</router-link>
       </div>
     </section>
+
+    <!-- Section Prestataires -->
+    <section class="prestataires-section">
+      <div class="prestataires-container">
+        <h2 class="section-title">NOS PARTENAIRES</h2>
+
+        <!-- Filtres -->
+        <div class="filters-wrapper">
+          <button
+            class="filter-btn"
+            :class="{ active: selectedFilters.length === 0 }"
+            @click="clearFilters"
+          >
+            Tous
+          </button>
+          <button
+            v-for="type in availableTypes"
+            :key="type"
+            class="filter-btn"
+            :class="{ active: selectedFilters.includes(type) }"
+            @click="toggleFilter(type)"
+          >
+            {{ type }}
+          </button>
+        </div>
+
+        <!-- Grille des prestataires -->
+        <div class="prestataires-grid">
+          <div
+            v-for="prestataire in filteredPrestataires"
+            :key="prestataire.nom"
+            class="prestataire-card"
+          >
+            <div class="prestataire-image-wrapper">
+              <img
+                :src="prestataire.image"
+                :alt="prestataire.nom"
+                class="prestataire-image"
+                @error="handleImageError"
+              />
+              <div class="prestataire-overlay">
+                <div class="prestataire-content">
+                  <h3 class="prestataire-nom">{{ prestataire.nom }}</h3>
+                  <span class="prestataire-type">{{ prestataire.type }}</span>
+                  <div class="prestataire-prix">
+                    <span v-if="prestataire.prixMoyen > 0" class="prix-value">
+                      {{ prestataire.prixMoyen }}€
+                    </span>
+                    <span v-else class="prix-gratuit">Gratuit</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="filteredPrestataires.length === 0" class="no-results">
+          Aucun prestataire ne correspond à votre sélection.
+        </p>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import CarteView from './CarteView.vue';
 
 export default {
@@ -182,7 +243,70 @@ export default {
       { name: 'Gims', img: '/media/artistes/Gims.jpg' },
     ];
 
-    return { artists };
+    // Données prestataires
+    const prestataires = ref([]);
+    const selectedFilters = ref([]);
+
+    // Charger les prestataires
+    const loadPrestataires = async () => {
+      try {
+        const response = await fetch('/data/prestataires.json');
+        const data = await response.json();
+        prestataires.value = data.prestataires;
+      } catch (error) {
+        console.error('Erreur lors du chargement des prestataires:', error);
+      }
+    };
+
+    // Types disponibles pour les filtres
+    const availableTypes = computed(() => {
+      const types = prestataires.value.map(p => p.type);
+      return [...new Set(types)].sort();
+    });
+
+    // Prestataires filtrés
+    const filteredPrestataires = computed(() => {
+      if (selectedFilters.value.length === 0) {
+        return prestataires.value;
+      }
+      return prestataires.value.filter(p =>
+        selectedFilters.value.includes(p.type)
+      );
+    });
+
+    // Gestion des filtres
+    const toggleFilter = (type) => {
+      const index = selectedFilters.value.indexOf(type);
+      if (index > -1) {
+        selectedFilters.value.splice(index, 1);
+      } else {
+        selectedFilters.value.push(type);
+      }
+    };
+
+    const clearFilters = () => {
+      selectedFilters.value = [];
+    };
+
+    // Gestion d'erreur image
+    const handleImageError = (e) => {
+      e.target.src = '/media/placeholder-prestataire.jpg';
+    };
+
+    onMounted(() => {
+      loadPrestataires();
+    });
+
+    return {
+      artists,
+      prestataires,
+      selectedFilters,
+      availableTypes,
+      filteredPrestataires,
+      toggleFilter,
+      clearFilters,
+      handleImageError
+    };
   },
 };
 </script>
@@ -708,6 +832,175 @@ export default {
 @media screen and (max-width: 480px) {
   .cta-title { font-size: 1.8rem; }
   .cta-text { font-size: 1rem; }
+}
+
+/* Section Prestataires */
+.prestataires-section {
+  padding: 80px 20px;
+  background: linear-gradient(to bottom, #0b1e55 0%, #05102b 100%);
+}
+
+.prestataires-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.prestataires-section .section-title {
+  color: #FCDC1E;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+/* Filtres */
+.filters-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 50px;
+  padding: 0 20px;
+}
+
+.filter-btn {
+  padding: 12px 24px;
+  border: 2px solid rgba(252, 220, 30, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-btn:hover {
+  background: rgba(252, 220, 30, 0.1);
+  border-color: rgba(252, 220, 30, 0.6);
+}
+
+.filter-btn.active {
+  background: #FCDC1E;
+  color: #000000;
+  border-color: #FCDC1E;
+}
+
+/* Grille des prestataires - Cards compactes */
+.prestataires-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.prestataire-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  cursor: pointer;
+  height: 320px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.prestataire-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(252, 220, 30, 0.3);
+}
+
+.prestataire-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.prestataire-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.prestataire-card:hover .prestataire-image {
+  transform: scale(1.1);
+}
+
+.prestataire-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%);
+  padding: 25px 20px;
+  transition: all 0.3s ease;
+}
+
+.prestataire-card:hover .prestataire-overlay {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.8) 70%, transparent 100%);
+}
+
+.prestataire-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prestataire-nom {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FCDC1E;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.prestataire-type {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(252, 220, 30, 0.2);
+  color: #FCDC1E;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+}
+
+.prestataire-prix {
+  margin-top: 8px;
+}
+
+.prix-value {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(0, 200, 0, 0.2);
+  color: #00ff00;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.prix-gratuit {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(252, 220, 30, 0.2);
+  color: #FCDC1E;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+}
+
+.no-results {
+  text-align: center;
+  color: #ffffff;
+  font-size: 1.2rem;
+  padding: 40px;
+  font-style: italic;
 }
 
 /* Responsive Design */
