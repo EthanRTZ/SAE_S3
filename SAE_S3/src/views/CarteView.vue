@@ -1,5 +1,5 @@
 <template>
-  <div class="carte">
+  <div class="carte" :class="{ embedded }">
     <div class="side-panel" :class="{ collapsed: panelCollapsed }">
       <div v-show="!panelCollapsed" class="panel-content">
         <h1>Carte</h1>
@@ -38,6 +38,9 @@
 <script>
 export default {
   name: 'CarteView',
+  props: {
+    embedded: { type: Boolean, default: false },
+  },
   data() {
     return {
       // Instance Leaflet de la carte
@@ -331,6 +334,11 @@ export default {
   overflow: hidden;
   background: #fff;
 }
+/* En mode embedded: s'adapte au parent (pour HomeView) */
+.carte.embedded {
+  width: 100%;
+  height: 100%;
+}
 
 /* Nouveau panneau latéral */
 .side-panel {
@@ -381,7 +389,7 @@ export default {
 #map {
   flex: 1;
   height: 100%;
-  width: 100%; /* ancien: calc(100% - 300px) */
+  width: 100%;
   transition: width 0.25s ease;
 }
 
