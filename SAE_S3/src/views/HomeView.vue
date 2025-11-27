@@ -727,7 +727,7 @@ export default {
   padding: 12px;
   border-radius: 14px;
   box-shadow: 0 16px 36px rgba(6,18,50,0.18);
-  background: linear-gradient(180deg,#ffffff 0%, #f7f9ff 100%);
+  background: linear-gradient(180deg, #172c75 0%, #0f1d51 100%);
 }
 
 /* Conteneur interne: fixe la hauteur et masque dépassements */
@@ -735,7 +735,7 @@ export default {
   border-radius: 10px;
   overflow: hidden;
   height: 520px; /* ajuste si besoin */
-  background: #eef3ff;
+  background: linear-gradient(180deg, #172c75 0%, #0f1d51 100%);
   position: relative;
 }
 

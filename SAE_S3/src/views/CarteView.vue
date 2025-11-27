@@ -346,11 +346,13 @@ export default {
   min-width: 300px;
   padding: 16px 18px 28px;
   box-sizing: border-box;
-  background: #ffffff;
+  background: linear-gradient(180deg, #172c75 0%, #0f1d51 100%);
+  color: #ffffff;
   border-right: 1px solid #e0e0e0;
   overflow-y: auto;
   position: relative;
   transition: width 0.25s ease;
+  /* modifiez cette valeur */
 }
 
 .side-panel.collapsed {
@@ -375,7 +377,7 @@ export default {
   font-size: 2rem;
 }
 
-/* Barre de filtres intégrée (plus de position:absolute) */
+/* Barre de filtres intégrée */
 .map-toolbar {
   display: flex;
   flex-direction: column;
@@ -383,6 +385,26 @@ export default {
   background: transparent;
   padding: 0;
   box-shadow: none;
+}
+
+/* Conteneurs de filtres: fond basé sur la variable + priorité */
+.types-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--filter-bg) !important;
+  /* si vous préférez un fond plus léger: utilisez rgba */
+  /* background: rgba(255, 233, 168, 0.35) !important; */
+  padding: 6px;
+  border-radius: 6px;
+}
+
+/* Badges/étiquettes de filtre: appliquer le fond (texte inchangé) */
+.type-label {
+  font-weight: 600;
+  background: var(--filter-bg) !important;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 /* Carte à droite */
@@ -395,19 +417,6 @@ export default {
 
 .side-panel.collapsed ~ #map {
   width: 100%;
-}
-
-/* Filtres (inchangés) */
-.types-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.type-label {
-  font-weight: 600;
-  background: #f5f5f5;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
 /* Icônes et autres styles existants */
