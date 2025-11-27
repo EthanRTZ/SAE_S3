@@ -13,12 +13,21 @@
     "stock": 80,
     "days": [
       { "label": "Vendredi + Samedi", "stock": 40, "linkedDays": ["Vendredi", "Samedi"] },
-      { "label": "Samedi + Dimanche", "stock": 40, "linkedDays": ["Samedi", "Dimanche"] }
+      { "label": "Samedi + Dimanche", "stock": 40, "linkedDays": ["Samedi", "Dimanche"] },
+      { "label": "vendredi + Dimanche", "stock": 40, "linkedDays": ["vendredi", "Dimanche"] }
     ]
   },
   "threeDays": {
     "label": "Pass 3 jours",
     "stock": 50
+  },
+  "parking": {
+    "label": "Place de parking",
+    "stock": 200
+  },
+  "camping": {
+    "label": "Emplacement de camping",
+    "stock": 150
   }
 }
 

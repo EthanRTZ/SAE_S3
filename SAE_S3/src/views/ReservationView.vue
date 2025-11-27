@@ -153,6 +153,90 @@
           </div>
 
         </section>
+
+        <!-- Section Parking -->
+        <section class="resa-card" aria-label="Réserver une place de parking">
+          <h1>Place de parking</h1>
+          <div class="divider" aria-hidden="true"></div>
+
+          <div v-if="!isAuthenticatedAsUser" class="auth-warning">
+            <p v-if="!authUser" class="warning-text">
+              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver une place de parking.
+              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+            </p>
+            <p v-else class="warning-text">
+              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver.
+            </p>
+          </div>
+
+          <div class="parking-section">
+            <div class="parking-info">
+              <p class="stock">Places restantes: {{ forfaits.parking.stock }}</p>
+              <div class="quantity-field">
+                <label class="select-label" for="qty-parking">Nombre de places</label>
+                <input
+                  id="qty-parking"
+                  class="quantity-input"
+                  type="number"
+                  min="1"
+                  :max="forfaits.parking.stock"
+                  v-model.number="quantities.parking"
+                  @input="sanitizeQuantity('parking')"
+                />
+                <p class="quantity-hint">Disponible : {{ forfaits.parking.stock }}</p>
+              </div>
+              <button
+                class="cta"
+                :disabled="!canReserveWithoutAuth('parking')"
+                @click="reserve('parking')"
+              >
+                Réserver une place de parking
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section Camping -->
+        <section class="resa-card" aria-label="Réserver un emplacement de camping">
+          <h1>Emplacement de camping</h1>
+          <div class="divider" aria-hidden="true"></div>
+
+          <div v-if="!isAuthenticatedAsUser" class="auth-warning">
+            <p v-if="!authUser" class="warning-text">
+              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver un emplacement de camping.
+              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+            </p>
+            <p v-else class="warning-text">
+              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver.
+            </p>
+          </div>
+
+          <div class="camping-section">
+            <div class="camping-info">
+              <p class="stock">Emplacements restants: {{ forfaits.camping.stock }}</p>
+              <div class="quantity-field">
+                <label class="select-label" for="qty-camping">Nombre d'emplacements</label>
+                <input
+                  id="qty-camping"
+                  class="quantity-input"
+                  type="number"
+                  min="1"
+                  :max="forfaits.camping.stock"
+                  v-model.number="quantities.camping"
+                  @input="sanitizeQuantity('camping')"
+                />
+                <p class="quantity-hint">Disponible : {{ forfaits.camping.stock }}</p>
+              </div>
+              <button
+                class="cta"
+                :disabled="!canReserveWithoutAuth('camping')"
+                @click="reserve('camping')"
+              >
+                Réserver un emplacement de camping
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -193,7 +277,9 @@ export default {
       quantities: {
         oneDay: 1,
         twoDays: 1,
-        threeDays: 1
+        threeDays: 1,
+        parking: 1,
+        camping: 1
       },
       dayErrors: {
         oneDay: '',
@@ -294,6 +380,9 @@ export default {
          }
          return Math.min(...stocks)
        }
+      if (type === 'parking' || type === 'camping') {
+        return this.forfaits[type]?.stock ?? 0
+      }
       return this.forfaits[type]?.stock ?? 0
     },
     sanitizeQuantity(type) {
@@ -412,6 +501,14 @@ export default {
         return
       }
 
+      if (type === 'parking' || type === 'camping') {
+        if (forfait.stock >= requestedQty) {
+          forfait.stock -= requestedQty
+          this.sanitizeQuantity(type)
+        }
+        return
+      }
+
       if (forfait.stock >= requestedQty) {
         forfait.stock -= requestedQty
         this.sanitizeQuantity(type)
@@ -469,6 +566,11 @@ export default {
   line-height: 1.6;
   backdrop-filter: blur(8px) saturate(120%);
   -webkit-backdrop-filter: blur(8px) saturate(120%);
+  margin-bottom: 24px;
+}
+
+.resa-card:last-child {
+  margin-bottom: 0;
 }
 
 h1 {
@@ -734,6 +836,24 @@ h1 {
 .btn-login-link:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(252,220,30,0.3);
+}
+
+.parking-section,
+.camping-section {
+  width: 100%;
+}
+
+.parking-info,
+.camping-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255, 215, 80, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(2,6,23,0.5);
 }
 
 @media (max-width: 900px) {
