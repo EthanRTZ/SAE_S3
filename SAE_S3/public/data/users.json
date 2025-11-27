@@ -1,13 +1,18 @@
 [
   {
-    "email": "test@example.com",
-    "password": "test12",
+    "email": "user@abc.fr",
+    "password": "user12",
     "role": "user"
   },
   {
-    "email": "admin@gcfestival.fr",
-    "password": "admin2026",
+    "email": "admin@abc.fr",
+    "password": "admin12",
     "role": "admin"
+  },
+  {
+    "email": "prestataire@abc.fr",
+    "password": "prest12",
+    "role": "prestataire"
   }
 ]
 

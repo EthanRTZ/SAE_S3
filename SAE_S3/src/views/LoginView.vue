@@ -90,7 +90,7 @@ const fetchUsers = async () => {
     return data
   } catch (e) {
     // Fallback de dev pour pouvoir tester si le fichier n'existe pas encore
-    return [{ email: 'test@example.com', password: 'secret123' }]
+    return [{ email: 'test@example.com', password: 'secret123', role: 'user' }]
   }
 }
 
@@ -120,8 +120,15 @@ const onSubmit = async () => {
       return
     }
 
-    // Persistance minimale (à adapter selon besoins)
-    localStorage.setItem('authUser', JSON.stringify({ email: user.email, ts: Date.now() }))
+    // Persistance minimale : on stocke l'email + le rôle + un timestamp
+    const payload = {
+      email: user.email,
+      role: user.role || 'user',
+      ts: Date.now()
+    }
+    localStorage.setItem('authUser', JSON.stringify(payload))
+    // Notifie l'application qu'un changement d'auth a eu lieu
+    window.dispatchEvent(new Event('auth-changed'))
     router.push({ path: '/' })
   } catch (e) {
     error.value = "Impossible d'accéder au fichier JSON."

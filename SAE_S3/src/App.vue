@@ -1,11 +1,49 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import logoIcon from '../media/logo-icon.png'
 
 const isMenuOpen = ref(false)
+const authUser = ref(null)
+
+const loadAuthFromStorage = () => {
+  try {
+    const raw = localStorage.getItem('authUser')
+    authUser.value = raw ? JSON.parse(raw) : null
+  } catch (e) {
+    authUser.value = null
+  }
+}
+
+const isAuthenticated = computed(() => !!authUser.value)
+const userEmail = computed(() => authUser.value?.email || '')
+
+const handleAuthChanged = () => {
+  loadAuthFromStorage()
+}
+
+onMounted(() => {
+  loadAuthFromStorage()
+  window.addEventListener('storage', handleAuthChanged)
+  window.addEventListener('auth-changed', handleAuthChanged)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', handleAuthChanged)
+  window.removeEventListener('auth-changed', handleAuthChanged)
+})
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
+}
+
+const logout = () => {
+  try {
+    localStorage.removeItem('authUser')
+  } catch (e) {
+    // ignore
+  }
+  authUser.value = null
+  window.dispatchEvent(new Event('auth-changed'))
 }
 </script>
 
@@ -28,8 +66,20 @@ const toggleMenu = () => {
           <router-link to="/carte" class="nav-link">Carte</router-link>
           <router-link to="/reservation" class="nav-link">Réservation</router-link>
 
-          <!-- BOUTON CONNEXION (desktop, placé à droite) -->
-          <router-link to="/login" class="login-btn">Connexion</router-link>
+          <!-- Zone connexion / utilisateur (desktop) -->
+          <router-link
+            v-if="!isAuthenticated"
+            to="/login"
+            class="login-btn"
+          >
+            Connexion
+          </router-link>
+          <div v-else class="auth-desktop">
+            <span class="auth-email">{{ userEmail }}</span>
+            <button type="button" class="logout-btn" @click="logout">
+              Déconnexion
+            </button>
+          </div>
         </div>
         
         <!-- Mobile Menu Button -->
@@ -40,16 +90,33 @@ const toggleMenu = () => {
         </div>
       </div>
       
-      <!-- Mobile Menu -->
-      <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
+        <!-- Mobile Menu -->
+        <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
         <router-link to="/" class="nav-link-mobile" @click="toggleMenu">Accueil</router-link>
         <router-link to="/programmation" class="nav-link-mobile" @click="toggleMenu">Programmation</router-link>
         <router-link to="/prestataire" class="nav-link-mobile" @click="toggleMenu">Prestataire</router-link>
         <router-link to="/carte" class="nav-link-mobile" @click="toggleMenu">Carte</router-link>
         <router-link to="/reservation" class="nav-link-mobile" @click="toggleMenu">Réservation</router-link>
 
-        <!-- BOUTON CONNEXION (mobile) -->
-        <router-link to="/login" class="login-btn-mobile" @click="toggleMenu">Connexion</router-link>
+        <!-- Zone connexion / utilisateur (mobile) -->
+        <router-link
+          v-if="!isAuthenticated"
+          to="/login"
+          class="login-btn-mobile"
+          @click="toggleMenu"
+        >
+          Connexion
+        </router-link>
+        <div v-else class="auth-mobile">
+          <span class="auth-email-mobile">{{ userEmail }}</span>
+          <button
+            type="button"
+            class="logout-btn-mobile"
+            @click="() => { logout(); toggleMenu(); }"
+          >
+            Déconnexion
+          </button>
+        </div>
       </div>
     </nav>
     
@@ -311,5 +378,62 @@ main {
 /* Assure que le bouton desktop reste visible dans la nav-menu */
 .nav-menu .login-btn {
   align-self: center;
+}
+
+/* Zone auth desktop */
+.auth-desktop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.auth-email {
+  color: #ffffff;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.logout-btn {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.4);
+  background: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Zone auth mobile */
+.auth-mobile {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-email-mobile {
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.logout-btn-mobile {
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.4);
+  background: transparent;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout-btn-mobile:hover {
+  background: rgba(255,255,255,0.1);
 }
 </style>

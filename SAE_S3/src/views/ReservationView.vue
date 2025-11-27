@@ -6,6 +6,17 @@
           <h1>Réserver un forfait</h1>
           <div class="divider" aria-hidden="true"></div>
 
+          <!-- Message d'information pour les utilisateurs non connectés ou avec mauvais rôle -->
+          <div v-if="!isAuthenticatedAsUser" class="auth-warning">
+            <p v-if="!authUser" class="warning-text">
+              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver des billets.
+              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+            </p>
+            <p v-else class="warning-text">
+              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver des billets.
+            </p>
+          </div>
+
           <div class="forfaits">
             <div class="forfait">
               <p class="stock">Places restantes: {{ forfaits.oneDay.stock }}</p>
@@ -42,7 +53,7 @@
               </div>
               <button
                 class="cta"
-                :disabled="!canReserve('oneDay')"
+                :disabled="!canReserveWithoutAuth('oneDay')"
                 @click="reserve('oneDay')"
               >
                 Réserver 1 jour
@@ -96,7 +107,7 @@
               </div>
               <button
                 class="cta"
-                :disabled="!canReserve('twoDays')"
+                :disabled="!canReserveWithoutAuth('twoDays')"
                 @click="reserve('twoDays')"
               >
                 Réserver 2 jours
@@ -131,18 +142,16 @@
                 <p class="quantity-hint">Disponible : {{ getMaxQuantity('threeDays') }}</p>
               </div>
               <p v-if="dayErrors.threeDays" class="day-error">{{ dayErrors.threeDays }}</p>
-              <button class="cta" :disabled="!canReserve('threeDays')" @click="reserve('threeDays')">
+              <button 
+                class="cta" 
+                :disabled="!canReserveWithoutAuth('threeDays')" 
+                @click="reserve('threeDays')"
+              >
                 Réserver 3 jours
               </button>
             </div>
           </div>
 
-          <div class="auth-check">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="requireLoginChecked" />
-              <span>non connecté</span>
-            </label>
-          </div>
         </section>
       </div>
     </div>
@@ -152,11 +161,11 @@
     <div class="modal-card">
       <h2 id="auth-modal-title" class="modal-title">Connexion requise</h2>
       <p>
-        Vous devez être connecté pour réserver un forfait. Veuillez vous connecter
-        ou créer un compte pour poursuivre votre réservation.
+        {{ authMessage }}
       </p>
       <div class="modal-actions">
-        <button class="btn-close" @click="closeAuthModal">J'ai compris</button>
+        <router-link to="/login" class="btn-login-link" @click="closeAuthModal">Aller à la connexion</router-link>
+        <button class="btn-close" @click="closeAuthModal">Fermer</button>
       </div>
     </div>
   </div>
@@ -191,11 +200,37 @@ export default {
         twoDays: '',
         threeDays: ''
       },
-      requireLoginChecked: false,
-      showAuthModal: false
+      showAuthModal: false,
+      authUser: null
+    }
+  },
+  computed: {
+    isAuthenticatedAsUser() {
+      if (!this.authUser) return false
+      return this.authUser.role === 'user'
+    },
+    authMessage() {
+      if (!this.authUser) {
+        return 'Vous devez être connecté avec un compte utilisateur pour réserver un forfait. Veuillez vous connecter pour poursuivre votre réservation.'
+      }
+      if (this.authUser.role !== 'user') {
+        return `Vous êtes connecté en tant que ${this.authUser.role}. Seuls les comptes utilisateurs peuvent réserver des billets.`
+      }
+      return 'Vous devez être connecté pour réserver un forfait.'
     }
   },
   methods: {
+    loadAuthUser() {
+      try {
+        const stored = localStorage.getItem('authUser')
+        this.authUser = stored ? JSON.parse(stored) : null
+      } catch (e) {
+        this.authUser = null
+      }
+    },
+    handleStorageChange() {
+      this.loadAuthUser()
+    },
     requiresDaySelection(type) {
       return type === 'oneDay' || type === 'twoDays'
     },
@@ -273,7 +308,9 @@ export default {
         this.quantities[type] = max
       }
     },
-    canReserve(type) {
+    canReserveWithoutAuth(type) {
+      // Vérifie si on peut réserver sans tenir compte de l'authentification
+      // (pour permettre le clic et afficher la modale)
       const forfait = this.forfaits[type]
       if (!forfait || forfait.stock === 0) {
         return false
@@ -288,7 +325,8 @@ export default {
       return Boolean(selected && selected.stock > 0)
     },
     reserve(type) {
-      if (this.requireLoginChecked) {
+      // Vérifier si l'utilisateur est connecté avec le rôle "user"
+      if (!this.isAuthenticatedAsUser) {
         this.showAuthModal = true
         return
       }
@@ -382,6 +420,15 @@ export default {
     closeAuthModal() {
       this.showAuthModal = false
     }
+  },
+  mounted() {
+    this.loadAuthUser()
+    window.addEventListener('storage', this.handleStorageChange)
+    window.addEventListener('auth-changed', this.handleStorageChange)
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.handleStorageChange)
+    window.removeEventListener('auth-changed', this.handleStorageChange)
   }
 }
 </script>
@@ -593,16 +640,35 @@ h1 {
   box-shadow: none;
 }
 
-.auth-check {
-  margin-top: 22px;
+.auth-warning {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(255,193,7,0.15), rgba(255,193,7,0.08));
+  border: 1px solid rgba(255,193,7,0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(255,193,7,0.1);
 }
 
-.checkbox-label {
-  display: inline-flex;
+.warning-text {
+  margin: 0;
+  color: #ffd166;
+  font-size: 1rem;
+  line-height: 1.6;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.98rem;
-  color: #ffdca3;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.warning-link {
+  color: #FCDC1E;
+  font-weight: 700;
+  text-decoration: underline;
+  transition: color 0.12s ease;
+}
+
+.warning-link:hover {
+  color: #fff176;
 }
 
 /* Modal */
@@ -617,7 +683,7 @@ h1 {
 }
 
 .modal-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+  background: linear-gradient(180deg, #0b1e55 0%, #051237 100%);
   border: 1px solid rgba(255, 215, 80, 0.12);
   border-radius: 14px;
   padding: 22px;
@@ -636,6 +702,7 @@ h1 {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
 }
 
 .btn-close {
@@ -645,6 +712,28 @@ h1 {
   padding: 8px 12px;
   border-radius: 10px;
   cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn-close:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.btn-login-link {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-login-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(252,220,30,0.3);
 }
 
 @media (max-width: 900px) {
