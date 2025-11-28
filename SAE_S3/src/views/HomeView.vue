@@ -198,6 +198,7 @@
             v-for="prestataire in filteredPrestataires"
             :key="prestataire.nom"
             class="prestataire-card"
+            @click="goToPrestataire(prestataire.nom)"
           >
             <div class="prestataire-image-wrapper">
               <img
@@ -232,12 +233,15 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import CarteView from './CarteView.vue';
 
 export default {
   name: 'HomeView',
   components: { CarteView },
   setup() {
+    const router = useRouter();
+
     // CHANGED: helper pour normaliser les chemins d'assets publics
     const normalizePublicPath = (p) => {
       if (!p) return p;
@@ -306,6 +310,14 @@ export default {
       e.target.src = normalizePublicPath('/media/placeholder-prestataire.jpg');
     };
 
+    // Fonction de redirection vers la page prestataire
+    const goToPrestataire = (nom) => {
+      router.push({
+        name: 'prestataire',
+        params: { nom: nom }
+      });
+    };
+
     onMounted(() => {
       loadPrestataires();
     });
@@ -319,8 +331,8 @@ export default {
       toggleFilter,
       clearFilters,
       handleImageError,
-      // expose le helper au template pour lier d'autres src
-      normalizePublicPath
+      normalizePublicPath,
+      goToPrestataire
     };
   },
 };
@@ -948,10 +960,14 @@ export default {
   right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%);
   padding: 25px 20px;
+  opacity: 0;
+  transform: translateY(20px);
   transition: all 0.3s ease;
 }
 
 .prestataire-card:hover .prestataire-overlay {
+  opacity: 1;
+  transform: translateY(0);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.8) 70%, transparent 100%);
 }
 
