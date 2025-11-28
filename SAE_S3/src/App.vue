@@ -67,13 +67,20 @@ const logout = () => {
           <router-link to="/reservation" class="nav-link">Réservation</router-link>
 
           <!-- Zone connexion / utilisateur (desktop) -->
-          <router-link
-            v-if="!isAuthenticated"
-            to="/login"
-            class="login-btn"
-          >
-            Connexion
-          </router-link>
+          <div v-if="!isAuthenticated" class="guest-actions">
+            <router-link
+              to="/login"
+              class="login-btn"
+            >
+              Connexion
+            </router-link>
+            <router-link
+              to="/register"
+              class="signup-btn"
+            >
+              Créer un compte
+            </router-link>
+          </div>
           <div v-else class="auth-desktop">
             <span class="auth-email">{{ userEmail }}</span>
             <button type="button" class="logout-btn" @click="logout">
@@ -99,14 +106,22 @@ const logout = () => {
         <router-link to="/reservation" class="nav-link-mobile" @click="toggleMenu">Réservation</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
-        <router-link
-          v-if="!isAuthenticated"
-          to="/login"
-          class="login-btn-mobile"
-          @click="toggleMenu"
-        >
-          Connexion
-        </router-link>
+        <div v-if="!isAuthenticated" class="guest-actions-mobile">
+          <router-link
+            to="/login"
+            class="login-btn-mobile"
+            @click="toggleMenu"
+          >
+            Connexion
+          </router-link>
+          <router-link
+            to="/register"
+            class="signup-btn-mobile"
+            @click="toggleMenu"
+          >
+            Créer un compte
+          </router-link>
+        </div>
         <div v-else class="auth-mobile">
           <span class="auth-email-mobile">{{ userEmail }}</span>
           <button
@@ -340,7 +355,14 @@ main {
 }
 
 /* Styles pour le bouton Connexion (desktop) */
-.login-btn {
+.guest-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.login-btn,
+.signup-btn {
   display: inline-block;
   padding: 8px 12px;
   background: #FCDC1E;
@@ -352,13 +374,26 @@ main {
   margin-left: 8px; /* espace entre les liens et le bouton */
   transition: background 0.12s, transform 0.12s;
 }
-.login-btn:hover {
+.login-btn:hover,
+.signup-btn:hover {
   background: #fff176;
   transform: translateY(-1px);
 }
 
+.signup-btn {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.45);
+}
+
+.signup-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #2046b3;
+}
+
 /* Styles pour le bouton Connexion (mobile) */
-.login-btn-mobile {
+.login-btn-mobile,
+.signup-btn-mobile {
   display: block;
   width: 100%;
   text-align: center;
@@ -371,13 +406,33 @@ main {
   margin-top: 12px;
   border: 2px solid transparent;
 }
-.login-btn-mobile:hover {
+.login-btn-mobile:hover,
+.signup-btn-mobile:hover {
   background: #fff176;
+}
+
+.signup-btn-mobile {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.45);
+  margin-top: 10px;
+}
+
+.signup-btn-mobile:hover {
+  background: rgba(255,255,255,0.15);
 }
 
 /* Assure que le bouton desktop reste visible dans la nav-menu */
 .nav-menu .login-btn {
   align-self: center;
+}
+
+.guest-actions-mobile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 /* Zone auth desktop */
