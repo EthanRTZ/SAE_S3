@@ -1,6 +1,6 @@
-<script setup>
+x<script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import logoIcon from '../media/logo-icon.png'
+import logoIcon from '../public/media/logo-icon.png'
 
 const isMenuOpen = ref(false)
 const authUser = ref(null)

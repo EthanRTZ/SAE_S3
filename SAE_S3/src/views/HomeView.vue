@@ -3,7 +3,7 @@
     <!-- Hero Section avec Vidéo -->
     <div class="hero-section">
       <video autoplay muted loop playsinline class="hero-video">
-        <source src="/media/fond.mp4" type="video/mp4">
+        <source :src="normalizePublicPath('/media/fond.mp4')" type="video/mp4">
       </video>
       <div class="hero-content">
         <h1 class="hero-title">GOLDEN COAST FESTIVAL V3</h1>
@@ -79,13 +79,15 @@
         </div>
 
         <div class="description-right">
-          <img src="/media/description.png" alt="Golden Coast Festival" class="description-image" />
+          <!-- CHANGED: bind src via helper -->
+          <img :src="normalizePublicPath('/media/description.png')" alt="Golden Coast Festival" class="description-image" />
         </div>
       </div>
 
       <div class="description-container two-col">
         <div class="description-right">
-          <img src="/media/accueil2.jpeg" alt="Ambiance Golden Coast" class="description-image" />
+          <!-- CHANGED: bind src via helper -->
+          <img :src="normalizePublicPath('/media/accueil2.jpeg')" alt="Ambiance Golden Coast" class="description-image" />
         </div>
 
         <div class="description-left">
@@ -113,6 +115,7 @@
                 :key="'first-' + artist.name"
             >
               <div class="artist-image-wrapper">
+                <!-- CHANGED: bind src via helper -->
                 <img :src="artist.img" :alt="artist.name" class="artist-image" />
                 <div class="artist-overlay">
                   <span class="artist-name">{{ artist.name }}</span>
@@ -126,6 +129,7 @@
                 :key="'second-' + artist.name"
             >
               <div class="artist-image-wrapper">
+                <!-- CHANGED: bind src via helper -->
                 <img :src="artist.img" :alt="artist.name" class="artist-image" />
                 <div class="artist-overlay">
                   <span class="artist-name">{{ artist.name }}</span>
@@ -234,13 +238,21 @@ export default {
   name: 'HomeView',
   components: { CarteView },
   setup() {
+    // CHANGED: helper pour normaliser les chemins d'assets publics
+    const normalizePublicPath = (p) => {
+      if (!p) return p;
+      // Convertit "/public/..." en "/..." si jamais un chemin erroné est présent
+      return p.replace(/^\/?public\//, '/');
+    };
+
     const artists = [
-      { name: 'Booba', img: '/media/artistes/booba.jpg' },
-      { name: 'SCH', img: '/media/artistes/SCH.jpg' },
-      { name: 'SDM', img: '/media/artistes/SDM.jpg' },
-      { name: 'Josman', img: '/media/artistes/Josman.jpg' },
-      { name: 'Ninho', img: '/media/artistes/Ninho.jpg' },
-      { name: 'Gims', img: '/media/artistes/Gims.jpg' },
+      // CHANGED: utiliser normalizePublicPath pour garantir un chemin root correct
+      { name: 'Booba', img: normalizePublicPath('/media/artistes/booba.jpg') },
+      { name: 'SCH', img: normalizePublicPath('/media/artistes/SCH.jpg') },
+      { name: 'SDM', img: normalizePublicPath('/media/artistes/SDM.jpg') },
+      { name: 'Josman', img: normalizePublicPath('/media/artistes/Josman.jpg') },
+      { name: 'Ninho', img: normalizePublicPath('/media/artistes/Ninho.jpg') },
+      { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
 
     // Données prestataires
@@ -290,7 +302,8 @@ export default {
 
     // Gestion d'erreur image
     const handleImageError = (e) => {
-      e.target.src = '/media/placeholder-prestataire.jpg';
+      // CHANGED: utiliser le helper pour fallback
+      e.target.src = normalizePublicPath('/media/placeholder-prestataire.jpg');
     };
 
     onMounted(() => {
@@ -305,7 +318,9 @@ export default {
       filteredPrestataires,
       toggleFilter,
       clearFilters,
-      handleImageError
+      handleImageError,
+      // expose le helper au template pour lier d'autres src
+      normalizePublicPath
     };
   },
 };
