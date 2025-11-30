@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import logoIcon from '../public/media/logo-icon.png'
 
 const isMenuOpen = ref(false)
+const isUserMenuOpen = ref(false)
 const authUser = ref(null)
 
 const loadAuthFromStorage = () => {
@@ -21,19 +22,38 @@ const handleAuthChanged = () => {
   loadAuthFromStorage()
 }
 
+const handleClickOutside = (e) => {
+  if (isUserMenuOpen.value && !e.target.closest('.auth-desktop') && !e.target.closest('.auth-mobile')) {
+    closeUserMenu()
+  }
+}
+
 onMounted(() => {
   loadAuthFromStorage()
   window.addEventListener('storage', handleAuthChanged)
   window.addEventListener('auth-changed', handleAuthChanged)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleAuthChanged)
   window.removeEventListener('auth-changed', handleAuthChanged)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
+  if (isMenuOpen.value) {
+    isUserMenuOpen.value = false
+  }
+}
+
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+}
+
+const closeUserMenu = () => {
+  isUserMenuOpen.value = false
 }
 
 const logout = () => {
@@ -43,6 +63,7 @@ const logout = () => {
     // ignore
   }
   authUser.value = null
+  isUserMenuOpen.value = false
   window.dispatchEvent(new Event('auth-changed'))
 }
 </script>
@@ -82,10 +103,27 @@ const logout = () => {
             </router-link>
           </div>
           <div v-else class="auth-desktop">
-            <span class="auth-email">{{ userEmail }}</span>
-            <button type="button" class="logout-btn" @click="logout">
-              Déconnexion
+            <button type="button" class="auth-email-btn" @click="toggleUserMenu">
+              {{ userEmail }}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isUserMenuOpen }">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </button>
+            <div v-if="isUserMenuOpen" class="user-dropdown">
+              <router-link to="/profile" class="user-profile-link" @click="closeUserMenu">
+                <div class="user-profile">
+                  <div class="user-avatar">{{ userEmail.charAt(0).toUpperCase() }}</div>
+                  <div class="user-info">
+                    <div class="user-email">{{ userEmail }}</div>
+                    <div class="user-role">Utilisateur</div>
+                  </div>
+                </div>
+              </router-link>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-item logout-item" @click="logout">
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
         
@@ -99,38 +137,55 @@ const logout = () => {
       
         <!-- Mobile Menu -->
         <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
-        <router-link to="/" class="nav-link-mobile" @click="toggleMenu">Accueil</router-link>
-        <router-link to="/programmation" class="nav-link-mobile" @click="toggleMenu">Programmation</router-link>
-        <router-link to="/prestataire" class="nav-link-mobile" @click="toggleMenu">Prestataire</router-link>
-        <router-link to="/carte" class="nav-link-mobile" @click="toggleMenu">Carte</router-link>
-        <router-link to="/reservation" class="nav-link-mobile" @click="toggleMenu">Réservation</router-link>
+        <router-link to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Accueil</router-link>
+        <router-link to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Programmation</router-link>
+        <router-link to="/prestataire" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Prestataire</router-link>
+        <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Carte</router-link>
+        <router-link to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Réservation</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
         <div v-if="!isAuthenticated" class="guest-actions-mobile">
           <router-link
             to="/login"
             class="login-btn-mobile"
-            @click="toggleMenu"
+            @click="() => { toggleMenu(); closeUserMenu(); }"
           >
             Connexion
           </router-link>
           <router-link
             to="/register"
             class="signup-btn-mobile"
-            @click="toggleMenu"
+            @click="() => { toggleMenu(); closeUserMenu(); }"
           >
             Créer un compte
           </router-link>
         </div>
         <div v-else class="auth-mobile">
-          <span class="auth-email-mobile">{{ userEmail }}</span>
-          <button
-            type="button"
-            class="logout-btn-mobile"
-            @click="() => { logout(); toggleMenu(); }"
-          >
-            Déconnexion
+          <button type="button" class="auth-email-btn-mobile" @click="toggleUserMenu">
+            {{ userEmail }}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isUserMenuOpen }">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </button>
+          <div v-if="isUserMenuOpen" class="user-dropdown-mobile">
+            <router-link to="/profile" class="user-profile-link" @click="() => { closeUserMenu(); toggleMenu(); }">
+              <div class="user-profile">
+                <div class="user-avatar">{{ userEmail.charAt(0).toUpperCase() }}</div>
+                <div class="user-info">
+                  <div class="user-email">{{ userEmail }}</div>
+                  <div class="user-role">Utilisateur</div>
+                </div>
+              </div>
+            </router-link>
+            <div class="dropdown-divider"></div>
+            <button
+              type="button"
+              class="dropdown-item logout-item"
+              @click="() => { logout(); toggleMenu(); }"
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -437,58 +492,276 @@ main {
 
 /* Zone auth desktop */
 .auth-desktop {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   margin-left: 8px;
 }
 
-.auth-email {
-  color: #ffffff;
-  font-size: 0.95rem;
-  opacity: 0.9;
-}
-
-.logout-btn {
-  padding: 6px 10px;
+.auth-email-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.4);
-  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.logout-btn:hover {
+.auth-email-btn:hover {
   background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.dropdown-icon {
+  transition: transform 0.2s ease;
+  color: #FCDC1E;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  z-index: 1001;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-profile-link {
+  text-decoration: none;
+  display: block;
+  transition: background 0.12s ease;
+}
+
+.user-profile-link:hover {
+  background: rgba(32,70,179,0.05);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(32,70,179,0.1) 0%, rgba(252,220,30,0.1) 100%);
+  transition: background 0.12s ease;
+}
+
+.user-profile-link:hover .user-profile {
+  background: linear-gradient(135deg, rgba(32,70,179,0.15) 0%, rgba(252,220,30,0.15) 100%);
+}
+
+.user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2046b3 0%, #FCDC1E 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-email {
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.user-role {
+  color: rgba(32,70,179,0.7);
+  font-size: 0.85rem;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(32,70,179,0.1);
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+.logout-item {
+  color: #d32f2f;
+}
+
+.logout-item:hover {
+  background: rgba(211,47,47,0.1);
 }
 
 /* Zone auth mobile */
 .auth-mobile {
+  position: relative;
   margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.auth-email-mobile {
-  color: #ffffff;
-  font-size: 0.95rem;
-}
-
-.logout-btn-mobile {
+.auth-email-btn-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 10px 0;
+  padding: 12px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.4);
-  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.logout-btn-mobile:hover {
+.auth-email-btn-mobile:hover {
   background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.user-dropdown-mobile {
+  width: 100%;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  margin-top: 8px;
+  animation: slideDown 0.2s ease;
+}
+
+.user-dropdown-mobile .user-profile-link {
+  text-decoration: none;
+  display: block;
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .user-profile-link:hover {
+  background: rgba(32,70,179,0.05);
+}
+
+.user-dropdown-mobile .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(32,70,179,0.1) 0%, rgba(252,220,30,0.1) 100%);
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .user-profile-link:hover .user-profile {
+  background: linear-gradient(135deg, rgba(32,70,179,0.15) 0%, rgba(252,220,30,0.15) 100%);
+}
+
+.user-dropdown-mobile .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2046b3 0%, #FCDC1E 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.user-dropdown-mobile .user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-dropdown-mobile .user-email {
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.user-dropdown-mobile .user-role {
+  color: rgba(32,70,179,0.7);
+  font-size: 0.85rem;
+}
+
+.user-dropdown-mobile .dropdown-divider {
+  height: 1px;
+  background: rgba(32,70,179,0.1);
+  margin: 8px 0;
+}
+
+.user-dropdown-mobile .dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+.user-dropdown-mobile .logout-item {
+  color: #d32f2f;
+}
+
+.user-dropdown-mobile .logout-item:hover {
+  background: rgba(211,47,47,0.1);
 }
 </style>

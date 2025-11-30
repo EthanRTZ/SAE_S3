@@ -43,6 +43,11 @@ const routes = [
         component: RegisterView
     },
     {
+        path: '/profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue')
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         redirect: '/'
