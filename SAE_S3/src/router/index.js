@@ -4,6 +4,7 @@ import PrestataireView from "@/views/PrestataireView.vue";
 import ProgrammationView from "@/views/ProgrammationView.vue";
 import CarteView from "@/views/CarteView.vue";
 import ReservationView from "@/views/ReservationView.vue";
+import MesReservationsView from "@/views/MesReservationsView.vue";
 import RegisterView from "@/views/RegisterView.vue";
 
 const routes = [
@@ -31,6 +32,11 @@ const routes = [
         path: '/reservation',
         name: 'reservation',
         component: ReservationView,
+    },
+    {
+        path: '/mes-reservations',
+        name: 'mes-reservations',
+        component: MesReservationsView,
     },
     {
         path: '/login',

@@ -6,6 +6,12 @@
           <h1>Réserver un forfait</h1>
           <div class="divider" aria-hidden="true"></div>
 
+          <div v-if="isAuthenticatedAsUser" class="my-reservations-link-wrapper">
+            <router-link to="/mes-reservations" class="my-reservations-link">
+              Voir mes réservations
+            </router-link>
+          </div>
+
           <!-- Message d'information pour les utilisateurs non connectés ou avec mauvais rôle -->
           <div v-if="!isAuthenticatedAsUser" class="auth-warning">
             <p v-if="!authUser" class="warning-text">
@@ -306,6 +312,37 @@ export default {
     }
   },
   methods: {
+    getAllReservations() {
+      try {
+        const raw = localStorage.getItem('userReservations')
+        if (!raw) return []
+        const parsed = JSON.parse(raw)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        return []
+      }
+    },
+    saveAllReservations(list) {
+      localStorage.setItem('userReservations', JSON.stringify(list))
+    },
+    recordReservation(type, quantity, extra = {}) {
+      if (!this.authUser || !this.authUser.email || !quantity || quantity <= 0) {
+        return
+      }
+      const all = this.getAllReservations()
+      const now = new Date()
+      const id = `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`
+      const reservation = {
+        id,
+        userEmail: this.authUser.email,
+        type,
+        quantity,
+        createdAt: now.toISOString(),
+        ...extra
+      }
+      all.push(reservation)
+      this.saveAllReservations(all)
+    },
     loadAuthUser() {
       try {
         const stored = localStorage.getItem('authUser')
@@ -483,6 +520,12 @@ export default {
         }
 
         this.sanitizeQuantity(type)
+        this.recordReservation(type, requestedQty, {
+          optionLabel: selected.label || '',
+          displayLabel: type === 'oneDay'
+            ? `Forfait 1 jour - ${selected.label}`
+            : `Forfait 2 jours - ${selected.label}`
+        })
         return
       }
 
@@ -498,6 +541,10 @@ export default {
           ref.stock -= requestedQty
         })
         this.sanitizeQuantity(type)
+        this.recordReservation(type, requestedQty, {
+          optionLabel: '3 jours',
+          displayLabel: 'Forfait 3 jours'
+        })
         return
       }
 
@@ -505,6 +552,12 @@ export default {
         if (forfait.stock >= requestedQty) {
           forfait.stock -= requestedQty
           this.sanitizeQuantity(type)
+          const displayLabel = type === 'parking'
+            ? 'Place de parking'
+            : 'Emplacement de camping'
+          this.recordReservation(type, requestedQty, {
+            displayLabel
+          })
         }
         return
       }
@@ -512,6 +565,9 @@ export default {
       if (forfait.stock >= requestedQty) {
         forfait.stock -= requestedQty
         this.sanitizeQuantity(type)
+        this.recordReservation(type, requestedQty, {
+          displayLabel: 'Forfait'
+        })
       }
     },
     closeAuthModal() {
@@ -589,6 +645,30 @@ h1 {
   background: linear-gradient(90deg, rgba(255,209,102,0.95), rgba(159, 120, 22, 0.9));
   margin: 10px 0 18px 0;
   box-shadow: 0 6px 18px rgba(255,160,60,0.12);
+}
+
+.my-reservations-link-wrapper {
+  margin-bottom: 18px;
+  text-align: right;
+}
+
+.my-reservations-link {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 215, 80, 0.5);
+  color: #ffd166;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(1, 4, 16, 0.25);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.my-reservations-link:hover {
+  background: rgba(255, 215, 80, 0.1);
+  border-color: #ffd166;
+  color: #fffbe6;
 }
 
 .forfaits {

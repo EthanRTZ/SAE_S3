@@ -119,6 +119,9 @@ const logout = () => {
                   </div>
                 </div>
               </router-link>
+              <router-link to="/mes-reservations" class="dropdown-item" @click="closeUserMenu">
+                Mes réservations
+              </router-link>
               <div class="dropdown-divider"></div>
               <button type="button" class="dropdown-item logout-item" @click="logout">
                 Déconnexion
@@ -176,6 +179,13 @@ const logout = () => {
                   <div class="user-role">Utilisateur</div>
                 </div>
               </div>
+            </router-link>
+            <router-link
+              to="/mes-reservations"
+              class="dropdown-item"
+              @click="() => { closeUserMenu(); toggleMenu(); }"
+            >
+              Mes réservations
             </router-link>
             <div class="dropdown-divider"></div>
             <button

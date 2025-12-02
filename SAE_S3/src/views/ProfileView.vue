@@ -185,6 +185,58 @@
         </form>
       </div>
 
+      <div class="section-divider"></div>
+
+      <!-- Section Gestion des réservations -->
+      <div class="profile-section">
+        <h3>Mes réservations</h3>
+        <p class="reservations-help">
+          Consultez vos réservations effectuées depuis ce compte et supprimez celles que vous ne souhaitez plus conserver.
+        </p>
+
+        <p v-if="reservationsLoading" class="info">Chargement de vos réservations...</p>
+        <p v-if="reservationsError" class="error">{{ reservationsError }}</p>
+
+        <div v-if="!reservationsLoading && reservations.length === 0 && !reservationsError" class="empty-reservations">
+          <p>Vous n'avez pas encore de réservation enregistrée avec ce compte.</p>
+        </div>
+
+        <div v-else-if="!reservationsLoading && reservations.length > 0">
+          <ul class="reservations-list">
+            <li
+              v-for="resa in reservations"
+              :key="resa.id"
+              class="reservation-item"
+            >
+              <label class="reservation-row">
+                <input
+                  type="checkbox"
+                  :value="resa.id"
+                  v-model="selectedReservationIds"
+                />
+                <div class="reservation-main">
+                  <span class="reservation-title">
+                    {{ formatReservationTitle(resa) }}
+                  </span>
+                  <span class="reservation-meta">
+                    {{ formatReservationMeta(resa) }}
+                  </span>
+                </div>
+              </label>
+            </li>
+          </ul>
+
+          <button
+            type="button"
+            class="btn-primary btn-delete"
+            :disabled="selectedReservationIds.length === 0 || deletingReservations"
+            @click="onDeleteSelectedReservations"
+          >
+            {{ deletingReservations ? 'Suppression...' : 'Supprimer les réservations sélectionnées' }}
+          </button>
+        </div>
+      </div>
+
       <div class="actions">
         <router-link to="/" class="btn-secondary">Retour à l'accueil</router-link>
       </div>
@@ -216,6 +268,13 @@ const showConfirmPwd = ref(false)
 
 const USERS_JSON_URL = '/data/users.json'
 const LOCAL_USERS_KEY = 'customUsers'
+const RESERVATIONS_KEY = 'userReservations'
+
+const reservations = ref([])
+const reservationsLoading = ref(false)
+const reservationsError = ref('')
+const deletingReservations = ref(false)
+const selectedReservationIds = ref([])
 
 const loadCurrentUser = () => {
   try {
@@ -226,6 +285,29 @@ const loadCurrentUser = () => {
     }
   } catch (e) {
     currentUserEmail.value = ''
+  }
+}
+
+const loadReservations = () => {
+  reservationsError.value = ''
+  reservationsLoading.value = true
+  try {
+    const raw = localStorage.getItem(RESERVATIONS_KEY)
+    if (!raw) {
+      reservations.value = []
+      return
+    }
+    const parsed = JSON.parse(raw)
+    const list = Array.isArray(parsed) ? parsed : []
+    const email = (currentUserEmail.value || '').toLowerCase()
+    reservations.value = list.filter(
+      (r) => (r.userEmail || '').toLowerCase() === email
+    )
+  } catch (e) {
+    reservations.value = []
+    reservationsError.value = 'Impossible de charger vos réservations.'
+  } finally {
+    reservationsLoading.value = false
   }
 }
 
@@ -271,6 +353,8 @@ onMounted(() => {
   loadCurrentUser()
   if (!currentUserEmail.value) {
     router.push('/login')
+  } else {
+    loadReservations()
   }
 })
 
@@ -300,6 +384,7 @@ const onUpdateEmail = async () => {
 
   loadingEmail.value = true
   try {
+    const previousEmail = currentUserEmail.value
     const [baseUsers, customUsers] = await Promise.all([
       fetchUsers(),
       Promise.resolve(readCustomUsers())
@@ -348,10 +433,32 @@ const onUpdateEmail = async () => {
 
     // Mettre à jour l'auth
     persistAuthUser({ ...currentUser, email: newEmail.value })
+
+    // Mettre à jour l'email actuel et les réservations associées
+    try {
+      const raw = localStorage.getItem(RESERVATIONS_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          const prevLower = (previousEmail || '').toLowerCase()
+          const updatedReservations = parsed.map((r) => {
+            if ((r.userEmail || '').toLowerCase() === prevLower) {
+              return { ...r, userEmail: newEmail.value }
+            }
+            return r
+          })
+          localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(updatedReservations))
+        }
+      }
+    } catch (e) {
+      // Ignorer les erreurs de migration des réservations
+    }
+
     currentUserEmail.value = newEmail.value
     newEmail.value = ''
     emailPassword.value = ''
     emailSuccess.value = 'Email modifié avec succès !'
+    loadReservations()
   } catch (e) {
     emailError.value = 'Impossible de modifier l\'email pour le moment.'
   } finally {
@@ -424,6 +531,78 @@ const onUpdatePassword = async () => {
     passwordError.value = 'Impossible de modifier le mot de passe pour le moment.'
   } finally {
     loadingPassword.value = false
+  }
+}
+
+const formatReservationTitle = (resa) => {
+  if (resa.displayLabel) return resa.displayLabel
+  switch (resa.type) {
+    case 'oneDay':
+      return 'Forfait 1 jour'
+    case 'twoDays':
+      return 'Forfait 2 jours'
+    case 'threeDays':
+      return 'Forfait 3 jours'
+    case 'parking':
+      return 'Place de parking'
+    case 'camping':
+      return 'Emplacement de camping'
+    default:
+      return 'Réservation'
+  }
+}
+
+const formatReservationMeta = (resa) => {
+  const parts = []
+  if (resa.optionLabel) {
+    parts.push(resa.optionLabel)
+  }
+  if (resa.quantity) {
+    parts.push(`${resa.quantity} place${resa.quantity > 1 ? 's' : ''}`)
+  }
+  if (resa.createdAt) {
+    try {
+      const date = new Date(resa.createdAt)
+      parts.push(
+        `le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`
+      )
+    } catch (e) {
+      // ignore
+    }
+  }
+  return parts.join(' • ')
+}
+
+const onDeleteSelectedReservations = () => {
+  if (!selectedReservationIds.value.length || deletingReservations.value) {
+    return
+  }
+  deletingReservations.value = true
+  reservationsError.value = ''
+  try {
+    const raw = localStorage.getItem(RESERVATIONS_KEY)
+    const all = raw ? JSON.parse(raw) : []
+    const idsToDelete = new Set(selectedReservationIds.value)
+    const email = (currentUserEmail.value || '').toLowerCase()
+    const remaining = Array.isArray(all)
+      ? all.filter(
+          (r) =>
+            !(
+              (r.userEmail || '').toLowerCase() === email &&
+              idsToDelete.has(r.id)
+            )
+        )
+      : []
+    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(remaining))
+    reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
+    selectedReservationIds.value = []
+  } catch (e) {
+    reservationsError.value = 'Impossible de supprimer les réservations sélectionnées.'
+  } finally {
+    deletingReservations.value = false
   }
 }
 </script>
