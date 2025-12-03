@@ -10,7 +10,7 @@
       "tel": "+33 1 23 45 67 89",
       "site": "https://o-tacos.com",
       "services": [
-        { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers", "prix": 10 }
+        { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers" }
       ]
     },
     {
@@ -23,7 +23,7 @@
       "tel": "+33 1 98 76 54 32",
       "site": "https://free.fr",
       "services": [
-        { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site", "prix": 0 }
+        { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site" }
       ]
     },
     {
@@ -36,7 +36,7 @@
       "tel": "+33 1 45 67 89 10",
       "site": "https://allianz.fr",
       "services": [
-        { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool", "prix": 0 }
+        { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool" }
       ]
     },
     {
@@ -49,7 +49,7 @@
       "tel": "+33 1 56 98 45 32",
       "site": "https://poliakov.fr",
       "services": [
-        { "nom": "Bar principal", "description": "Espace boisson et cocktails", "prix": 12 }
+        { "nom": "Bar principal", "description": "Espace boisson et cocktails" }
       ]
     },
     {
@@ -62,7 +62,7 @@
       "tel": "+33 1 87 65 43 21",
       "site": "https://jackdaniels.com",
       "services": [
-        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's", "prix": 15 }
+        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's" }
       ]
     },
     {
@@ -75,7 +75,7 @@
       "tel": "+43 1 87 65 90 12",
       "site": "https://redbull.com",
       "services": [
-        { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente", "prix": 8 }
+        { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente" }
       ]
     },
     {
@@ -88,7 +88,7 @@
       "tel": "+33 1 70 95 25 25",
       "site": "https://heetch.com",
       "services": [
-        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale", "prix": 0 }
+        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale" }
       ]
     },
     {
@@ -101,7 +101,7 @@
       "tel": "+33 3 20 33 50 00",
       "site": "https://decathlon.fr",
       "services": [
-        { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor", "prix": 25 }
+        { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor" }
       ]
     },
     {
@@ -114,7 +114,7 @@
       "tel": "+33 1 71 75 00 00",
       "site": "https://www.veolia.com",
       "services": [
-        { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles", "prix": 0 }
+        { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles" }
       ]
     },
     {
@@ -127,7 +127,7 @@
       "tel": "+33 1 49 92 12 34",
       "site": "https://www.securitas.fr",
       "services": [
-        { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles", "prix": null }
+        { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles" }
       ]
     },
     {
@@ -140,7 +140,7 @@
       "tel": "+46 8 578 479 00",
       "site": "https://spotify.com",
       "services": [
-        { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival", "prix": 0 }
+        { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival" }
       ]
     },
     {
@@ -153,7 +153,7 @@
       "tel": "+33 1 84 16 17 30",
       "site": "https://www.happn.com",
       "services": [
-        { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives", "prix": 5 }
+        { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives" }
       ]
     }
   ]

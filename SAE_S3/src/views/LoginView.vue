@@ -112,6 +112,7 @@ const persistAuthUser = (user) => {
   const payload = {
     email: user.email,
     role: user.role || 'user',
+    prestataireNom: user.prestataireNom || null,
     ts: Date.now()
   }
   localStorage.setItem('authUser', JSON.stringify(payload))

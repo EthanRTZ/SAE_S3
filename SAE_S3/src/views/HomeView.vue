@@ -232,7 +232,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import CarteView from './CarteView.vue';
 
@@ -266,9 +266,33 @@ export default {
     // Charger les prestataires
     const loadPrestataires = async () => {
       try {
+        // Charger les modifications locales
+        const customRaw = localStorage.getItem('customPrestataires');
+        let customPrestataires = null;
+        if (customRaw) {
+          try {
+            customPrestataires = JSON.parse(customRaw);
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        // Charger depuis le fichier JSON
         const response = await fetch('/data/prestataires.json');
         const data = await response.json();
-        prestataires.value = data.prestataires;
+        let prestatairesData = data.prestataires || [];
+
+        // Appliquer les modifications locales si elles existent
+        if (customPrestataires) {
+          prestatairesData = prestatairesData.map(p => {
+            if (customPrestataires[p.nom]) {
+              return { ...p, ...customPrestataires[p.nom] };
+            }
+            return p;
+          });
+        }
+
+        prestataires.value = prestatairesData;
       } catch (error) {
         console.error('Erreur lors du chargement des prestataires:', error);
       }
@@ -318,8 +342,25 @@ export default {
       });
     };
 
+    // Handlers pour les événements
+    const prestataireUpdateHandler = () => {
+      loadPrestataires();
+    };
+    const storageChangeHandler = (e) => {
+      if (e.key === 'customPrestataires' || !e.key) {
+        loadPrestataires();
+      }
+    };
+
     onMounted(() => {
       loadPrestataires();
+      window.addEventListener('prestataire-updated', prestataireUpdateHandler);
+      window.addEventListener('storage', storageChangeHandler);
+    });
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('prestataire-updated', prestataireUpdateHandler);
+      window.removeEventListener('storage', storageChangeHandler);
     });
 
     return {

@@ -68,12 +68,14 @@
               <li v-for="s in p.services" :key="s.nom">
                 <span class="service-name">{{ s.nom }}</span>
                 <span v-if="s.description" class="service-desc">— {{ s.description }}</span>
-                <span v-if="s.prix !== null && s.prix !== undefined" class="service-price"> ({{ formatPrix(s.prix) }})</span>
               </li>
             </ul>
           </div>
 
           <div class="contacts">
+            <span v-if="p.prixMoyen !== null && p.prixMoyen !== undefined" class="link prix-bubble">
+              {{ formatPrix(p.prixMoyen) }}
+            </span>
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
           </div>
         </div>
@@ -96,21 +98,27 @@ export default {
     }
   },
   async mounted() {
-    try {
-      const response = await fetch('/data/prestataires.json');
-      const data = await response.json();
-      this.prestataires = data.prestataires || [];
-      this.types = [...new Set(this.prestataires.map(p => p.type))];
-    } catch (error) {
-      console.error('Erreur lors du chargement des prestataires:', error);
-    } finally {
-      this.loading = false;
-    }
+    await this.loadPrestataires();
     // Fermer le dropdown si on clique en dehors
     document.addEventListener('click', this.handleClickOutside);
+    // Écouter les mises à jour
+    this.prestataireUpdateHandler = () => this.loadPrestataires();
+    this.storageChangeHandler = (e) => {
+      if (e.key === 'customPrestataires' || !e.key) {
+        this.loadPrestataires();
+      }
+    };
+    window.addEventListener('prestataire-updated', this.prestataireUpdateHandler);
+    window.addEventListener('storage', this.storageChangeHandler);
   },
   beforeUnmount() {
     document.removeEventListener('click', this.handleClickOutside);
+    if (this.prestataireUpdateHandler) {
+      window.removeEventListener('prestataire-updated', this.prestataireUpdateHandler);
+    }
+    if (this.storageChangeHandler) {
+      window.removeEventListener('storage', this.storageChangeHandler);
+    }
   },
   computed: {
     filteredPrestataires() {
@@ -142,6 +150,42 @@ export default {
     formatPrix(val) {
       if (val === 0) return 'gratuit';
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
+    },
+    async loadPrestataires() {
+      try {
+        // Charger les modifications locales
+        const customRaw = localStorage.getItem('customPrestataires');
+        let customPrestataires = null;
+        if (customRaw) {
+          try {
+            customPrestataires = JSON.parse(customRaw);
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        // Charger depuis le fichier JSON
+        const response = await fetch('/data/prestataires.json');
+        const data = await response.json();
+        let prestataires = data.prestataires || [];
+
+        // Appliquer les modifications locales si elles existent
+        if (customPrestataires) {
+          prestataires = prestataires.map(p => {
+            if (customPrestataires[p.nom]) {
+              return { ...p, ...customPrestataires[p.nom] };
+            }
+            return p;
+          });
+        }
+
+        this.prestataires = prestataires;
+        this.types = [...new Set(this.prestataires.map(p => p.type))];
+      } catch (error) {
+        console.error('Erreur lors du chargement des prestataires:', error);
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }

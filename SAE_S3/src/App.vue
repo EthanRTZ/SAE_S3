@@ -17,9 +17,49 @@ const loadAuthFromStorage = () => {
 
 const isAuthenticated = computed(() => !!authUser.value)
 const userEmail = computed(() => authUser.value?.email || '')
+const userRole = computed(() => authUser.value?.role || 'user')
+const isUserRole = computed(() => userRole.value === 'user')
+const prestataireNom = computed(() => authUser.value?.prestataireNom || '')
+const prestataireInfo = ref(null)
+
+const loadPrestataireInfo = async () => {
+  if (userRole.value !== 'prestataire' || !prestataireNom.value) {
+    prestataireInfo.value = null
+    return
+  }
+  try {
+    // Charger les modifications locales
+    const customRaw = localStorage.getItem('customPrestataires')
+    let customPrestataires = null
+    if (customRaw) {
+      try {
+        customPrestataires = JSON.parse(customRaw)
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Charger depuis le fichier JSON
+    const resp = await fetch('/data/prestataires.json', { cache: 'no-store' })
+    if (!resp.ok) throw new Error('fetch failed')
+    const data = await resp.json()
+    const prestataires = data.prestataires || []
+    let prestataire = prestataires.find(p => p.nom === prestataireNom.value) || null
+
+    // Appliquer les modifications locales si elles existent
+    if (prestataire && customPrestataires && customPrestataires[prestataireNom.value]) {
+      prestataire = { ...prestataire, ...customPrestataires[prestataireNom.value] }
+    }
+
+    prestataireInfo.value = prestataire
+  } catch (e) {
+    prestataireInfo.value = null
+  }
+}
 
 const handleAuthChanged = () => {
   loadAuthFromStorage()
+  loadPrestataireInfo()
 }
 
 const handleClickOutside = (e) => {
@@ -30,14 +70,17 @@ const handleClickOutside = (e) => {
 
 onMounted(() => {
   loadAuthFromStorage()
+  loadPrestataireInfo()
   window.addEventListener('storage', handleAuthChanged)
   window.addEventListener('auth-changed', handleAuthChanged)
+  window.addEventListener('prestataire-updated', loadPrestataireInfo)
   document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleAuthChanged)
   window.removeEventListener('auth-changed', handleAuthChanged)
+  window.removeEventListener('prestataire-updated', loadPrestataireInfo)
   document.removeEventListener('click', handleClickOutside)
 })
 
@@ -112,17 +155,17 @@ const logout = () => {
             <div v-if="isUserMenuOpen" class="user-dropdown">
               <router-link to="/profile" class="user-profile-link" @click="closeUserMenu">
                 <div class="user-profile">
-                  <div class="user-avatar">{{ userEmail.charAt(0).toUpperCase() }}</div>
+                  <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                   <div class="user-info">
-                    <div class="user-email">{{ userEmail }}</div>
-                    <div class="user-role">Utilisateur</div>
+                    <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
+                    <div class="user-role">{{ userRole === 'user' ? 'Utilisateur' : userRole === 'prestataire' ? (prestataireInfo?.type || 'Prestataire') : userRole === 'admin' ? 'Administrateur' : 'Utilisateur' }}</div>
                   </div>
                 </div>
               </router-link>
-              <router-link to="/mes-reservations" class="dropdown-item" @click="closeUserMenu">
+              <router-link v-if="isUserRole" to="/mes-reservations" class="dropdown-item" @click="closeUserMenu">
                 Mes réservations
               </router-link>
-              <div class="dropdown-divider"></div>
+              <div v-if="isUserRole" class="dropdown-divider"></div>
               <button type="button" class="dropdown-item logout-item" @click="logout">
                 Déconnexion
               </button>
@@ -173,21 +216,22 @@ const logout = () => {
           <div v-if="isUserMenuOpen" class="user-dropdown-mobile">
             <router-link to="/profile" class="user-profile-link" @click="() => { closeUserMenu(); toggleMenu(); }">
               <div class="user-profile">
-                <div class="user-avatar">{{ userEmail.charAt(0).toUpperCase() }}</div>
+                <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                 <div class="user-info">
-                  <div class="user-email">{{ userEmail }}</div>
-                  <div class="user-role">Utilisateur</div>
+                  <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
+                  <div class="user-role">{{ userRole === 'user' ? 'Utilisateur' : userRole === 'prestataire' ? (prestataireInfo?.type || 'Prestataire') : userRole === 'admin' ? 'Administrateur' : 'Utilisateur' }}</div>
                 </div>
               </div>
             </router-link>
             <router-link
+              v-if="isUserRole"
               to="/mes-reservations"
               class="dropdown-item"
               @click="() => { closeUserMenu(); toggleMenu(); }"
             >
               Mes réservations
             </router-link>
-            <div class="dropdown-divider"></div>
+            <div v-if="isUserRole" class="dropdown-divider"></div>
             <button
               type="button"
               class="dropdown-item logout-item"

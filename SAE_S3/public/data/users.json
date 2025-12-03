@@ -12,7 +12,80 @@
   {
     "email": "prestataire@abc.fr",
     "password": "prest12",
-    "role": "prestataire"
+    "role": "prestataire",
+    "prestataireNom": "OTacos"
+  },
+  {
+    "email": "otacos@prestataire.fr",
+    "password": "otacos12",
+    "role": "prestataire",
+    "prestataireNom": "OTacos"
+  },
+  {
+    "email": "free@prestataire.fr",
+    "password": "free12",
+    "role": "prestataire",
+    "prestataireNom": "Free"
+  },
+  {
+    "email": "decathlon@prestataire.fr",
+    "password": "decathlon12",
+    "role": "prestataire",
+    "prestataireNom": "Decathlon"
+  },
+  {
+    "email": "redbull@prestataire.fr",
+    "password": "redbull12",
+    "role": "prestataire",
+    "prestataireNom": "Red Bull"
+  },
+  {
+    "email": "spotify@prestataire.fr",
+    "password": "spotify12",
+    "role": "prestataire",
+    "prestataireNom": "Spotify"
+  },
+  {
+    "email": "poliakov@prestataire.fr",
+    "password": "poliakov12",
+    "role": "prestataire",
+    "prestataireNom": "Poliakov"
+  },
+  {
+    "email": "jackdaniels@prestataire.fr",
+    "password": "jackdaniels12",
+    "role": "prestataire",
+    "prestataireNom": "Jack Daniel's"
+  },
+  {
+    "email": "heetch@prestataire.fr",
+    "password": "heetch12",
+    "role": "prestataire",
+    "prestataireNom": "Heetch"
+  },
+  {
+    "email": "veolia@prestataire.fr",
+    "password": "veolia12",
+    "role": "prestataire",
+    "prestataireNom": "Veolia"
+  },
+  {
+    "email": "securitas@prestataire.fr",
+    "password": "securitas12",
+    "role": "prestataire",
+    "prestataireNom": "Securitas"
+  },
+  {
+    "email": "happn@prestataire.fr",
+    "password": "happn12",
+    "role": "prestataire",
+    "prestataireNom": "Happn"
+  },
+  {
+    "email": "allianz@prestataire.fr",
+    "password": "allianz12",
+    "role": "prestataire",
+    "prestataireNom": "Allianz"
   }
 ]
 
