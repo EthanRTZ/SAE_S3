@@ -150,7 +150,15 @@ const onSubmit = async () => {
     }
 
     persistAuthUser(user)
-    router.push({ path: '/' })
+
+    // CHANGED: redirection selon le rôle
+    if (user.role === 'admin') {
+      router.push({ path: '/admin' })
+    } else if (user.role === 'prestataire') {
+      router.push({ path: '/prestataire-espace' })
+    } else {
+      router.push({ path: '/' })
+    }
   } catch (e) {
     error.value = "Impossible d'accéder au fichier JSON."
   } finally {

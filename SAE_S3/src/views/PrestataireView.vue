@@ -1,7 +1,8 @@
 <template>
   <div class="prestataire">
     <div class="container">
-      <h1 class="title">Prestataires</h1>
+      <h1 class="title">Nos Prestataires</h1>
+      <p class="subtitle">Découvrez tous nos partenaires</p>
 
       <div class="filter-bar">
         <div class="filter-label">Filtrer par type</div>

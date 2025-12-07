@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from "@/views/HomeView.vue";
 import PrestataireView from "@/views/PrestataireView.vue";
+import EspacePrestataireView from "@/views/prestataire/PrestataireView.vue";
 import ProgrammationView from "@/views/ProgrammationView.vue";
 import CarteView from "@/views/CarteView.vue";
 import ReservationView from "@/views/ReservationView.vue";
 import MesReservationsView from "@/views/MesReservationsView.vue";
 import RegisterView from "@/views/RegisterView.vue";
+import AdminView from "@/views/admin/AdminView.vue";
 
 const routes = [
     {
@@ -22,6 +24,11 @@ const routes = [
         path: '/prestataire',
         name: 'prestataire',
         component: PrestataireView,
+    },
+    {
+        path: '/prestataire-espace',
+        name: 'prestataire-espace',
+        component: EspacePrestataireView,
     },
     {
         path: '/carte',
@@ -52,6 +59,11 @@ const routes = [
         path: '/profile',
         name: 'profile',
         component: () => import('@/views/ProfileView.vue')
+    },
+    {
+        path: '/admin',
+        name: 'admin',
+        component: AdminView,
     },
     {
         path: '/:pathMatch(.*)*',

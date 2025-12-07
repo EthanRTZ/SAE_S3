@@ -1,6 +1,7 @@
-x<script setup>
+<script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import logoIcon from '../public/media/logo-icon.png'
+
+const logoIcon = '/media/logo-icon.png'
 
 const isMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
@@ -21,6 +22,34 @@ const userRole = computed(() => authUser.value?.role || 'user')
 const isUserRole = computed(() => userRole.value === 'user')
 const prestataireNom = computed(() => authUser.value?.prestataireNom || '')
 const prestataireInfo = ref(null)
+
+const prestataireLink = computed(() => {
+  if (isAuthenticated.value && userRole.value === 'prestataire') {
+    return { name: 'prestataire-espace' }
+  }
+  return { name: 'prestataire' }
+})
+
+// CHANGED: Carte reste visible pour tous (y compris admin)
+const showProgrammationLinkInNav = computed(() => {
+  return userRole.value !== 'prestataire' && userRole.value !== 'admin'
+})
+
+const showReservationLinkInNav = computed(() => {
+  return userRole.value !== 'prestataire' && userRole.value !== 'admin'
+})
+
+const showPrestataireLink = computed(() => {
+  return userRole.value !== 'admin'
+})
+
+const showAccueilLink = computed(() => {
+  return userRole.value !== 'admin'
+})
+
+const showAdminLink = computed(() => {
+  return userRole.value === 'admin'
+})
 
 const loadPrestataireInfo = async () => {
   if (userRole.value !== 'prestataire' || !prestataireNom.value) {
@@ -124,11 +153,14 @@ const logout = () => {
         
         <!-- Desktop Menu -->
         <div class="nav-menu">
-          <router-link to="/" class="nav-link">Accueil</router-link>
-          <router-link to="/programmation" class="nav-link">Programmation</router-link>
-          <router-link to="/prestataire" class="nav-link">Prestataire</router-link>
+          <!-- CHANGED: liens conditionnels selon le rôle -->
+          <router-link v-if="showAccueilLink" to="/" class="nav-link">Accueil</router-link>
+          <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link">Programmation</router-link>
+          <router-link v-if="showPrestataireLink" :to="prestataireLink" class="nav-link">Prestataire</router-link>
+          <!-- CHANGED: Carte toujours visible -->
+          <router-link v-if="showAdminLink" to="/admin" class="nav-link">Admin</router-link>
           <router-link to="/carte" class="nav-link">Carte</router-link>
-          <router-link to="/reservation" class="nav-link">Réservation</router-link>
+          <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link">Réservation</router-link>
 
           <!-- Zone connexion / utilisateur (desktop) -->
           <div v-if="!isAuthenticated" class="guest-actions">
@@ -183,11 +215,14 @@ const logout = () => {
       
         <!-- Mobile Menu -->
         <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
-        <router-link to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Accueil</router-link>
-        <router-link to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Programmation</router-link>
-        <router-link to="/prestataire" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Prestataire</router-link>
+        <!-- CHANGED: liens conditionnels selon le rôle (mobile) -->
+        <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Accueil</router-link>
+        <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Programmation</router-link>
+        <router-link v-if="showPrestataireLink" :to="prestataireLink" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Prestataire</router-link>
+        <!-- CHANGED: Carte toujours visible -->
         <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Carte</router-link>
-        <router-link to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Réservation</router-link>
+        <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Réservation</router-link>
+        <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Admin</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
         <div v-if="!isAuthenticated" class="guest-actions-mobile">
