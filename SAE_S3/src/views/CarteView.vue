@@ -4,7 +4,7 @@
       <div v-show="!panelCollapsed" class="panel-content">
         <h1>Carte</h1>
         <div class="map-toolbar">
-          <span>Types activités:</span>
+          <span>Types prestataires:</span>
           <div class="types-filter">
             <label v-for="(val, type) in visibleTypes" :key="type" class="type-label">
               <input type="checkbox" v-model="visibleTypes[type]" /> {{ type }}
@@ -46,8 +46,8 @@ export default {
       // Instance Leaflet de la carte
       map: null,
 
-      // Activités chargées depuis le JSON
-      activities: [],
+      // Prestataires chargés depuis le JSON (avec coordonnées)
+      prestataires: [],
       // Objet { type: boolean } pour le filtrage
       visibleTypes: {},
       // Dictionnaire id -> marker
@@ -129,8 +129,8 @@ export default {
           attribution: '&copy; OpenStreetMap',
         }).addTo(this.map);
 
-        // Chargement des activités puis init des marqueurs
-        this.loadActivities();
+        // Chargement des prestataires puis init des marqueurs
+        this.loadPrestataires();
         this.loadZones();      // ajout
       })
       .catch((e) => console.error(e));
@@ -160,12 +160,13 @@ export default {
   },
   methods: {
     // Charge le JSON et prépare les filtres + marqueurs
-    async loadActivities() {
+    async loadPrestataires() {
       try {
-        const res = await fetch('/data/activite.json');
-        this.activities = await res.json();
+        const res = await fetch('/data/site.json');
+        const data = await res.json();
+        this.prestataires = (data.prestataires || []).filter(p => p.coordone);
         // Construit l’ensemble des types
-        const typeSet = new Set(this.activities.map(a => a.type).filter(Boolean));
+        const typeSet = new Set(this.prestataires.map(a => a.type).filter(Boolean));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
         this.visibleTypes = obj;
@@ -178,11 +179,12 @@ export default {
     // Ajout: chargement des zones
     async loadZones() {
       try {
-        const res = await fetch('/data/zone.json');
-        let data = await res.json();
+        const res = await fetch('/data/site.json');
+        const data = await res.json();
+        let zones = data.zones || [];
         // Ne garder que parking/camping
-        data = data.filter(z => ['parking', 'camping'].includes(z.type));
-        this.zones = data;
+        zones = zones.filter(z => ['parking', 'camping'].includes(z.type));
+        this.zones = zones;
         const typeSet = new Set(this.zones.map(z => z.type));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
@@ -218,13 +220,13 @@ export default {
       });
     },
 
-    // Crée les marqueurs depuis activities
+    // Crée les marqueurs depuis les prestataires
     initMarkers() {
       const L = this._L;
       if (!L || !this.map) return;
       this.markerLayers = {};
       let idx = 0;
-      this.activities.forEach(a => {
+      this.prestataires.forEach(a => {
         if (!a.coordone) return;
         const parts = a.coordone.split(',').map(s => parseFloat(s.trim()));
         if (parts.length !== 2 || parts.some(isNaN)) return;

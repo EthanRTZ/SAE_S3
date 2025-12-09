@@ -368,7 +368,7 @@ const showNewPwd = ref(false)
 const showConfirmPwd = ref(false)
 
 const USERS_JSON_URL = '/data/users.json'
-const PRESTATAIRES_JSON_URL = '/data/prestataires.json'
+const PRESTATAIRES_JSON_URL = '/data/site.json'
 const LOCAL_USERS_KEY = 'customUsers'
 const LOCAL_PRESTATAIRES_KEY = 'customPrestataires'
 const RESERVATIONS_KEY = 'userReservations'

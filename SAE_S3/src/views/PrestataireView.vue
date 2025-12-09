@@ -166,7 +166,7 @@ export default {
         }
 
         // Charger depuis le fichier JSON
-        const response = await fetch('/data/prestataires.json');
+        const response = await fetch('/data/site.json');
         const data = await response.json();
         let prestataires = data.prestataires || [];
 

@@ -1,0 +1,326 @@
+{
+  "prestataires": [
+    {
+      "nom": "OTacos",
+      "type": "Restauration",
+      "description": "Enseigne française présente parmi les stands food & beverage du festival.",
+      "image": "/media/prestataires/otacos.png",
+      "prixMoyen": 10,
+      "email": "contact@otacos.com",
+      "tel": "+33 1 23 45 67 89",
+      "site": "https://o-tacos.com",
+      "services": [
+        { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers" }
+      ],
+      "coordone": "47.30455,4.96570"
+    },
+    {
+      "nom": "Free",
+      "type": "Services",
+      "description": "Opérateur télécom partenaire du festival pour la couverture réseau.",
+      "image": "/media/prestataires/free.png",
+      "prixMoyen": 0,
+      "email": "partenariat@free.fr",
+      "tel": "+33 1 98 76 54 32",
+      "site": "https://free.fr",
+      "services": [
+        { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site" }
+      ]
+    },
+    {
+      "nom": "Allianz",
+      "type": "Services",
+      "description": "Partenaire prévention et sécurité du festival.",
+      "image": "/media/prestataires/alianz.png",
+      "prixMoyen": 0,
+      "email": "contact@allianz.fr",
+      "tel": "+33 1 45 67 89 10",
+      "site": "https://allianz.fr",
+      "services": [
+        { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool" }
+      ]
+    },
+    {
+      "nom": "Poliakov",
+      "type": "Boissons",
+      "description": "Sponsor officiel du bar principal du Golden Coast.",
+      "image": "/media/prestataires/poliakov.png",
+      "prixMoyen": 12,
+      "email": "contact@poliakov.fr",
+      "tel": "+33 1 56 98 45 32",
+      "site": "https://poliakov.fr",
+      "services": [
+        { "nom": "Bar principal", "description": "Espace boisson et cocktails" }
+      ],
+      "coordone": "47.30405,4.96495"
+    },
+    {
+      "nom": "Jack Daniel's",
+      "type": "Boissons",
+      "description": "Partenaire officiel du Golden Coast avec un bar éphémère.",
+      "image": "/media/prestataires/jackdaniels.png",
+      "prixMoyen": 15,
+      "email": "contact@jackdaniels.com",
+      "tel": "+33 1 87 65 43 21",
+      "site": "https://jackdaniels.com",
+      "services": [
+        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's" }
+      ],
+      "coordone": "47.30462,4.96548"
+    },
+    {
+      "nom": "Red Bull",
+      "type": "Boissons",
+      "description": "Partenaire énergie et animation du festival.",
+      "image": "/media/prestataires/redbull.png",
+      "prixMoyen": 8,
+      "email": "info@redbull.com",
+      "tel": "+43 1 87 65 90 12",
+      "site": "https://redbull.com",
+      "services": [
+        { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente" }
+      ]
+    },
+    {
+      "nom": "Heetch",
+      "type": "Mobilité",
+      "description": "Service de VTC officiel offrant des trajets sécurisés pour les festivaliers.",
+      "image": "/media/prestataires/heetch.png",
+      "prixMoyen": 0,
+      "email": "pro@heetch.com",
+      "tel": "+33 1 70 95 25 25",
+      "site": "https://heetch.com",
+      "services": [
+        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale" }
+      ]
+    },
+    {
+      "nom": "Decathlon",
+      "type": "Commerces & Équipements",
+      "description": "Fournisseur officiel d'équipements et d'accessoires camping.",
+      "image": "/media/prestataires/decathlon.png",
+      "prixMoyen": 25,
+      "email": "event@decathlon.com",
+      "tel": "+33 3 20 33 50 00",
+      "site": "https://decathlon.fr",
+      "services": [
+        { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor" }
+      ]
+    },
+    {
+      "nom": "Veolia",
+      "type": "Services",
+      "description": "Gestion de l'eau potable et du recyclage sur le site.",
+      "image": "/media/prestataires/veolia.png",
+      "prixMoyen": 0,
+      "email": "contact.evenement@veolia.com",
+      "tel": "+33 1 71 75 00 00",
+      "site": "https://www.veolia.com",
+      "services": [
+        { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles" }
+      ]
+    },
+    {
+      "nom": "Securitas",
+      "type": "Services",
+      "description": "Agence sécurité, contrôle des accès et soutien aux équipes internes.",
+      "image": "/media/prestataires/securitas.png",
+      "prixMoyen": 0,
+      "email": "evenements@securitas.fr",
+      "tel": "+33 1 49 92 12 34",
+      "site": "https://www.securitas.fr",
+      "services": [
+        { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles" }
+      ]
+    },
+    {
+      "nom": "Deezer",
+      "type": "Média & Animation",
+      "description": "Partenaire média avec playlists exclusives Golden Coast.",
+      "image": "/media/prestataires/Deezer.png",
+      "prixMoyen": 0,
+      "email": "events@spotify.com",
+      "tel": "+46 8 578 479 00",
+      "site": "https://spotify.com",
+      "services": [
+        { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival" }
+      ],
+      "coordone": "47.30440,4.96530"
+    },
+    {
+      "nom": "Happn",
+      "type": "Média & Animation",
+      "description": "Activation matchmaking & espace chill pour les festivaliers.",
+      "image": "/media/prestataires/happn.png",
+      "prixMoyen": 5,
+      "email": "partners@happn.com",
+      "tel": "+33 1 84 16 17 30",
+      "site": "https://www.happn.com",
+      "services": [
+        { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives" }
+      ]
+    },
+    {
+      "nom": "Jeager",
+      "type": "Boissons",
+      "description": "Liqueur allemande à base de plantes.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30425,4.96510"
+    },
+    {
+      "nom": "Ricard",
+      "type": "Boissons",
+      "description": "Anisette française.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30475,4.96595"
+    },
+    {
+      "nom": "JBL",
+      "type": "Commerces & Équipements",
+      "description": "Marque d'enceintes et de matériel audio.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30430,4.96605"
+    },
+    {
+      "nom": "Pepsi",
+      "type": "Boissons",
+      "description": "Boisson gazeuse sucrée.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30410,4.96550"
+    },
+    {
+      "nom": "Lipton",
+      "type": "Boissons",
+      "description": "Marque de thé et de boissons.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30395,4.96535"
+    },
+    {
+      "nom": "Bagels",
+      "type": "Restauration",
+      "description": "Pain en forme d'anneau, souvent garni.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30432,4.96580"
+    },
+    {
+      "nom": "Pizza",
+      "type": "Restauration",
+      "description": "Plat italien à base de pâte, sauce tomate et garnitures.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30418,4.96565"
+    },
+    {
+      "nom": "Ail et fines herbes",
+      "type": "Restauration",
+      "description": "Fromage frais aromatisé.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30452,4.96610"
+    },
+    {
+      "nom": "Nouilles",
+      "type": "Restauration",
+      "description": "Pâtes alimentaires.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30400,4.96600"
+    },
+    {
+      "nom": "Coiffure",
+      "type": "Services",
+      "description": "Salon de coiffure pour hommes et femmes.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30388,4.96515"
+    },
+    {
+      "nom": "Merch",
+      "type": "Commerces & Équipements",
+      "description": "Vêtements et accessoires à l'effigie d'une marque ou d'un artiste.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30442,4.96490"
+    },
+    {
+      "nom": "Borne d'arcade",
+      "type": "Média & Animation",
+      "description": "Jeux vidéo sur borne d'arcade.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30468,4.96525"
+    },
+    {
+      "nom": "Terrain de basket",
+      "type": "Média & Animation",
+      "description": "Terrain pour jouer au basket-ball.",
+      "image": "/media/placeholder-prestataire.jpg",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": [],
+      "coordone": "47.30485,4.96560"
+    }
+  ],
+  "zones": [
+    { "nom": "parking nord", "type": "parking", "coords": ["47.30510,4.96490", "47.30510,4.96550", "47.30475,4.96550", "47.30475,4.96490"] },
+    { "nom": "parking sud", "type": "parking", "coords": ["47.30340,4.96490", "47.30340,4.96555", "47.30305,4.96555", "47.30305,4.96490"] },
+    { "nom": "camping A", "type": "camping", "coords": ["47.30460,4.96620", "47.30460,4.96700", "47.30390,4.96700", "47.30390,4.96620"] },
+    { "nom": "camping B", "type": "camping", "coords": ["47.30490,4.96650", "47.30490,4.96720", "47.30440,4.96720", "47.30440,4.96650"] }
+  ]
+}

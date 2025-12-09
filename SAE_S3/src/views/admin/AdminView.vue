@@ -45,7 +45,7 @@ const loadData = async () => {
   try {
     const [usersResp, prestatairesResp] = await Promise.all([
       fetch('/data/users.json', { cache: 'no-store' }),
-      fetch('/data/prestataires.json', { cache: 'no-store' })
+      fetch('/data/site.json', { cache: 'no-store' })
     ])
 
     const usersData = usersResp.ok ? await usersResp.json() : []
