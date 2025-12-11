@@ -212,8 +212,8 @@
                   <h3 class="prestataire-nom">{{ prestataire.nom }}</h3>
                   <span class="prestataire-type">{{ prestataire.type }}</span>
                   <div class="prestataire-prix">
-                    <span v-if="prestataire.prixMoyen > 0" class="prix-value">
-                      {{ prestataire.prixMoyen }}€
+                    <span v-if="getPrestatairePriceRange(prestataire)" class="prix-value">
+                      {{ getPrestatairePriceRange(prestataire) }}
                     </span>
                     <span v-else class="prix-gratuit">Gratuit</span>
                   </div>
@@ -342,6 +342,35 @@ export default {
       });
     };
 
+    // Fonction pour obtenir la plage de prix d'un prestataire
+    const getPrestatairePriceRange = (prestataire) => {
+      if (!prestataire.services || prestataire.services.length === 0) {
+        return null;
+      }
+      
+      // Filtrer les services publics avec prix
+      const servicesWithPrice = prestataire.services
+        .filter(s => s.public !== false && (s.prix !== undefined && s.prix !== null))
+        .map(s => s.prix || 0);
+      
+      if (servicesWithPrice.length === 0) {
+        return null;
+      }
+      
+      const minPrice = Math.min(...servicesWithPrice);
+      const maxPrice = Math.max(...servicesWithPrice);
+      
+      if (minPrice === 0 && maxPrice === 0) {
+        return null; // Tous gratuits
+      }
+      
+      if (minPrice === maxPrice) {
+        return `${minPrice}€`;
+      }
+      
+      return `${minPrice}€ - ${maxPrice}€`;
+    };
+
     // Handlers pour les événements
     const prestataireUpdateHandler = () => {
       loadPrestataires();
@@ -373,7 +402,8 @@ export default {
       clearFilters,
       handleImageError,
       normalizePublicPath,
-      goToPrestataire
+      goToPrestataire,
+      getPrestatairePriceRange
     };
   },
 };

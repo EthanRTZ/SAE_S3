@@ -10,12 +10,6 @@
     "role": "admin"
   },
   {
-    "email": "prestataire@abc.fr",
-    "password": "prest12",
-    "role": "prestataire",
-    "prestataireNom": "OTacos"
-  },
-  {
     "email": "otacos@prestataire.fr",
     "password": "otacos12",
     "role": "prestataire",

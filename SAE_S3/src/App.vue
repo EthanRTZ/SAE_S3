@@ -5,6 +5,7 @@ const logoIcon = '/media/logo-icon.png'
 
 const isMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
+const isPrestataireDropdownOpen = ref(false)
 const authUser = ref(null)
 
 const loadAuthFromStorage = () => {
@@ -29,6 +30,19 @@ const prestataireLink = computed(() => {
   }
   return { name: 'prestataire' }
 })
+
+const isPrestataire = computed(() => userRole.value === 'prestataire')
+
+const togglePrestataireDropdown = () => {
+  isPrestataireDropdownOpen.value = !isPrestataireDropdownOpen.value
+  if (isPrestataireDropdownOpen.value) {
+    isUserMenuOpen.value = false
+  }
+}
+
+const closePrestataireDropdown = () => {
+  isPrestataireDropdownOpen.value = false
+}
 
 // CHANGED: Carte reste visible pour tous (y compris admin)
 const showProgrammationLinkInNav = computed(() => {
@@ -95,6 +109,9 @@ const handleClickOutside = (e) => {
   if (isUserMenuOpen.value && !e.target.closest('.auth-desktop') && !e.target.closest('.auth-mobile')) {
     closeUserMenu()
   }
+  if (isPrestataireDropdownOpen.value && !e.target.closest('.prestataire-dropdown-wrapper')) {
+    closePrestataireDropdown()
+  }
 }
 
 onMounted(() => {
@@ -156,7 +173,30 @@ const logout = () => {
           <!-- CHANGED: liens conditionnels selon le rôle -->
           <router-link v-if="showAccueilLink" to="/" class="nav-link">Accueil</router-link>
           <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link">Programmation</router-link>
-          <router-link v-if="showPrestataireLink" :to="prestataireLink" class="nav-link">Prestataire</router-link>
+          <!-- Menu déroulant Prestataire pour les prestataires connectés -->
+          <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-wrapper">
+            <button 
+              type="button"
+              class="nav-link nav-link-dropdown"
+              :class="{ 'dropdown-open': isPrestataireDropdownOpen }"
+              @click="togglePrestataireDropdown"
+            >
+              Prestataire
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isPrestataireDropdownOpen }">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div v-if="isPrestataireDropdownOpen" class="prestataire-dropdown">
+              <router-link to="/prestataire" class="dropdown-item" @click="closePrestataireDropdown">
+                📋 Liste des prestataires
+              </router-link>
+              <router-link to="/prestataire-espace" class="dropdown-item" @click="closePrestataireDropdown">
+                ⚙️ Mon espace prestataire
+              </router-link>
+            </div>
+          </div>
+          <!-- Lien simple pour les non-prestataires -->
+          <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link">Prestataire</router-link>
           <!-- CHANGED: Carte toujours visible -->
           <router-link v-if="showAdminLink" to="/admin" class="nav-link">Admin</router-link>
           <router-link to="/carte" class="nav-link">Carte</router-link>
@@ -216,13 +256,36 @@ const logout = () => {
         <!-- Mobile Menu -->
         <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
         <!-- CHANGED: liens conditionnels selon le rôle (mobile) -->
-        <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Accueil</router-link>
-        <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Programmation</router-link>
-        <router-link v-if="showPrestataireLink" :to="prestataireLink" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Prestataire</router-link>
+        <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Accueil</router-link>
+        <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Programmation</router-link>
+        <!-- Menu déroulant Prestataire pour les prestataires connectés (mobile) -->
+        <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-mobile">
+          <button 
+            type="button"
+            class="nav-link-mobile nav-link-dropdown"
+            :class="{ 'dropdown-open': isPrestataireDropdownOpen }"
+            @click="togglePrestataireDropdown"
+          >
+            Prestataire
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isPrestataireDropdownOpen }">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div v-if="isPrestataireDropdownOpen" class="prestataire-dropdown-mobile-menu">
+            <router-link to="/prestataire" class="dropdown-item" @click="() => { closePrestataireDropdown(); toggleMenu(); }">
+              📋 Liste des prestataires
+            </router-link>
+            <router-link to="/prestataire-espace" class="dropdown-item" @click="() => { closePrestataireDropdown(); toggleMenu(); }">
+              ⚙️ Mon espace prestataire
+            </router-link>
+          </div>
+        </div>
+        <!-- Lien simple pour les non-prestataires (mobile) -->
+        <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Prestataire</router-link>
         <!-- CHANGED: Carte toujours visible -->
-        <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Carte</router-link>
-        <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Réservation</router-link>
-        <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); }">Admin</router-link>
+        <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Carte</router-link>
+        <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Réservation</router-link>
+        <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Admin</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
         <div v-if="!isAuthenticated" class="guest-actions-mobile">
@@ -852,5 +915,99 @@ main {
 
 .user-dropdown-mobile .logout-item:hover {
   background: rgba(211,47,47,0.1);
+}
+
+/* Menu déroulant Prestataire */
+.prestataire-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-link-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.nav-link-dropdown .dropdown-icon {
+  transition: transform 0.2s ease;
+  color: #FCDC1E;
+}
+
+.nav-link-dropdown.dropdown-open {
+  color: #2046b3;
+  background: #FCDC1E;
+  border-color: #FCDC1E;
+}
+
+.prestataire-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  z-index: 1001;
+  animation: slideDown 0.2s ease;
+}
+
+.prestataire-dropdown .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(32,70,179,0.05);
+}
+
+.prestataire-dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.prestataire-dropdown .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+/* Mobile dropdown */
+.prestataire-dropdown-mobile {
+  width: 100%;
+}
+
+.prestataire-dropdown-mobile-menu {
+  width: 100%;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  margin-top: 8px;
+  animation: slideDown 0.2s ease;
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(32,70,179,0.05);
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
 }
 </style>

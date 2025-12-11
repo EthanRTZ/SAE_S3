@@ -61,22 +61,26 @@
             <h2 class="card-title">{{ p.nom }}</h2>
             <span class="badge">{{ p.type }}</span>
           </div>
-          <p class="description">{{ p.description }}</p>
+          <p class="description">{{ cleanHtml(p.description) }}</p>
 
           <div v-if="p.services && p.services.length" class="services">
             <h3>Services</h3>
             <ul>
-              <li v-for="s in p.services" :key="s.nom">
+              <li v-for="s in (p.services || []).filter(s => s.public !== false)" :key="s.nom">
+                <div class="service-item">
+                  <div class="service-info">
                 <span class="service-name">{{ s.nom }}</span>
                 <span v-if="s.description" class="service-desc">— {{ s.description }}</span>
+                  </div>
+                  <span class="service-price" :class="{ 'price-free': (s.prix || 0) === 0 }">
+                    {{ formatServicePrix(s.prix) }}
+                  </span>
+                </div>
               </li>
             </ul>
           </div>
 
           <div class="contacts">
-            <span v-if="p.prixMoyen !== null && p.prixMoyen !== undefined" class="link prix-bubble">
-              {{ formatPrix(p.prixMoyen) }}
-            </span>
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
           </div>
         </div>
@@ -151,6 +155,20 @@ export default {
     formatPrix(val) {
       if (val === 0) return 'gratuit';
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
+    },
+    formatServicePrix(prix) {
+      if (prix === undefined || prix === null) return 'Gratuit';
+      if (prix === 0) return 'Gratuit';
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(prix);
+    },
+    cleanHtml(html) {
+      if (!html) return '';
+      // Si c'est déjà du texte brut, le retourner tel quel
+      if (!html.includes('<')) return html;
+      // Sinon, extraire le texte depuis le HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || '';
     },
     async loadPrestataires() {
       try {
@@ -473,9 +491,38 @@ export default {
   color: rgba(255, 255, 255, 0.75);
 }
 
+.service-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.service-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .service-name { font-weight: 600; }
-.service-desc { color: rgba(255, 255, 255, 0.6); }
-.service-price { color: #FCDC1E; font-weight: 700; }
+.service-desc { color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; }
+.service-price { 
+  color: #FCDC1E; 
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 4px 10px;
+  background: rgba(252,220,30,0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(252,220,30,0.3);
+  white-space: nowrap;
+}
+.service-price.price-free {
+  color: #4caf50;
+  background: rgba(76,175,80,0.15);
+  border-color: rgba(76,175,80,0.3);
+}
 
 .contacts {
   display: flex;

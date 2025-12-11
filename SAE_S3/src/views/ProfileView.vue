@@ -187,106 +187,6 @@
 
       <div class="section-divider"></div>
 
-      <!-- Section Gestion des informations prestataire -->
-      <div v-if="currentUserRole === 'prestataire' && prestataireInfo" class="profile-section">
-        <h3>Mes informations prestataire</h3>
-        <p class="reservations-help">
-          Gérez les informations de votre prestataire visibles sur le site.
-        </p>
-        <form @submit.prevent="onUpdatePrestataire">
-          <div class="input-group">
-            <label for="prestataireNom">Nom du prestataire</label>
-            <input
-              id="prestataireNom"
-              type="text"
-              :value="prestataireInfo.nom"
-              disabled
-              class="input-disabled"
-            />
-          </div>
-          <div class="input-group">
-            <label for="prestataireType">Type</label>
-            <input
-              id="prestataireType"
-              type="text"
-              :value="prestataireInfo.type"
-              disabled
-              class="input-disabled"
-            />
-          </div>
-          <div class="input-group">
-            <label for="prestataireDescription">Description</label>
-            <textarea
-              id="prestataireDescription"
-              v-model="prestataireForm.description"
-              rows="4"
-              required
-            ></textarea>
-          </div>
-          <div class="input-group">
-            <label for="prestatairePrixMoyen">Prix moyen (€)</label>
-            <input
-              id="prestatairePrixMoyen"
-              type="number"
-              v-model.number="prestataireForm.prixMoyen"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-          <div class="input-group">
-            <label for="prestataireEmail">Email de contact</label>
-            <span class="input-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" stroke="#FCDC1E" stroke-width="1.6" />
-                <path d="M4 7l8 6 8-6" stroke="#FCDC1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <input
-              id="prestataireEmail"
-              type="email"
-              v-model.trim="prestataireForm.email"
-              required
-            />
-          </div>
-          <div class="input-group">
-            <label for="prestataireTel">Téléphone</label>
-            <span class="input-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M5 4h4l2 5l-2.5 2.5c1.5 3 4 5.5 7 7l2.5-2.5 5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 3 5a1 1 0 0 1 1-1Z" stroke="#FCDC1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <input
-              id="prestataireTel"
-              type="tel"
-              v-model.trim="prestataireForm.tel"
-              required
-            />
-          </div>
-          <div class="input-group">
-            <label for="prestataireSite">Site web</label>
-            <span class="input-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9Z" stroke="#FCDC1E" stroke-width="1.6" fill="none"/>
-              </svg>
-            </span>
-            <input
-              id="prestataireSite"
-              type="url"
-              v-model.trim="prestataireForm.site"
-              required
-            />
-          </div>
-          <button type="submit" class="btn-primary" :disabled="loadingPrestataire">
-            {{ loadingPrestataire ? 'Modification...' : 'Modifier les informations' }}
-          </button>
-          <p v-if="prestataireError" class="error">{{ prestataireError }}</p>
-          <p v-if="prestataireSuccess" class="success">{{ prestataireSuccess }}</p>
-        </form>
-      </div>
-
-      <div class="section-divider"></div>
-
       <!-- Section Gestion des réservations (uniquement pour les comptes user) -->
       <div v-if="currentUserRole === 'user'" class="profile-section">
         <h3>Mes réservations</h3>
@@ -383,7 +283,6 @@ const prestataireNom = ref('')
 const prestataireInfo = ref(null)
 const prestataireForm = ref({
   description: '',
-  prixMoyen: 0,
   email: '',
   tel: '',
   site: ''
@@ -441,7 +340,6 @@ const loadPrestataireInfo = async () => {
       prestataireInfo.value = prestataire
       prestataireForm.value = {
         description: prestataire.description || '',
-        prixMoyen: prestataire.prixMoyen || 0,
         email: prestataire.email || '',
         tel: prestataire.tel || '',
         site: prestataire.site || ''
@@ -557,7 +455,6 @@ const onUpdatePrestataire = async () => {
     // Mettre à jour les informations du prestataire
     customPrestataires[prestataireNom.value] = {
       description: prestataireForm.value.description,
-      prixMoyen: prestataireForm.value.prixMoyen,
       email: prestataireForm.value.email,
       tel: prestataireForm.value.tel,
       site: prestataireForm.value.site
