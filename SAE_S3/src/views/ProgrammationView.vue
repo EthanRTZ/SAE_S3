@@ -104,18 +104,6 @@ export default {
       loading: true,
     }
   },
-  async mounted() {
-    try {
-      const response = await fetch('/data/programmation.json');
-      const data = await response.json();
-      this.stages = data.stages || [];
-      this.schedules = data.schedules || [];
-      this.loading = false;
-    } catch (error) {
-      console.error('Erreur lors du chargement des données de programmation:', error);
-      this.loading = false;
-    }
-  },
   computed: {
     currentSchedule() {
       return this.schedules[this.selectedDay] || {};
@@ -145,7 +133,47 @@ export default {
       return this.generateTimes(this.openingTime, this.closingTime);
     },
   },
+  async mounted() {
+    await this.loadProgrammation();
+    // Écouter les mises à jour
+    window.addEventListener('programmation-updated', this.loadProgrammation);
+  },
+  beforeUnmount() {
+    window.removeEventListener('programmation-updated', this.loadProgrammation);
+  },
   methods: {
+    async loadProgrammation() {
+      try {
+        this.loading = true;
+        const response = await fetch('/data/programmation.json');
+        const data = await response.json();
+        
+        // Charger les modifications locales si elles existent
+        const customRaw = localStorage.getItem('customProgrammation');
+        let customData = null;
+        if (customRaw) {
+          try {
+            customData = JSON.parse(customRaw);
+          } catch (e) {
+            // ignore
+          }
+        }
+        
+        // Utiliser les données modifiées si disponibles, sinon les données originales
+        if (customData) {
+          this.stages = customData.stages || data.stages || [];
+          this.schedules = customData.schedules || data.schedules || [];
+        } else {
+          this.stages = data.stages || [];
+          this.schedules = data.schedules || [];
+        }
+        
+        this.loading = false;
+      } catch (error) {
+        console.error('Erreur lors du chargement des données de programmation:', error);
+        this.loading = false;
+      }
+    },
     // Convertit une heure (HH:MM) en minutes depuis minuit
     timeToMinutes(time) {
       const [hours, minutes] = time.split(':').map(Number);

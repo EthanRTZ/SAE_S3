@@ -7,8 +7,17 @@ const authUser = ref(null)
 const loading = ref(true)
 const currentSection = ref('dashboard')
 const prestataires = ref([])
+const prestatairesOriginaux = ref([]) // Données originales pour comparaison
+const customPrestataires = ref({}) // Modifications locales
 const selectedPrestataire = ref(null)
 const users = ref([])
+
+// Données de programmation
+const programmation = ref({ stages: [], schedules: [] })
+const programmationOriginaux = ref({ stages: [], schedules: [] })
+const selectedDayIndex = ref(0)
+const selectedStage = ref('')
+const editingSlot = ref(null)
 
 // Données de présentation du festival (éditeur WYSIWYG)
 const festivalPresentation = ref({
@@ -52,7 +61,26 @@ const loadData = async () => {
     const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
 
     users.value = Array.isArray(usersData) ? usersData : []
-    prestataires.value = prestataireData.prestataires || []
+    prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestataireData.prestataires || [])) // Copie profonde
+    
+    // Charger les modifications locales
+    const customRaw = localStorage.getItem('customPrestataires')
+    if (customRaw) {
+      try {
+        customPrestataires.value = JSON.parse(customRaw)
+      } catch (e) {
+        customPrestataires.value = {}
+      }
+    }
+    
+    // Fusionner les données originales avec les modifications
+    prestataires.value = (prestataireData.prestataires || []).map(p => {
+      const custom = customPrestataires.value[p.nom]
+      if (custom) {
+        return { ...p, ...custom }
+      }
+      return p
+    })
 
     const totalServices = prestataires.value.reduce((acc, p) => acc + (p.services?.length || 0), 0)
 
@@ -72,11 +100,96 @@ const loadData = async () => {
         // ignore
       }
     }
+
+    // Charger la programmation
+    await loadProgrammation()
   } catch (e) {
     console.error('Erreur chargement données:', e)
   } finally {
     loading.value = false
   }
+}
+
+const loadProgrammation = async () => {
+  try {
+    const resp = await fetch('/data/programmation.json', { cache: 'no-store' })
+    if (!resp.ok) throw new Error('fetch failed')
+    const data = await resp.json()
+    programmationOriginaux.value = JSON.parse(JSON.stringify(data)) // Copie profonde
+    
+    // Charger les modifications locales
+    const customRaw = localStorage.getItem('customProgrammation')
+    if (customRaw) {
+      try {
+        const custom = JSON.parse(customRaw)
+        // Fusionner avec les données originales
+        programmation.value = {
+          stages: custom.stages || data.stages || [],
+          schedules: custom.schedules || data.schedules || []
+        }
+      } catch (e) {
+        programmation.value = { ...data }
+      }
+    } else {
+      programmation.value = { ...data }
+    }
+    
+    if (programmation.value.stages.length > 0 && !selectedStage.value) {
+      selectedStage.value = programmation.value.stages[0].name
+    }
+  } catch (e) {
+    console.error('Erreur chargement programmation:', e)
+    programmation.value = { stages: [], schedules: [] }
+  }
+}
+
+const saveProgrammation = () => {
+  localStorage.setItem('customProgrammation', JSON.stringify(programmation.value))
+  window.dispatchEvent(new Event('programmation-updated'))
+  alert('Programmation sauvegardée avec succès!')
+}
+
+const addSlot = (dayIndex, stageName) => {
+  // S'assurer que le tableau schedules a assez d'éléments
+  while (programmation.value.schedules.length <= dayIndex) {
+    programmation.value.schedules.push({})
+  }
+  
+  if (!programmation.value.schedules[dayIndex][stageName]) {
+    programmation.value.schedules[dayIndex][stageName] = []
+  }
+  
+  const newSlot = {
+    start: '15:00',
+    end: '16:00',
+    artist: 'Nouvel artiste',
+    style: 'Rap'
+  }
+  programmation.value.schedules[dayIndex][stageName].push(newSlot)
+  editingSlot.value = { dayIndex, stageName, slotIndex: programmation.value.schedules[dayIndex][stageName].length - 1 }
+}
+
+const editSlot = (dayIndex, stageName, slotIndex) => {
+  editingSlot.value = { dayIndex, stageName, slotIndex }
+}
+
+const deleteSlot = (dayIndex, stageName, slotIndex) => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')) {
+    programmation.value.schedules[dayIndex][stageName].splice(slotIndex, 1)
+    saveProgrammation()
+  }
+}
+
+const saveSlot = () => {
+  if (!editingSlot.value) return
+  const { dayIndex, stageName, slotIndex } = editingSlot.value
+  editingSlot.value = null
+  saveProgrammation()
+}
+
+const cancelEdit = () => {
+  editingSlot.value = null
+  loadProgrammation() // Recharger pour annuler les modifications
 }
 
 const changeSection = (section) => {
@@ -87,6 +200,48 @@ const changeSection = (section) => {
 const selectPrestataire = (prestataire) => {
   selectedPrestataire.value = { ...prestataire }
   currentSection.value = 'prestataire-detail'
+}
+
+// Vérifier si un prestataire a des modifications
+const hasModifications = (prestataire) => {
+  return !!customPrestataires.value[prestataire.nom]
+}
+
+// Obtenir les champs modifiés
+const getModifiedFields = (prestataire) => {
+  const original = prestatairesOriginaux.value.find(p => p.nom === prestataire.nom)
+  if (!original) return []
+  
+  const custom = customPrestataires.value[prestataire.nom]
+  if (!custom) return []
+  
+  const modified = []
+  if (custom.description !== undefined && custom.description !== original.description) modified.push('Description')
+  if (custom.email !== undefined && custom.email !== original.email) modified.push('Email')
+  if (custom.tel !== undefined && custom.tel !== original.tel) modified.push('Téléphone')
+  if (custom.site !== undefined && custom.site !== original.site) modified.push('Site web')
+  if (custom.services && JSON.stringify(custom.services) !== JSON.stringify(original.services)) modified.push('Services')
+  
+  return modified
+}
+
+// Réinitialiser un prestataire (supprimer les modifications)
+const resetPrestataire = () => {
+  if (!selectedPrestataire.value) return
+  if (!confirm('Êtes-vous sûr de vouloir réinitialiser ce prestataire ? Toutes les modifications locales seront supprimées.')) return
+  
+  delete customPrestataires.value[selectedPrestataire.value.nom]
+  localStorage.setItem('customPrestataires', JSON.stringify(customPrestataires.value))
+  
+  // Recharger les données
+  loadData().then(() => {
+    // Remettre à jour le prestataire sélectionné avec les données originales
+    const original = prestatairesOriginaux.value.find(p => p.nom === selectedPrestataire.value.nom)
+    if (original) {
+      selectedPrestataire.value = { ...original }
+    }
+    alert('Prestataire réinitialisé avec succès!')
+  })
 }
 
 const savePresentation = () => {
@@ -184,6 +339,12 @@ onMounted(() => {
             :class="['nav-item', { active: currentSection === 'carte' }]"
           >
             🗺️ Carte interactive
+          </button>
+          <button
+            @click="changeSection('programmation')"
+            :class="['nav-item', { active: currentSection === 'programmation' }]"
+          >
+            🎵 Programmation
           </button>
           <button
             @click="changeSection('prestataires')"
@@ -311,15 +472,114 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Programmation -->
+        <div v-if="currentSection === 'programmation'" class="section-content">
+          <h1 class="section-title">Gestion de la programmation</h1>
+
+          <div class="programmation-editor">
+            <!-- Sélecteur de jour -->
+            <div class="day-selector-admin">
+              <label>Jour :</label>
+              <select v-model="selectedDayIndex" class="form-input">
+                <option v-for="(day, index) in programmation.schedules" :key="index" :value="index">
+                  {{ day.day || `Jour ${index + 1}` }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Sélecteur de scène -->
+            <div class="stage-selector-admin">
+              <label>Scène :</label>
+              <select v-model="selectedStage" class="form-input">
+                <option v-for="stage in programmation.stages" :key="stage.name" :value="stage.name">
+                  {{ stage.name }} {{ stage.by ? `(by ${stage.by})` : '' }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Liste des créneaux pour la scène sélectionnée -->
+            <div v-if="selectedStage && programmation.schedules[selectedDayIndex]" class="slots-list">
+              <div class="slots-header">
+                <h3>Créneaux - {{ selectedStage }}</h3>
+                <button @click="addSlot(selectedDayIndex, selectedStage)" class="btn-add">
+                  ➕ Ajouter un créneau
+                </button>
+              </div>
+
+              <div v-if="programmation.schedules[selectedDayIndex][selectedStage]?.length" class="slots-grid">
+                <div
+                  v-for="(slot, slotIndex) in programmation.schedules[selectedDayIndex][selectedStage]"
+                  :key="slotIndex"
+                  class="slot-card"
+                  :class="{ editing: editingSlot && editingSlot.dayIndex === selectedDayIndex && editingSlot.stageName === selectedStage && editingSlot.slotIndex === slotIndex }"
+                >
+                  <div v-if="editingSlot && editingSlot.dayIndex === selectedDayIndex && editingSlot.stageName === selectedStage && editingSlot.slotIndex === slotIndex" class="slot-editor">
+                    <div class="form-row">
+                      <label>Artiste</label>
+                      <input v-model="slot.artist" class="form-input" />
+                    </div>
+                    <div class="form-row">
+                      <label>Heure début</label>
+                      <input v-model="slot.start" type="time" class="form-input" />
+                    </div>
+                    <div class="form-row">
+                      <label>Heure fin</label>
+                      <input v-model="slot.end" type="time" class="form-input" />
+                    </div>
+                    <div class="form-row">
+                      <label>Style</label>
+                      <input v-model="slot.style" class="form-input" />
+                    </div>
+                    <div class="slot-actions">
+                      <button @click="saveSlot" class="btn-save-small">💾 Sauvegarder</button>
+                      <button @click="cancelEdit" class="btn-cancel">❌ Annuler</button>
+                    </div>
+                  </div>
+                  <div v-else class="slot-display">
+                    <div class="slot-info">
+                      <div class="slot-artist-name">{{ slot.artist }}</div>
+                      <div class="slot-time">{{ slot.start }} - {{ slot.end }}</div>
+                      <div class="slot-style">{{ slot.style }}</div>
+                    </div>
+                    <div class="slot-actions">
+                      <button @click="editSlot(selectedDayIndex, selectedStage, slotIndex)" class="btn-edit">✏️</button>
+                      <button @click="deleteSlot(selectedDayIndex, selectedStage, slotIndex)" class="btn-delete">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-slots">
+                <p>Aucun créneau pour cette scène ce jour-là.</p>
+                <button @click="addSlot(selectedDayIndex, selectedStage)" class="btn-add">
+                  ➕ Ajouter le premier créneau
+                </button>
+              </div>
+            </div>
+
+            <div class="programmation-actions">
+              <button @click="saveProgrammation" class="btn-save">
+                💾 Sauvegarder toute la programmation
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Gestion Prestataires -->
         <div v-if="currentSection === 'prestataires'" class="section-content">
           <h1 class="section-title">Gestion des prestataires</h1>
+          
+          <div class="modifications-summary" v-if="Object.keys(customPrestataires).length > 0">
+            <p class="summary-text">
+              📝 <strong>{{ Object.keys(customPrestataires).length }}</strong> prestataire(s) avec modifications
+            </p>
+          </div>
 
           <div class="prestataires-list">
             <div
               v-for="prestataire in prestataires"
               :key="prestataire.nom"
               class="prestataire-item"
+              :class="{ 'has-modifications': hasModifications(prestataire) }"
               @click="selectPrestataire(prestataire)"
             >
               <img
@@ -329,9 +589,16 @@ onMounted(() => {
                 class="prestataire-thumb"
               />
               <div class="prestataire-info">
-                <h3>{{ prestataire.nom }}</h3>
+                <div class="prestataire-header-row">
+                  <h3>{{ prestataire.nom }}</h3>
+                  <span v-if="hasModifications(prestataire)" class="modification-badge">✏️ Modifié</span>
+                </div>
                 <p>{{ prestataire.type }}</p>
                 <span class="services-count">{{ prestataire.services?.length || 0 }} service(s)</span>
+                <div v-if="hasModifications(prestataire)" class="modified-fields">
+                  <span class="modified-label">Champs modifiés :</span>
+                  <span class="modified-list">{{ getModifiedFields(prestataire).join(', ') || 'Aucun' }}</span>
+                </div>
               </div>
               <span class="arrow">→</span>
             </div>
@@ -343,6 +610,18 @@ onMounted(() => {
           <div class="section-header">
             <button @click="changeSection('prestataires')" class="btn-back">← Retour</button>
             <h1 class="section-title">{{ selectedPrestataire.nom }}</h1>
+          </div>
+
+          <!-- Indicateur de modifications -->
+          <div v-if="hasModifications(selectedPrestataire)" class="modifications-alert">
+            <div class="alert-content">
+              <span class="alert-icon">⚠️</span>
+              <div class="alert-text">
+                <strong>Ce prestataire a des modifications locales</strong>
+                <p>Champs modifiés : {{ getModifiedFields(selectedPrestataire).join(', ') || 'Aucun' }}</p>
+              </div>
+              <button @click="resetPrestataire" class="btn-reset">🔄 Réinitialiser</button>
+            </div>
           </div>
 
           <div class="prestataire-editor">
@@ -784,6 +1063,112 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.5);
 }
 
+.prestataire-item.has-modifications {
+  border-color: rgba(252, 220, 30, 0.4);
+  background: rgba(252, 220, 30, 0.05);
+}
+
+.prestataire-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.modification-badge {
+  background: rgba(252, 220, 30, 0.2);
+  color: #FCDC1E;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(252, 220, 30, 0.4);
+}
+
+.modified-fields {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modified-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 6px;
+}
+
+.modified-list {
+  font-size: 0.85rem;
+  color: #FCDC1E;
+  font-weight: 600;
+}
+
+.modifications-summary {
+  background: rgba(252, 220, 30, 0.1);
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.summary-text {
+  color: #FCDC1E;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.modifications-alert {
+  background: rgba(255, 193, 7, 0.15);
+  border: 2px solid rgba(255, 193, 7, 0.4);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+}
+
+.alert-text {
+  flex: 1;
+}
+
+.alert-text strong {
+  display: block;
+  color: #FCDC1E;
+  margin-bottom: 4px;
+  font-size: 1rem;
+}
+
+.alert-text p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.btn-reset {
+  background: rgba(255, 87, 34, 0.2);
+  border: 1px solid rgba(255, 87, 34, 0.4);
+  color: #ff5722;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+  background: rgba(255, 87, 34, 0.3);
+  border-color: rgba(255, 87, 34, 0.6);
+}
+
 .arrow {
   color: #FCDC1E;
   font-size: 1.5rem;
@@ -1011,6 +1396,165 @@ onMounted(() => {
   }
 }
 
+/* Programmation */
+.programmation-editor {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+}
+
+.day-selector-admin,
+.stage-selector-admin {
+  margin-bottom: 24px;
+}
+
+.day-selector-admin label,
+.stage-selector-admin label {
+  display: block;
+  color: #FCDC1E;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.slots-list {
+  margin-top: 24px;
+}
+
+.slots-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.slots-header h3 {
+  color: #FCDC1E;
+  font-size: 1.4rem;
+}
+
+.slots-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.slot-card {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.slot-card:hover {
+  border-color: rgba(252, 220, 30, 0.3);
+}
+
+.slot-card.editing {
+  border-color: #FCDC1E;
+  background: rgba(252, 220, 30, 0.1);
+}
+
+.slot-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.slot-info {
+  flex: 1;
+}
+
+.slot-artist-name {
+  color: #FCDC1E;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.slot-time {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.slot-style {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.slot-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.slot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit {
+  background: rgba(33, 150, 243, 0.2);
+  border: 1px solid rgba(33, 150, 243, 0.4);
+  color: #2196F3;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+  background: rgba(33, 150, 243, 0.3);
+}
+
+.btn-save-small {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  color: #4CAF50;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-save-small:hover {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.btn-cancel {
+  background: rgba(158, 158, 158, 0.2);
+  border: 1px solid rgba(158, 158, 158, 0.4);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: rgba(158, 158, 158, 0.3);
+}
+
+.empty-slots {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.programmation-actions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(252, 220, 30, 0.2);
+}
+
 @media (max-width: 768px) {
   .admin-layout {
     flex-direction: column;
@@ -1027,6 +1571,11 @@ onMounted(() => {
   }
 
   .map-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .slot-display {
     flex-direction: column;
     align-items: flex-start;
   }

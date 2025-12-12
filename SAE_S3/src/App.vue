@@ -44,21 +44,21 @@ const closePrestataireDropdown = () => {
   isPrestataireDropdownOpen.value = false
 }
 
-// CHANGED: Carte reste visible pour tous (y compris admin)
+// CHANGED: Admins peuvent voir tous les liens pour naviguer facilement
 const showProgrammationLinkInNav = computed(() => {
-  return userRole.value !== 'prestataire' && userRole.value !== 'admin'
+  return userRole.value !== 'prestataire'
 })
 
 const showReservationLinkInNav = computed(() => {
-  return userRole.value !== 'prestataire' && userRole.value !== 'admin'
+  return userRole.value !== 'prestataire'
 })
 
 const showPrestataireLink = computed(() => {
-  return userRole.value !== 'admin'
+  return true // Admins peuvent voir la liste des prestataires
 })
 
 const showAccueilLink = computed(() => {
-  return userRole.value !== 'admin'
+  return true // Admins peuvent voir l'accueil
 })
 
 const showAdminLink = computed(() => {
