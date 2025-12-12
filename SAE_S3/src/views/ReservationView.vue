@@ -264,9 +264,14 @@
 
 <script>
 import forfaitsData from '@/data/forfaits.json'
+import { usePanierStore } from '@/stores/panier'
 
 export default {
   name: 'ReservationView',
+  setup() {
+    const panierStore = usePanierStore()
+    return { panierStore }
+  },
   data() {
     const forfaits = JSON.parse(JSON.stringify(forfaitsData))
     Object.keys(forfaits).forEach((key) => {
@@ -502,30 +507,22 @@ export default {
           this.dayErrors[type] = 'Pas assez de places pour cette option.'
           return
         }
-        selected.stock -= requestedQty
-        forfait.stock = Math.max(0, forfait.stock - requestedQty)
 
-        if (type === 'twoDays' && Array.isArray(selected.linkedDays)) {
-          let oneDayDeduction = 0
-          selected.linkedDays.forEach((label) => {
-            const dayRef = this.findOneDayOption(label)
-            if (dayRef) {
-              dayRef.stock = Math.max(0, dayRef.stock - requestedQty)
-              oneDayDeduction += requestedQty
-            }
-          })
-          if (oneDayDeduction > 0) {
-            this.forfaits.oneDay.stock = Math.max(0, this.forfaits.oneDay.stock - oneDayDeduction)
-          }
-        }
-
-        this.sanitizeQuantity(type)
-        this.recordReservation(type, requestedQty, {
+        // Ajouter au panier au lieu de décrémenter le stock
+        this.panierStore.addItem({
+          type,
+          quantity: requestedQty,
           optionLabel: selected.label || '',
           displayLabel: type === 'oneDay'
             ? `Forfait 1 jour - ${selected.label}`
-            : `Forfait 2 jours - ${selected.label}`
+            : `Forfait 2 jours - ${selected.label}`,
+          userEmail: this.authUser.email
         })
+
+        // Réinitialiser la sélection
+        this.selections[type] = ''
+        this.quantities[type] = 1
+        alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
         return
       }
 
@@ -537,37 +534,52 @@ export default {
           this.dayErrors.threeDays = 'Pas assez de places disponibles sur les autres options.'
           return
         }
-        dependencies.forEach((ref) => {
-          ref.stock -= requestedQty
-        })
-        this.sanitizeQuantity(type)
-        this.recordReservation(type, requestedQty, {
+
+        // Ajouter au panier
+        this.panierStore.addItem({
+          type,
+          quantity: requestedQty,
           optionLabel: '3 jours',
-          displayLabel: 'Forfait 3 jours'
+          displayLabel: 'Forfait 3 jours',
+          userEmail: this.authUser.email
         })
+
+        this.quantities[type] = 1
+        alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
         return
       }
 
       if (type === 'parking' || type === 'camping') {
         if (forfait.stock >= requestedQty) {
-          forfait.stock -= requestedQty
-          this.sanitizeQuantity(type)
           const displayLabel = type === 'parking'
             ? 'Place de parking'
             : 'Emplacement de camping'
-          this.recordReservation(type, requestedQty, {
-            displayLabel
+
+          // Ajouter au panier
+          this.panierStore.addItem({
+            type,
+            quantity: requestedQty,
+            displayLabel,
+            userEmail: this.authUser.email
           })
+
+          this.quantities[type] = 1
+          alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
         }
         return
       }
 
       if (forfait.stock >= requestedQty) {
-        forfait.stock -= requestedQty
-        this.sanitizeQuantity(type)
-        this.recordReservation(type, requestedQty, {
-          displayLabel: 'Forfait'
+        // Ajouter au panier
+        this.panierStore.addItem({
+          type,
+          quantity: requestedQty,
+          displayLabel: 'Forfait',
+          userEmail: this.authUser.email
         })
+
+        this.quantities[type] = 1
+        alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
       }
     },
     closeAuthModal() {

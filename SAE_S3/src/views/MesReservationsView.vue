@@ -145,11 +145,17 @@ const formatReservationMeta = (resa) => {
   if (resa.quantity) {
     parts.push(`${resa.quantity} place${resa.quantity > 1 ? 's' : ''}`)
   }
+  if (resa.personalInfo) {
+    const fullName = `${resa.personalInfo.firstName || ''} ${resa.personalInfo.lastName || ''}`.trim()
+    if (fullName) {
+      parts.push(fullName)
+    }
+  }
   if (resa.createdAt) {
     try {
       const date = new Date(resa.createdAt)
       parts.push(
-        `le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
+        `Acheté le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
           'fr-FR',
           {
             hour: '2-digit',
@@ -390,5 +396,3 @@ h1 {
   }
 }
 </style>
-
-

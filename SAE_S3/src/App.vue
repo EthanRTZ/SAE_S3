@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { usePanierStore } from '@/stores/panier'
 
 const logoIcon = '/media/logo-icon.png'
 
@@ -7,6 +8,7 @@ const isMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
 const isPrestataireDropdownOpen = ref(false)
 const authUser = ref(null)
+const panierStore = usePanierStore()
 
 const loadAuthFromStorage = () => {
   try {
@@ -153,6 +155,10 @@ const logout = () => {
   }
   authUser.value = null
   isUserMenuOpen.value = false
+
+  // Vider le panier lors de la déconnexion
+  panierStore.clearPanier()
+
   window.dispatchEvent(new Event('auth-changed'))
 }
 </script>
@@ -201,6 +207,12 @@ const logout = () => {
           <router-link v-if="showAdminLink" to="/admin" class="nav-link">Admin</router-link>
           <router-link to="/carte" class="nav-link">Carte</router-link>
           <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link">Réservation</router-link>
+
+          <!-- Lien Panier avec badge -->
+          <router-link to="/panier" class="nav-link nav-link-panier">
+            Panier
+            <span v-if="panierStore.itemCount > 0" class="panier-badge">{{ panierStore.itemCount }}</span>
+          </router-link>
 
           <!-- Zone connexion / utilisateur (desktop) -->
           <div v-if="!isAuthenticated" class="guest-actions">
@@ -285,6 +297,13 @@ const logout = () => {
         <!-- CHANGED: Carte toujours visible -->
         <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Carte</router-link>
         <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Réservation</router-link>
+
+        <!-- Lien Panier mobile avec badge -->
+        <router-link to="/panier" class="nav-link-mobile nav-link-panier-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">
+          🛒 Panier
+          <span v-if="panierStore.itemCount > 0" class="panier-badge-mobile">{{ panierStore.itemCount }}</span>
+        </router-link>
+
         <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Admin</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
@@ -1009,5 +1028,47 @@ main {
 
 .prestataire-dropdown-mobile-menu .dropdown-item:hover {
   background: rgba(32,70,179,0.08);
+}
+
+/* Styles pour le lien Panier */
+.nav-link-panier {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panier-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff5252;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.nav-link-panier-mobile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panier-badge-mobile {
+  background: #ff5252;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  min-width: 22px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 </style>

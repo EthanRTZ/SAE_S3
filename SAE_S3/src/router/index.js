@@ -8,6 +8,8 @@ import ReservationView from "@/views/ReservationView.vue";
 import MesReservationsView from "@/views/MesReservationsView.vue";
 import RegisterView from "@/views/RegisterView.vue";
 import AdminView from "@/views/admin/AdminView.vue";
+import PanierView from "@/views/PanierView.vue";
+import PaymentView from "@/views/PaymentView.vue";
 
 const routes = [
     {
@@ -44,6 +46,16 @@ const routes = [
         path: '/mes-reservations',
         name: 'mes-reservations',
         component: MesReservationsView,
+    },
+    {
+        path: '/panier',
+        name: 'panier',
+        component: PanierView,
+    },
+    {
+        path: '/payment',
+        name: 'payment',
+        component: PaymentView,
     },
     {
         path: '/login',
