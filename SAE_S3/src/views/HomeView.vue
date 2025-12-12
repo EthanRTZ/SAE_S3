@@ -331,7 +331,7 @@ export default {
     // Gestion d'erreur image
     const handleImageError = (e) => {
       // CHANGED: utiliser le helper pour fallback
-      e.target.src = normalizePublicPath('/media/placeholder-prestataire.jpg');
+      e.target.src = normalizePublicPath('/media/placeholder-prestataire.png');
     };
 
     // Fonction de redirection vers la page prestataire
