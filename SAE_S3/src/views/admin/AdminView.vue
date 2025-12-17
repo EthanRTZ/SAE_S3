@@ -52,17 +52,26 @@ const loadData = async () => {
   }
 
   try {
-    const [usersResp, prestatairesResp] = await Promise.all([
+    const [usersResp, prestatairesResp, avisResp] = await Promise.all([
       fetch('/data/users.json', { cache: 'no-store' }),
-      fetch('/data/site.json', { cache: 'no-store' })
+      fetch('/data/site.json', { cache: 'no-store' }),
+      fetch('/data/avis.json', { cache: 'no-store' })
     ])
 
     const usersData = usersResp.ok ? await usersResp.json() : []
     const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+    const avisData = avisResp.ok ? await avisResp.json() : {}
 
     users.value = Array.isArray(usersData) ? usersData : []
-    prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestataireData.prestataires || [])) // Copie profonde
-    
+
+    // Filtrer uniquement les prestataires présents dans avis.json
+    const prestatairesValides = Object.keys(avisData)
+    const prestatairesFiltered = (prestataireData.prestataires || []).filter(p =>
+      prestatairesValides.includes(p.nom)
+    )
+
+    prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestatairesFiltered))
+
     // Charger les modifications locales
     const customRaw = localStorage.getItem('customPrestataires')
     if (customRaw) {
@@ -74,7 +83,7 @@ const loadData = async () => {
     }
     
     // Fusionner les données originales avec les modifications
-    prestataires.value = (prestataireData.prestataires || []).map(p => {
+    prestataires.value = prestatairesFiltered.map(p => {
       const custom = customPrestataires.value[p.nom]
       if (custom) {
         return { ...p, ...custom }
@@ -289,6 +298,70 @@ const addService = () => {
   })
 }
 
+// =======================
+// Stats avis par prestataire
+// =======================
+const avisStatsParPrestataire = ref([]) // [{ nom, moyenne, nbAvis, parNote, dernierAvis }]
+const selectedPrestataireStats = ref(null)
+
+const computeAvisStatsForPrestataires = async () => {
+  try {
+    // Charger avis depuis localStorage ou avis.json
+    let allAvis = null
+    const localRaw = localStorage.getItem('prestataireAvis')
+    if (localRaw) {
+      allAvis = JSON.parse(localRaw)
+    } else {
+      const resp = await fetch('/data/avis.json', { cache: 'no-store' }).catch(() => null)
+      if (resp && resp.ok) {
+        allAvis = await resp.json()
+        localStorage.setItem('prestataireAvis', JSON.stringify(allAvis))
+      } else {
+        allAvis = {}
+      }
+    }
+
+    const statsArray = prestataires.value.map((p) => {
+      const entry = allAvis[p.nom] || { avis: [] }
+      const avis = entry.avis || []
+      const base = {
+        nom: p.nom,
+        moyenne: 0,
+        nbAvis: avis.length,
+        parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        dernierAvis: null
+      }
+
+      if (!avis.length) return base
+
+      let total = 0
+      avis.forEach((a) => {
+        const n = a.note || 0
+        if (base.parNote[n] !== undefined) base.parNote[n]++
+        total += n
+      })
+      base.moyenne = total / avis.length
+
+      // dernier avis = le plus récent par date
+      const sorted = avis
+        .slice()
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      base.dernierAvis = sorted[sorted.length - 1] || null
+
+      return base
+    })
+
+    avisStatsParPrestataire.value = statsArray
+  } catch (e) {
+    console.error('Erreur calcul stats avis prestataires', e)
+    avisStatsParPrestataire.value = []
+  }
+}
+
+const selectPrestataireStats = (item) => {
+  selectedPrestataireStats.value = item
+}
+
 onMounted(() => {
   loadAuthFromStorage()
 
@@ -297,7 +370,10 @@ onMounted(() => {
     return
   }
 
-  loadData()
+  loadData().then(() => {
+    // Une fois prestataires chargés, on calcule les stats avis
+    computeAvisStatsForPrestataires()
+  })
 })
 </script>
 
@@ -713,8 +789,11 @@ onMounted(() => {
 
         <!-- Statistiques -->
         <div v-if="currentSection === 'statistiques'" class="section-content">
-          <h1 class="section-title">Statistiques des services</h1>
+          <h1 class="section-title">Statistiques</h1>
 
+          <!-- =============================== -->
+          <!-- Stats services (déjà présentes) -->
+          <!-- =============================== -->
           <div class="stats-charts">
             <div class="chart-card">
               <h3>Services par prestataire</h3>
@@ -751,6 +830,99 @@ onMounted(() => {
                   <span class="type-count">{{ count }}</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- ======================================= -->
+          <!-- NOUVELLE PARTIE : Stats avis prestataire -->
+          <!-- ======================================= -->
+          <div class="stats-charts" style="margin-top: 32px;">
+            <div class="chart-card">
+              <h3>Notes moyennes par prestataire</h3>
+              <p class="info-text">
+                Vue d’ensemble des avis (notes et commentaires) laissés sur chaque prestataire.
+              </p>
+
+              <div class="avis-stats-table-wrapper">
+                <table class="avis-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Prestataire</th>
+                      <th>Note moyenne</th>
+                      <th>Nb avis</th>
+                      <th>Dernier commentaire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="item in avisStatsParPrestataire"
+                      :key="item.nom"
+                      @click="selectPrestataireStats(item)"
+                      :class="{ 'row-clickable': true, 'row-selected': selectedPrestataireStats && selectedPrestataireStats.nom === item.nom }"
+                    >
+                      <td>{{ item.nom }}</td>
+                      <td>
+                        <span v-if="item.nbAvis">
+                          {{ item.moyenne.toFixed(1) }}/5
+                        </span>
+                        <span v-else>—</span>
+                      </td>
+                      <td>{{ item.nbAvis }}</td>
+                      <td class="last-comment">
+                        <span v-if="item.dernierAvis">
+                          "{{ item.dernierAvis.commentaire.length > 60 ? (item.dernierAvis.commentaire.slice(0, 60) + '…') : item.dernierAvis.commentaire }}"
+                        </span>
+                        <span v-else>Pas encore d’avis</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="chart-card" v-if="selectedPrestataireStats">
+              <h3>Détail des avis — {{ selectedPrestataireStats.nom }}</h3>
+              <div class="detail-avis-stats">
+                <div class="detail-note-block">
+                  <div class="detail-note-value">
+                    {{ selectedPrestataireStats.nbAvis ? selectedPrestataireStats.moyenne.toFixed(1) : '—' }}
+                  </div>
+                  <div class="detail-note-stars">
+                    <span
+                      v-for="i in 5"
+                      :key="i"
+                      class="star"
+                      :class="{ filled: selectedPrestataireStats.nbAvis && i <= Math.round(selectedPrestataireStats.moyenne) }"
+                    >★</span>
+                  </div>
+                  <div class="detail-note-meta">
+                    {{ selectedPrestataireStats.nbAvis }} avis
+                  </div>
+                </div>
+
+                <div class="detail-repartition">
+                  <div
+                    v-for="i in [5,4,3,2,1]"
+                    :key="i"
+                    class="avis-repartition-row"
+                  >
+                    <span class="avis-repartition-label">{{ i }}★</span>
+                    <div class="avis-repartition-bar">
+                      <div
+                        class="avis-repartition-fill"
+                        :style="{ width: selectedPrestataireStats.nbAvis ? (selectedPrestataireStats.parNote[i] / selectedPrestataireStats.nbAvis) * 100 + '%' : '0%' }"
+                      ></div>
+                    </div>
+                    <span class="avis-repartition-count">
+                      {{ selectedPrestataireStats.parNote[i] }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="info-text small">
+                Ces statistiques sont basées sur les avis saisis par les festivaliers sur chaque page prestataire.
+              </p>
             </div>
           </div>
         </div>
@@ -1386,6 +1558,139 @@ onMounted(() => {
   font-size: 1.1rem;
 }
 
+/* Styles pour la table des stats d'avis */
+.avis-stats-table-wrapper {
+  overflow-x: auto;
+}
+
+.avis-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.avis-stats-table th,
+.avis-stats-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.avis-stats-table th {
+  color: #FCDC1E;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.avis-stats-table tr:last-child td {
+  border-bottom: none;
+}
+
+.row-clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.row-clickable:hover {
+  background: rgba(252, 220, 30, 0.06);
+}
+
+.row-selected {
+  background: rgba(252, 220, 30, 0.12);
+}
+
+.last-comment {
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Détail avis */
+.detail-avis-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.detail-note-block {
+  min-width: 160px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(252, 220, 30, 0.4);
+  text-align: center;
+}
+
+.detail-note-value {
+  font-size: 2.3rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  margin-bottom: 4px;
+}
+
+.detail-note-stars .star {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 1.2rem;
+}
+
+.detail-note-stars .star.filled {
+  color: #FCDC1E;
+}
+
+.detail-note-meta {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.detail-repartition {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* Réutilisation du style de répartition */
+.avis-repartition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.avis-repartition-label {
+  width: 32px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.avis-repartition-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.avis-repartition-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.avis-repartition-count {
+  width: 30px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.info-text.small {
+  font-size: 0.8rem;
+  margin-top: 12px;
+}
+
 @media (max-width: 1024px) {
   .admin-sidebar {
     width: 220px;
@@ -1553,31 +1858,5 @@ onMounted(() => {
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid rgba(252, 220, 30, 0.2);
-}
-
-@media (max-width: 768px) {
-  .admin-layout {
-    flex-direction: column;
-  }
-
-  .admin-sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-  }
-
-  .chart-bar-item {
-    grid-template-columns: 1fr;
-  }
-
-  .map-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .slot-display {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 </style>

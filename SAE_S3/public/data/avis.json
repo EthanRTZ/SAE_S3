@@ -1,0 +1,362 @@
+{
+  "OTacos": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "Super tacos, rapide et parfait entre deux concerts !",
+        "date": "2025-01-15T18:30:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Très bon, juste un peu d'attente mais ça valait le coup.",
+        "date": "2025-01-15T20:10:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Les tacos sont délicieux et les portions généreuses !",
+        "date": "2025-01-16T12:45:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 3,
+        "commentaire": "Correct, mais j'aurais aimé plus d'options végétariennes.",
+        "date": "2025-01-16T19:20:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.25,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 0, "3": 1, "4": 1, "5": 2 }
+    }
+  },
+  "Free": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 4,
+        "commentaire": "Bonne couverture réseau, j'ai pu streamer tous les concerts.",
+        "date": "2025-01-15T17:05:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 5,
+        "commentaire": "Wi-Fi gratuit au top, ça change la vie sur le site du festival.",
+        "date": "2025-01-16T15:22:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 4,
+        "commentaire": "Service client réactif et réseau stable.",
+        "date": "2025-01-16T20:15:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.33,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 2, "5": 1 }
+    }
+  },
+  "Decathlon": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "Stand super pratique, j'ai trouvé un poncho à la dernière minute.",
+        "date": "2025-01-15T16:40:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Prix corrects pour un festival, bon choix de produits.",
+        "date": "2025-01-16T11:10:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Équipement de qualité et personnel très serviable.",
+        "date": "2025-01-16T14:30:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.67,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 2 }
+    }
+  },
+  "Red Bull": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 4,
+        "commentaire": "L'ambiance au stand est géniale, et ça réveille bien.",
+        "date": "2025-01-15T19:00:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 5,
+        "commentaire": "Animations très cool, parfait avant les derniers concerts.",
+        "date": "2025-01-16T21:30:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "L'énergie Red Bull à son meilleur ! Super expérience.",
+        "date": "2025-01-16T23:00:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 4,
+        "commentaire": "Bon stand, boissons fraîches et distribution rapide.",
+        "date": "2025-01-17T13:15:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.5,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 2, "5": 2 }
+    }
+  },
+  "Spotify": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "La playlist du festival est top, j'ai découvert plein d'artistes.",
+        "date": "2025-01-14T10:15:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Le stand d'écoute immersive est super sympa.",
+        "date": "2025-01-15T14:20:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Parfait pour découvrir de nouveaux sons entre les concerts.",
+        "date": "2025-01-16T16:45:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.67,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 2 }
+    }
+  },
+  "Poliakov": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 3,
+        "commentaire": "Cocktails bons mais un peu chers.",
+        "date": "2025-01-15T22:00:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Bonne ambiance, musique sympa au bar.",
+        "date": "2025-01-16T23:10:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 4,
+        "commentaire": "Bar festif, cocktails bien dosés !",
+        "date": "2025-01-17T00:30:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 2,
+        "commentaire": "Trop de monde, service un peu lent.",
+        "date": "2025-01-17T01:15:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 3.25,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 1, "3": 1, "4": 2, "5": 0 }
+    }
+  },
+  "Jack Daniel's": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "Bar très stylé, staff super sympa.",
+        "date": "2025-01-15T21:15:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Bonne sélection de cocktails, service rapide.",
+        "date": "2025-01-16T21:55:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Ambiance au top et whisky de qualité !",
+        "date": "2025-01-17T00:20:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.67,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 2 }
+    }
+  },
+  "Heetch": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 4,
+        "commentaire": "Application pratique pour rentrer après les concerts.",
+        "date": "2025-01-16T01:30:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 3,
+        "commentaire": "Un peu d'attente pour trouver un chauffeur tard dans la nuit.",
+        "date": "2025-01-16T02:05:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Super service, chauffeur sympa et trajet rapide !",
+        "date": "2025-01-17T01:45:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 4,
+        "commentaire": "Tarifs corrects, bon moyen de rentrer en sécurité.",
+        "date": "2025-01-17T02:30:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 0, "3": 1, "4": 2, "5": 1 }
+    }
+  },
+  "Veolia": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "Sanitaires propres tout le long du festival, merci !",
+        "date": "2025-01-15T13:40:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Bonne gestion des déchets, site globalement propre.",
+        "date": "2025-01-16T16:10:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Excellent travail, on ne voit jamais de déchets traîner.",
+        "date": "2025-01-17T11:20:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.67,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 2 }
+    }
+  },
+  "Securitas": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 4,
+        "commentaire": "Sécurité présente mais discrète, on se sent en confiance.",
+        "date": "2025-01-15T18:05:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 3,
+        "commentaire": "Contrôles un peu longs à l'entrée, mais ça reste correct.",
+        "date": "2025-01-15T17:45:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "Personnel très professionnel et rassurant.",
+        "date": "2025-01-16T19:30:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 4,
+        "commentaire": "Bonne organisation, on se sent protégé.",
+        "date": "2025-01-17T12:00:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 0, "3": 1, "4": 2, "5": 1 }
+    }
+  },
+  "Happn": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 5,
+        "commentaire": "Animations fun autour des rencontres, très original.",
+        "date": "2025-01-15T15:25:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 4,
+        "commentaire": "Concept sympa pour discuter avec d'autres festivaliers.",
+        "date": "2025-01-16T17:35:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 5,
+        "commentaire": "J'ai rencontré des gens géniaux grâce à Happn !",
+        "date": "2025-01-16T20:50:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4.67,
+      "nbAvis": 3,
+      "parNote": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 2 }
+    }
+  },
+  "Allianz": {
+    "avis": [
+      {
+        "id": 1,
+        "note": 4,
+        "commentaire": "Stand rassurant pour les questions d'assurance, staff dispo.",
+        "date": "2025-01-15T12:00:00.000Z"
+      },
+      {
+        "id": 2,
+        "note": 3,
+        "commentaire": "Explications parfois un peu techniques, mais utiles.",
+        "date": "2025-01-16T13:50:00.000Z"
+      },
+      {
+        "id": 3,
+        "note": 4,
+        "commentaire": "Bon service conseil, personnel à l'écoute.",
+        "date": "2025-01-17T10:30:00.000Z"
+      },
+      {
+        "id": 4,
+        "note": 5,
+        "commentaire": "Très professionnel, j'ai eu toutes les réponses à mes questions.",
+        "date": "2025-01-17T14:15:00.000Z"
+      }
+    ],
+    "stats": {
+      "moyenne": 4,
+      "nbAvis": 4,
+      "parNote": { "1": 0, "2": 0, "3": 1, "4": 2, "5": 1 }
+    }
+  }
+}

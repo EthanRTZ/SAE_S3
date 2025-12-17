@@ -176,34 +176,29 @@ export default {
       return tempDiv.textContent || tempDiv.innerText || '';
     },
     async loadPrestataires() {
+      this.loading = true;
       try {
-        // Charger les modifications locales
-        const customRaw = localStorage.getItem('customPrestataires');
-        let customPrestataires = null;
-        if (customRaw) {
-          try {
-            customPrestataires = JSON.parse(customRaw);
-          } catch (e) {
-            // ignore
-          }
-        }
+        const [siteResp, avisResp] = await Promise.all([
+          fetch('/data/site.json', { cache: 'no-store' }),
+          fetch('/data/avis.json', { cache: 'no-store' })
+        ]);
 
-        // Charger depuis le fichier JSON
-        const response = await fetch('/data/site.json');
-        const data = await response.json();
-        let prestataires = data.prestataires || [];
+        const siteData = siteResp.ok ? await siteResp.json() : { prestataires: [] };
+        const avisData = avisResp.ok ? await avisResp.json() : {};
+
+        // Filtrer uniquement les prestataires présents dans avis.json
+        const prestatairesValides = Object.keys(avisData);
+        let allPrestataires = siteData.prestataires || [];
+        allPrestataires = allPrestataires.filter(p => prestatairesValides.includes(p.nom));
 
         // Appliquer les modifications locales si elles existent
-        if (customPrestataires) {
-          prestataires = prestataires.map(p => {
-            if (customPrestataires[p.nom]) {
-              return { ...p, ...customPrestataires[p.nom] };
-            }
-            return p;
-          });
-        }
+        const custom = JSON.parse(localStorage.getItem('customPrestataires') || '{}');
+        allPrestataires = allPrestataires.map(p => {
+          const local = custom[p.nom];
+          return local ? { ...p, ...local } : p;
+        });
 
-        this.prestataires = prestataires;
+        this.prestataires = allPrestataires;
         this.types = [...new Set(this.prestataires.map(p => p.type))];
       } catch (error) {
         console.error('Erreur lors du chargement des prestataires:', error);

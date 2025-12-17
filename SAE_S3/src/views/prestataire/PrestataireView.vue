@@ -1,14 +1,14 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const authUser = ref(null)
 const prestataireInfo = ref(null)
 const loading = ref(true)
-const selectedSection = ref('presentation') // 'presentation' | 'services' | 'config' | 'user'
-const presentationText = ref('') // contenu texte simple
-const services = ref([]) // services modifiables
+const selectedSection = ref('presentation')
+const presentationText = ref('')
+const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 
 const loadAuthFromStorage = () => {
@@ -31,6 +31,11 @@ const loadPrestataireInfo = async () => {
   }
 
   try {
+    const [siteResp, avisResp] = await Promise.all([
+      fetch('/data/site.json', { cache: 'no-store' }),
+      fetch('/data/avis.json', { cache: 'no-store' })
+    ])
+
     const customRaw = localStorage.getItem('customPrestataires')
     let customPrestataires = null
     if (customRaw) {
@@ -41,9 +46,17 @@ const loadPrestataireInfo = async () => {
       }
     }
 
-    const resp = await fetch('/data/site.json', { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
+    const data = siteResp.ok ? await siteResp.json() : { prestataires: [] }
+    const avisData = avisResp.ok ? await avisResp.json() : {}
+
+    // Vérifier que le prestataire est dans avis.json
+    const prestatairesValides = Object.keys(avisData)
+    if (!prestatairesValides.includes(prestataireNom.value)) {
+      prestataireInfo.value = null
+      loading.value = false
+      return
+    }
+
     const prestataires = data.prestataires || []
 
     let prestataire = prestataires.find(p => p.nom === prestataireNom.value) || null
@@ -148,6 +161,56 @@ const formatPrix = (val) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val)
 }
 
+// =======================
+// NOUVEAU: stats de ventes
+// =======================
+const statsNotes = ref({
+  moyenne: 0,
+  nbAvis: 0,
+  parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  derniersAvis: []
+})
+
+const loadStatsNotes = () => {
+  if (!prestataireNom.value) return
+  try {
+    const localRaw = localStorage.getItem('prestataireAvis')
+    if (!localRaw) {
+      statsNotes.value = {
+        moyenne: 0,
+        nbAvis: 0,
+        parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        derniersAvis: []
+      }
+      return
+    }
+    const allAvis = JSON.parse(localRaw)
+    const data = allAvis[prestataireNom.value] || { avis: [] }
+    const avis = data.avis || []
+
+    const st = {
+      moyenne: 0,
+      nbAvis: avis.length,
+      parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      derniersAvis: avis.slice().reverse().slice(0, 10)
+    }
+
+    if (st.nbAvis) {
+      let total = 0
+      avis.forEach(a => {
+        const n = a.note || 0
+        if (st.parNote[n] !== undefined) st.parNote[n]++
+        total += n
+      })
+      st.moyenne = total / st.nbAvis
+    }
+
+    statsNotes.value = st
+  } catch (e) {
+    console.error('Erreur chargement stats notes', e)
+  }
+}
+
 onMounted(() => {
   loadAuthFromStorage()
 
@@ -157,7 +220,12 @@ onMounted(() => {
   }
 
   loadPrestataireInfo()
-  // notifier parent/sidebar que prestataire chargé (optionnel)
+  loadStatsNotes()
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'prestataireAvis') {
+      loadStatsNotes()
+    }
+  })
 })
 </script>
 
@@ -198,6 +266,10 @@ onMounted(() => {
             <li :class="{ active: selectedSection === 'services' }" @click="selectedSection = 'services'">
               <span class="menu-icon">🛠️</span>
               <span>Services</span>
+            </li>
+            <li :class="{ active: selectedSection === 'stats' }" @click="selectedSection = 'stats'">
+              <span class="menu-icon">📊</span>
+              <span>Statistiques</span>
             </li>
             <li :class="{ active: selectedSection === 'config' }" @click="selectedSection = 'config'">
               <span class="menu-icon">⚙️</span>
@@ -282,6 +354,100 @@ onMounted(() => {
             <div v-if="!services.length" class="empty-state">
               <p>📭 Aucun service défini.</p>
               <p class="empty-hint">Cliquez sur "Ajouter un service" pour commencer.</p>
+            </div>
+          </div>
+
+          <!-- ===========================
+               Statistiques (VENTES UNIQUEMENT)
+               =========================== -->
+          <div v-if="selectedSection === 'stats'" class="section-content">
+            <div class="section-header">
+              <h2>📊 Statistiques des avis</h2>
+              <p class="section-description">
+                Synthèse des notes et commentaires laissés par les festivaliers pour votre prestataire.
+              </p>
+            </div>
+
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                  <div class="stat-label">Note moyenne</div>
+                  <div class="stat-value">
+                    {{ statsNotes.nbAvis ? statsNotes.moyenne.toFixed(1) + '/5' : '- /5' }}
+                  </div>
+                  <div class="stat-meta">
+                    <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= Math.round(statsNotes.moyenne) }">
+                      ★
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-content">
+                  <div class="stat-label">Nombre d'avis</div>
+                  <div class="stat-value">{{ statsNotes.nbAvis }}</div>
+                  <div class="stat-meta">Commentaires publiés</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Répartition des notes -->
+            <div class="stats-section">
+              <h3 class="stats-section-title">Répartition des notes</h3>
+              <div v-if="statsNotes.nbAvis" class="avis-repartition">
+                <div
+                  v-for="i in [5,4,3,2,1]"
+                  :key="i"
+                  class="avis-repartition-row"
+                >
+                  <span class="avis-repartition-label">{{ i }}★</span>
+                  <div class="avis-repartition-bar">
+                    <div
+                      class="avis-repartition-fill"
+                      :style="{ width: (statsNotes.parNote[i] / statsNotes.nbAvis) * 100 + '%' }"
+                    ></div>
+                  </div>
+                  <span class="avis-repartition-count">{{ statsNotes.parNote[i] }}</span>
+                </div>
+              </div>
+              <div v-else class="empty-state">
+                <p>📭 Aucun avis pour le moment.</p>
+                <p class="empty-hint">
+                  Les statistiques apparaîtront lorsque les visiteurs auront laissé des commentaires.
+                </p>
+              </div>
+            </div>
+
+            <!-- Derniers avis -->
+            <div class="stats-section" v-if="statsNotes.derniersAvis.length">
+              <h3 class="stats-section-title">Derniers avis reçus</h3>
+              <div class="data-table-container">
+                <table class="data-table transactions-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Note</th>
+                      <th>Commentaire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="avis in statsNotes.derniersAvis" :key="avis.id">
+                      <td class="transaction-date">
+                        {{ new Date(avis.date).toLocaleString('fr-FR') }}
+                      </td>
+                      <td class="table-value">
+                        {{ avis.note }}/5
+                      </td>
+                      <td class="transaction-client">
+                        {{ avis.commentaire }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -813,5 +979,248 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   .prestataire-header h1 {
     font-size: 1.8rem;
   }
+}
+
+/* Tableaux de données */
+.data-table-container {
+  margin-top: 24px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(252,220,30,0.2);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.data-table thead {
+  background: linear-gradient(135deg, rgba(32,70,179,0.3) 0%, rgba(252,220,30,0.2) 100%);
+}
+
+.data-table thead th {
+  padding: 16px 20px;
+  text-align: left;
+  color: #FCDC1E;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(252,220,30,0.3);
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(252,220,30,0.05);
+}
+
+.data-table tbody td {
+  padding: 14px 20px;
+  color: rgba(255,255,255,0.9);
+}
+
+.data-table tfoot {
+  background: rgba(252,220,30,0.1);
+  border-top: 2px solid rgba(252,220,30,0.3);
+}
+
+.data-table tfoot td {
+  padding: 16px 20px;
+  color: #FCDC1E;
+  font-weight: 700;
+}
+
+/* === STYLES SPÉCIFIQUES VENTES === */
+.ventes-table .service-name-cell {
+  min-width: 200px;
+}
+
+.service-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: linear-gradient(
+    135deg,
+    rgba(252, 220, 30, 0.2) 0%,
+    rgba(252, 220, 30, 0.1) 100%
+  );
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  border-radius: 8px;
+  color: #FCDC1E;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.service-badge.small {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.table-montant {
+  font-weight: 700;
+  color: #4caf50;
+  font-size: 1.05rem;
+}
+
+.table-moyenne {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+}
+
+.percent-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.percent-value {
+  font-weight: 700;
+  color: #FCDC1E;
+  min-width: 50px;
+}
+
+.percent-bar-track {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.percent-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(252, 220, 30, 0.4);
+}
+
+/* Évolution mensuelle / tendances */
+.table-day {
+  font-weight: 600;
+  color: #FCDC1E;
+}
+
+.table-value {
+  font-weight: 700;
+  color: #fff;
+}
+
+.table-evolution {
+  font-weight: 600;
+}
+
+.table-evolution.positive {
+  color: #4caf50;
+}
+
+.table-evolution.negative {
+  color: #f44336;
+}
+
+.table-trend {
+  text-align: center;
+}
+
+.trend-icon {
+  font-size: 1.1rem;
+}
+
+.trend-icon.up {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Transactions récentes */
+.transactions-table {
+  font-size: 0.9rem;
+}
+
+.transaction-id {
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.transaction-date {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.transaction-client {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+/* Hover / animation légère sur les lignes */
+.data-table tbody tr {
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(252, 220, 30, 0.05);
+  transform: translateY(-1px);
+}
+
+/* réutilisation styles avis / répartition dans le back-office */
+.avis-repartition {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.avis-repartition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avis-repartition-label {
+  width: 32px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.avis-repartition-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.avis-repartition-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
+  border-radius: 999px;
+}
+
+.avis-repartition-count {
+  width: 30px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-card .star {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 1.1rem;
+}
+
+.stat-card .star.filled {
+  color: #FCDC1E;
 }
 </style>

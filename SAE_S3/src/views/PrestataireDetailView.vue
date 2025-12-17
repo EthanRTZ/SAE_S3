@@ -86,6 +86,123 @@
             🗺️ Voir sur la carte
           </router-link>
         </section>
+
+        <!-- ========================= -->
+        <!-- NOUVELLE SECTION : AVIS   -->
+        <!-- ========================= -->
+        <section class="detail-section">
+          <h2 class="section-title">Avis et notes</h2>
+
+          <!-- Stats globales -->
+          <div v-if="noteStats.nbAvis > 0" class="avis-stats">
+            <div class="avis-note-moyenne">
+              <div class="note-moyenne-val">{{ noteStats.moyenne.toFixed(1) }}</div>
+              <div class="note-moyenne-stars">
+                <span
+                  v-for="i in 5"
+                  :key="i"
+                  class="star"
+                  :class="{ filled: i <= Math.round(noteStats.moyenne) }"
+                >
+                  ★
+                </span>
+              </div>
+              <div class="note-moyenne-meta">
+                {{ noteStats.nbAvis }} avis au total
+              </div>
+            </div>
+            <div class="avis-repartition">
+              <div
+                v-for="i in [5,4,3,2,1]"
+                :key="i"
+                class="avis-repartition-row"
+              >
+                <span class="avis-repartition-label">{{ i }}★</span>
+                <div class="avis-repartition-bar">
+                  <div
+                    class="avis-repartition-fill"
+                    :style="{ width: noteStats.nbAvis ? (noteStats.parNote[i] / noteStats.nbAvis) * 100 + '%' : '0%' }"
+                  ></div>
+                </div>
+                <span class="avis-repartition-count">{{ noteStats.parNote[i] || 0 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-avis">
+            Aucun avis pour le moment. Soyez le premier à donner votre avis !
+          </div>
+
+          <!-- Formulaire de nouvel avis -->
+          <div class="avis-form">
+            <h3>Donner votre avis</h3>
+            <div class="avis-form-row">
+              <label>Note</label>
+              <div class="avis-stars-input">
+                <span
+                  v-for="i in 5"
+                  :key="i"
+                  class="star-input"
+                  :class="{ selected: i <= newAvis.note }"
+                  @click="newAvis.note = i"
+                >
+                  ★
+                </span>
+                <span class="note-text" v-if="newAvis.note > 0">
+                  {{ newAvis.note }}/5
+                </span>
+              </div>
+            </div>
+            <div class="avis-form-row">
+              <label>Commentaire</label>
+              <textarea
+                v-model="newAvis.commentaire"
+                class="avis-textarea"
+                rows="4"
+                placeholder="Partagez votre expérience avec ce prestataire..."
+              ></textarea>
+            </div>
+            <div class="avis-form-actions">
+              <button
+                type="button"
+                class="btn-map"
+                @click="submitAvis"
+                :disabled="submitting || newAvis.note === 0 || !newAvis.commentaire.trim()"
+              >
+                {{ submitting ? 'Envoi...' : 'Envoyer mon avis' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des avis -->
+          <div v-if="avisList.length" class="avis-list">
+            <h3 class="avis-list-title">Derniers avis</h3>
+            <div
+              v-for="avis in avisList.slice().reverse()"
+              :key="avis.id"
+              class="avis-item"
+            >
+              <div class="avis-item-header">
+                <div class="avis-item-note">
+                  <span class="avis-stars">
+                    <span
+                      v-for="i in 5"
+                      :key="i"
+                      class="star"
+                      :class="{ filled: i <= avis.note }"
+                    >
+                      ★
+                    </span>
+                  </span>
+                  <span class="avis-date">
+                    {{ new Date(avis.date).toLocaleString('fr-FR') }}
+                  </span>
+                </div>
+              </div>
+              <p class="avis-commentaire">{{ avis.commentaire }}</p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -100,11 +217,110 @@ const router = useRouter()
 const prestataire = ref(null)
 const loading = ref(true)
 
+// ================================
+// ÉTAT POUR LES AVIS / STATISTIQUES
+// ================================
+const avisList = ref([])
+const noteStats = ref({
+  moyenne: 0,
+  nbAvis: 0,
+  parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+})
+const newAvis = ref({ note: 0, commentaire: '' })
+const submitting = ref(false)
+
 const publicServices = computed(() => {
   if (!prestataire.value || !prestataire.value.services) return []
   return prestataire.value.services.filter(s => s.public !== false)
 })
 
+// --------- AVIS : chargement / sauvegarde / calcul ---------
+const loadAvisFromStorage = async (prestataireNom) => {
+  try {
+    const localRaw = localStorage.getItem('prestataireAvis')
+    let allAvis = localRaw ? JSON.parse(localRaw) : null
+
+    // si aucun avis en local, initialiser depuis avis.json
+    if (!allAvis) {
+      const resp = await fetch('/data/avis.json', { cache: 'no-store' }).catch(() => null)
+      if (resp && resp.ok) {
+        allAvis = await resp.json()
+      } else {
+        allAvis = {}
+      }
+      localStorage.setItem('prestataireAvis', JSON.stringify(allAvis))
+    }
+
+    const data = allAvis[prestataireNom] || { avis: [], stats: null }
+    avisList.value = data.avis || []
+    computeNoteStats()
+  } catch (e) {
+    console.error('Erreur chargement avis', e)
+    avisList.value = []
+    computeNoteStats()
+  }
+}
+
+const saveAvisToStorage = (prestataireNom) => {
+  try {
+    const localRaw = localStorage.getItem('prestataireAvis')
+    const allAvis = localRaw ? JSON.parse(localRaw) : {}
+    allAvis[prestataireNom] = {
+      avis: avisList.value,
+      stats: noteStats.value
+    }
+    localStorage.setItem('prestataireAvis', JSON.stringify(allAvis))
+  } catch (e) {
+    console.error('Erreur sauvegarde avis', e)
+  }
+}
+
+const computeNoteStats = () => {
+  const stats = {
+    moyenne: 0,
+    nbAvis: avisList.value.length,
+    parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  }
+
+  if (!stats.nbAvis) {
+    noteStats.value = stats
+    return
+  }
+
+  let total = 0
+  avisList.value.forEach(a => {
+    const n = a.note || 0
+    if (stats.parNote[n] !== undefined) {
+      stats.parNote[n]++
+    }
+    total += n
+  })
+  stats.moyenne = total / stats.nbAvis
+  noteStats.value = stats
+}
+
+const submitAvis = async () => {
+  if (!prestataire.value) return
+  if (newAvis.value.note === 0 || !newAvis.value.commentaire.trim()) return
+
+  submitting.value = true
+  try {
+    const now = new Date().toISOString()
+    avisList.value.push({
+      id: avisList.value.length + 1,
+      note: newAvis.value.note,
+      commentaire: newAvis.value.commentaire.trim(),
+      date: now
+    })
+    computeNoteStats()
+    saveAvisToStorage(prestataire.value.nom)
+    newAvis.value = { note: 0, commentaire: '' }
+  } finally {
+    submitting.value = false
+  }
+}
+
+// --------- Chargement du prestataire + avis ---------
 const loadPrestataire = async () => {
   loading.value = true
   try {
@@ -136,6 +352,11 @@ const loadPrestataire = async () => {
     }
 
     prestataire.value = found || null
+
+    // Charger les avis si le prestataire est trouvé
+    if (prestataire.value?.nom) {
+      await loadAvisFromStorage(prestataire.value.nom)
+    }
   } catch (error) {
     console.error('Erreur lors du chargement du prestataire:', error)
     prestataire.value = null
@@ -492,6 +713,203 @@ onMounted(() => {
 
 .btn-back:hover {
   background: rgba(252, 220, 30, 0.3);
+}
+
+/* ========== STYLES AVIS / NOTES ========== */
+.avis-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.avis-note-moyenne {
+  min-width: 180px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  text-align: center;
+}
+
+.note-moyenne-val {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  margin-bottom: 4px;
+}
+
+.note-moyenne-stars .star {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 1.3rem;
+}
+
+.note-moyenne-stars .star.filled {
+  color: #FCDC1E;
+}
+
+.note-moyenne-meta {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.avis-repartition {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.avis-repartition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avis-repartition-label {
+  width: 32px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.avis-repartition-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.avis-repartition-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.avis-repartition-count {
+  width: 30px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.empty-avis {
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Formulaire */
+.avis-form {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.avis-form h3 {
+  margin-bottom: 12px;
+  color: #FCDC1E;
+}
+
+.avis-form-row {
+  margin-bottom: 12px;
+}
+
+.avis-form-row label {
+  display: block;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 6px;
+}
+
+.avis-stars-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.star-input {
+  cursor: pointer;
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.3);
+  transition: transform 0.1s ease, color 0.15s ease;
+}
+
+.star-input.selected {
+  color: #FCDC1E;
+  transform: scale(1.1);
+}
+
+.note-text {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.avis-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  padding: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.avis-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Liste des avis */
+.avis-list {
+  margin-top: 24px;
+}
+
+.avis-list-title {
+  font-size: 1.2rem;
+  color: #FCDC1E;
+  margin-bottom: 12px;
+}
+
+.avis-item {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.avis-item:first-of-type {
+  border-top: none;
+}
+
+.avis-item-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avis-stars .star {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.avis-stars .star.filled {
+  color: #FCDC1E;
+}
+
+.avis-date {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.avis-commentaire {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 @media (max-width: 768px) {
