@@ -233,15 +233,29 @@ export default {
         const [lat, lng] = parts;
         const icon = this.getIconForType(a.type);
         const layer = L.marker([lat, lng], { icon });
+        const prestataireNom = encodeURIComponent(a.nom);
         const html = `
           <div class="popup-activite">
             <h3>${a.nom}</h3>
             <p><strong>Type:</strong> ${a.type}</p>
             ${a.description ? `<p>${a.description}</p>` : ''}
+            <a href="/prestataire/${prestataireNom}" class="popup-link">Voir les détails →</a>
           </div>
         `;
         layer._pinType = a.type;
         layer.bindPopup(html);
+        
+        // Tooltip simple au survol (style similaire aux zones)
+        layer.bindTooltip(`${a.nom} (${a.type})`, {
+          permanent: false,
+          direction: 'top',
+          offset: [0, -10]
+        });
+        
+        // Ajouter un gestionnaire de clic pour rediriger vers la page de détail
+        layer.on('click', () => {
+          this.$router.push(`/prestataire/${prestataireNom}`);
+        });
         const id = `act_${idx++}`;
         this.markerLayers[id] = layer;
       });
@@ -473,6 +487,43 @@ export default {
 }
 .bulk-actions button:hover {
   background: #f1f1f1;
+}
+
+/* Styles pour le popup des prestataires */
+:deep(.popup-activite) {
+  padding: 12px;
+  min-width: 200px;
+}
+
+:deep(.popup-activite h3) {
+  margin: 0 0 8px 0;
+  color: #2046b3;
+  font-size: 1.1rem;
+}
+
+:deep(.popup-activite p) {
+  margin: 4px 0;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+:deep(.popup-link) {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 6px rgba(252, 220, 30, 0.3);
+}
+
+:deep(.popup-link:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(252, 220, 30, 0.4);
 }
 
 @media (max-width: 700px) {

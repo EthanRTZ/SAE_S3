@@ -334,11 +334,11 @@ export default {
       e.target.src = normalizePublicPath('/media/placeholder-prestataire.png');
     };
 
-    // Fonction de redirection vers la page prestataire
+    // Fonction de redirection vers la page de détail du prestataire
     const goToPrestataire = (nom) => {
       router.push({
-        name: 'prestataire',
-        params: { nom: nom }
+        name: 'prestataire-detail',
+        params: { nom: encodeURIComponent(nom) }
       });
     };
 

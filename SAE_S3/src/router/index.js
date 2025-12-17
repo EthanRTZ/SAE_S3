@@ -33,6 +33,11 @@ const routes = [
         component: EspacePrestataireView,
     },
     {
+        path: '/prestataire/:nom',
+        name: 'prestataire-detail',
+        component: () => import('@/views/PrestataireDetailView.vue')
+    },
+    {
         path: '/carte',
         name: 'carte',
         component: CarteView,

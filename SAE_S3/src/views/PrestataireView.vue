@@ -56,7 +56,12 @@
       </div>
 
       <div v-else class="cards">
-        <div v-for="p in filteredPrestataires" :key="p.nom" class="card">
+        <router-link
+          v-for="p in filteredPrestataires"
+          :key="p.nom"
+          :to="`/prestataire/${encodeURIComponent(p.nom)}`"
+          class="card card-clickable"
+        >
           <div class="card-header">
             <h2 class="card-title">{{ p.nom }}</h2>
             <span class="badge">{{ p.type }}</span>
@@ -80,10 +85,10 @@
             </ul>
           </div>
 
-          <div class="contacts">
+          <div class="contacts" @click.stop>
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
           </div>
-        </div>
+        </router-link>
       </div>
     </div>
   </div>
@@ -434,6 +439,20 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.card-clickable {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card-clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.55);
+  border-color: rgba(252, 220, 30, 0.5);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .card-header {
