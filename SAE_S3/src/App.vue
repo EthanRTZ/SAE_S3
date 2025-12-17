@@ -161,16 +161,6 @@ const logout = () => {
 
   window.dispatchEvent(new Event('auth-changed'))
 }
-
-// CHANGED: ajout d'un handler pour le clic "Laisser un avis"
-const openFeedback = (e) => {
-  // Empêche propagation si nécessaire
-  if (e && e.preventDefault) e.preventDefault()
-  // Déclenche un événement custom que tu pourras écouter ailleurs pour afficher un modal / route
-  window.dispatchEvent(new Event('open-feedback'))
-  // Log discret pour développement
-  console.log('open-feedback event dispatched')
-}
 </script>
 
 <template>
@@ -375,69 +365,6 @@ const openFeedback = (e) => {
     <main>
       <router-view />
     </main>
-
-    <!-- CHANGED: footer complet avec colonnes classiques -->
-    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
-      <div class="footer-top">
-        <div class="footer-container">
-          <div class="footer-column footer-brand">
-            <router-link to="/" class="footer-logo" aria-label="Accueil">
-              <img :src="logoIcon" alt="Golden Coast" class="logo-icon-footer" />
-            </router-link>
-            <p class="footer-desc">Golden Coast — Festival rap français • 28-30 août 2026 • Corcelles-les-Monts</p>
-            <div class="footer-copy">© 2026 Golden Coast</div>
-          </div>
-
-          <nav class="footer-column footer-nav" aria-label="Liens principaux">
-            <h4>Navigation</h4>
-            <ul class="footer-links">
-              <li><router-link to="/">Accueil</router-link></li>
-              <li><router-link to="/programmation">Programmation</router-link></li>
-              <li><router-link :to="prestataireLink">Prestataires</router-link></li>
-              <li><router-link to="/carte">Carte</router-link></li>
-              <li><router-link to="/reservation">Réservation</router-link></li>
-            </ul>
-          </nav>
-
-          <div class="footer-column footer-support" aria-label="Support">
-            <h4>Support</h4>
-            <ul class="footer-links">
-              <li><a href="mailto:contact@goldencoast.example" rel="noopener">Contact</a></li>
-              <li><a href="#" rel="noopener">FAQ</a></li>
-              <li><a href="#" rel="noopener">Aide billetterie</a></li>
-            </ul>
-            <button class="footer-feedback" @click.prevent="openFeedback" aria-label="Laisser un avis">Laisser un avis</button>
-          </div>
-
-          <div class="footer-column footer-legal" aria-label="Informations légales et réseaux">
-            <h4>Légal & réseaux</h4>
-            <ul class="footer-links">
-              <li><a href="#" rel="noopener">Mentions légales</a></li>
-              <li><a href="#" rel="noopener">Politique de confidentialité</a></li>
-              <li><a href="#" rel="noopener">Conditions Générales</a></li>
-            </ul>
-
-            <div class="social-links" aria-label="Réseaux sociaux">
-              <!-- Icônes simples textuelles ; remplace par tes URLs -->
-              <a href="#" aria-label="Facebook" rel="noopener" class="social">Facebook</a>
-              <a href="#" aria-label="Instagram" rel="noopener" class="social">Instagram</a>
-              <a href="#" aria-label="Twitter" rel="noopener" class="social">X</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <div class="footer-container small">
-          <div class="bottom-left">Site réalisé par Golden Coast</div>
-          <div class="bottom-right">
-            <a href="#" rel="noopener">Plan du site</a>
-            <span class="sep">•</span>
-            <a href="#" rel="noopener">Accessibilité</a>
-          </div>
-        </div>
-      </div>
-    </footer>
   </div>
 </template>
 
@@ -629,152 +556,519 @@ main {
      remplace margin-top par : padding-top: 64px; */
 }
 
-/* CHANGED: styles pour le footer étendu */
-.site-footer {
-  width: 100%;
-  background: linear-gradient(90deg, rgba(32,70,179,0.95), rgba(6,18,50,0.95));
-  color: #fff;
-  border-top: 2px solid #FCDC1E;
-  box-shadow: 0 -6px 24px rgba(0,0,0,0.12);
-  padding: 24px 12px 8px;
-  position: relative;
-  z-index: 900;
-  font-size: 0.95rem;
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .nav-menu {
+    display: none;
+  }
+  
+  .nav-toggle {
+    display: flex;
+  }
+  
+  .nav-menu-mobile {
+    display: flex;
+  }
+  
+  .nav-container {
+    padding: 0 12px;
+    justify-content: space-between;
+  }
+  
+  .nav-logo h2 {
+    font-size: 1.4rem;
+  }
 }
 
-/* wrapper commun */
-.footer-top {
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.footer-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  gap: 28px;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-/* variant small pour le bottom */
-.footer-container.small {
-  max-width: 1200px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  font-size: 0.9rem;
-}
-
-/* colonnes */
-.footer-column {
-  flex: 1;
-  min-width: 180px;
-}
-
-/* marque */
-.footer-brand .footer-logo {
-  display: inline-block;
-  margin-bottom: 10px;
-}
-.logo-icon-footer {
-  height: 40px;
-  width: auto;
-  display: block;
-}
-.footer-desc {
-  color: rgba(255,255,255,0.85);
-  margin: 8px 0 12px;
-  font-size: 0.92rem;
-  line-height: 1.35;
-}
-.footer-copy {
-  color: rgba(252,220,30,0.9);
-  font-weight: 700;
-}
-
-/* titres colonnes */
-.footer-column h4 {
-  font-size: 1rem;
-  color: #FCDC1E;
-  margin-bottom: 10px;
-  font-weight: 800;
-}
-
-/* liens */
-.footer-links {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 10px;
-}
-.footer-links li { margin: 6px 0; }
-.footer-links a,
-.footer-links router-link {
-  color: #ffffff;
-  text-decoration: none;
-  opacity: 0.95;
-  transition: color 0.12s ease, opacity 0.12s ease;
-}
-.footer-links a:hover,
-.footer-links router-link:hover {
-  color: #FCDC1E;
-  opacity: 1;
-  text-decoration: underline;
-}
-
-/* bouton avis (réutilise style existant mais adapté) */
-.footer-feedback {
-  margin-top: 8px;
-  display: inline-block;
-  background: transparent;
-  color: #FCDC1E;
-  border: 2px solid rgba(252,220,30,0.25);
-  padding: 8px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
-}
-.footer-feedback:hover {
-  background: #FCDC1E;
-  color: #0b1e55;
-  transform: translateY(-2px);
-}
-
-/* réseaux sociaux */
-.social-links {
+/* Styles pour le bouton Connexion (desktop) */
+.guest-actions {
   display: flex;
   gap: 10px;
-  margin-top: 8px;
-  flex-wrap: wrap;
+  align-items: center;
 }
-.social {
-  color: #fff;
-  background: rgba(255,255,255,0.06);
-  padding: 6px 10px;
-  border-radius: 8px;
-  text-decoration: none;
+
+.login-btn,
+.signup-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  background: #FCDC1E;
+  color: #2046b3;
+  border-radius: 12px;
   font-weight: 700;
+  text-decoration: none;
+  border: 2px solid transparent;
+  margin-left: 8px; /* espace entre les liens et le bouton */
+  transition: background 0.12s, transform 0.12s;
+}
+.login-btn:hover,
+.signup-btn:hover {
+  background: #fff176;
+  transform: translateY(-1px);
+}
+
+.signup-btn {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.45);
+}
+
+.signup-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #2046b3;
+}
+
+/* Styles pour le bouton Connexion (mobile) */
+.login-btn-mobile,
+.signup-btn-mobile {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px 0;
+  background: #FCDC1E;
+  color: #2046b3;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 12px;
+  border: 2px solid transparent;
+}
+.login-btn-mobile:hover,
+.signup-btn-mobile:hover {
+  background: #fff176;
+}
+
+.signup-btn-mobile {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.45);
+  margin-top: 10px;
+}
+
+.signup-btn-mobile:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* Assure que le bouton desktop reste visible dans la nav-menu */
+.nav-menu .login-btn {
+  align-self: center;
+}
+
+.guest-actions-mobile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Zone auth desktop */
+.auth-desktop {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.auth-email-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.auth-email-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.dropdown-icon {
+  transition: transform 0.2s ease;
+  color: #FCDC1E;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  z-index: 1001;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-profile-link {
+  text-decoration: none;
+  display: block;
+  transition: background 0.12s ease;
+}
+
+.user-profile-link:hover {
+  background: rgba(32,70,179,0.05);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(32,70,179,0.1) 0%, rgba(252,220,30,0.1) 100%);
+  transition: background 0.12s ease;
+}
+
+.user-profile-link:hover .user-profile {
+  background: linear-gradient(135deg, rgba(32,70,179,0.15) 0%, rgba(252,220,30,0.15) 100%);
+}
+
+.user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2046b3 0%, #FCDC1E 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-email {
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.user-role {
+  color: rgba(32,70,179,0.7);
   font-size: 0.85rem;
 }
-.social:hover { background: rgba(252,220,30,0.12); color: #FCDC1E; }
 
-/* footer bottom */
-.footer-bottom { margin-top: 12px; }
-.bottom-left { color: rgba(255,255,255,0.8); }
-.bottom-right a { color: rgba(255,255,255,0.85); text-decoration: none; margin-left: 8px; }
-.bottom-right a:hover { color: #FCDC1E; text-decoration: underline; }
-.sep { margin: 0 8px; color: rgba(255,255,255,0.25); }
+.dropdown-divider {
+  height: 1px;
+  background: rgba(32,70,179,0.1);
+  margin: 8px 0;
+}
 
-/* Responsive */
-@media screen and (max-width: 900px) {
-  .footer-container {
-    flex-direction: column;
-    gap: 18px;
-    align-items: stretch;
-  }
-  .footer-column { min-width: auto; }
-  .footer-container.small { flex-direction: column; gap: 6px; text-align: center; }
-  .bottom-right { display: flex; gap: 8px; justify-content: center; }
+.dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+.logout-item {
+  color: #d32f2f;
+}
+
+.logout-item:hover {
+  background: rgba(211,47,47,0.1);
+}
+
+/* Zone auth mobile */
+.auth-mobile {
+  position: relative;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-email-btn-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.auth-email-btn-mobile:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.user-dropdown-mobile {
+  width: 100%;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  margin-top: 8px;
+  animation: slideDown 0.2s ease;
+}
+
+.user-dropdown-mobile .user-profile-link {
+  text-decoration: none;
+  display: block;
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .user-profile-link:hover {
+  background: rgba(32,70,179,0.05);
+}
+
+.user-dropdown-mobile .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(32,70,179,0.1) 0%, rgba(252,220,30,0.1) 100%);
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .user-profile-link:hover .user-profile {
+  background: linear-gradient(135deg, rgba(32,70,179,0.15) 0%, rgba(252,220,30,0.15) 100%);
+}
+
+.user-dropdown-mobile .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2046b3 0%, #FCDC1E 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.user-dropdown-mobile .user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-dropdown-mobile .user-email {
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.user-dropdown-mobile .user-role {
+  color: rgba(32,70,179,0.7);
+  font-size: 0.85rem;
+}
+
+.user-dropdown-mobile .dropdown-divider {
+  height: 1px;
+  background: rgba(32,70,179,0.1);
+  margin: 8px 0;
+}
+
+.user-dropdown-mobile .dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.user-dropdown-mobile .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+.user-dropdown-mobile .logout-item {
+  color: #d32f2f;
+}
+
+.user-dropdown-mobile .logout-item:hover {
+  background: rgba(211,47,47,0.1);
+}
+
+/* Menu déroulant Prestataire */
+.prestataire-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-link-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.nav-link-dropdown .dropdown-icon {
+  transition: transform 0.2s ease;
+  color: #FCDC1E;
+}
+
+.nav-link-dropdown.dropdown-open {
+  color: #2046b3;
+  background: #FCDC1E;
+  border-color: #FCDC1E;
+}
+
+.prestataire-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  z-index: 1001;
+  animation: slideDown 0.2s ease;
+}
+
+.prestataire-dropdown .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(32,70,179,0.05);
+}
+
+.prestataire-dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.prestataire-dropdown .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+/* Mobile dropdown */
+.prestataire-dropdown-mobile {
+  width: 100%;
+}
+
+.prestataire-dropdown-mobile-menu {
+  width: 100%;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(252,220,30,0.3);
+  overflow: hidden;
+  margin-top: 8px;
+  animation: slideDown 0.2s ease;
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  color: #2046b3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(32,70,179,0.05);
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.prestataire-dropdown-mobile-menu .dropdown-item:hover {
+  background: rgba(32,70,179,0.08);
+}
+
+/* Styles pour le lien Panier */
+.nav-link-panier {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panier-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff5252;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.nav-link-panier-mobile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panier-badge-mobile {
+  background: #ff5252;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  min-width: 22px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 </style>
