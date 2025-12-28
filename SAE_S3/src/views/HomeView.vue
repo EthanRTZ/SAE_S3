@@ -6,9 +6,9 @@
         <source :src="normalizePublicPath('/media/fond.mp4')" type="video/mp4">
       </video>
       <div class="hero-content">
-        <h1 class="hero-title">GOLDEN COAST FESTIVAL V3</h1>
-        <p class="hero-date"><strong>28 - 29 - 30 août 2026</strong></p>
-        <p class="hero-location"><strong>CORCELLES-LES-MONTS • DIJON</strong></p>
+        <h1 class="hero-title">{{ festivalPresentation.titre }}</h1>
+        <p class="hero-date"><strong>{{ festivalPresentation.date }}</strong></p>
+        <p class="hero-location"><strong>{{ festivalPresentation.lieu }}</strong></p>
         <div class="hero-buttons">
           <router-link to="/reservation" class="btn-hero btn-primary">BILLETTERIE</router-link>
           <router-link to="/programmation" class="btn-hero btn-secondary">Programmation</router-link>
@@ -44,18 +44,18 @@
           <div class="about-grid">
             <div class="about-card">
               <div class="card-icon">🎤</div>
-              <h3>100% RAP FR</h3>
-              <p>Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d'affiche et les talents émergents.</p>
+              <h3>{{ festivalPresentation.aboutCard1Titre }}</h3>
+              <p v-html="festivalPresentation.aboutCard1Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">🌳</div>
-              <h3>SITE NATUREL</h3>
-              <p>Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.</p>
+              <h3>{{ festivalPresentation.aboutCard2Titre }}</h3>
+              <p v-html="festivalPresentation.aboutCard2Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">👥</div>
-              <h3>52 000 FESTIVALIERS</h3>
-              <p>Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.</p>
+              <h3>{{ festivalPresentation.aboutCard3Titre }}</h3>
+              <p v-html="festivalPresentation.aboutCard3Texte"></p>
             </div>
           </div>
         </div>
@@ -65,38 +65,25 @@
     <section class="description-section">
       <div class="description-container two-col">
         <div class="description-left">
-          <h2 class="description-title"><strong>Le rendez-vous des fans de rap</strong></h2>
-
-          <p class="description-text">
-            Plonge au cœur de l’expérience Golden Coast Festival, l’événement rap français qui transforme la fin de l’été en un moment d’exception.<br/><br/>
-            Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap &amp; boom bap d’une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.
-          </p>
-
+          <h2 class="description-title"><strong>{{ festivalPresentation.desc1Titre }}</strong></h2>
+          <p class="description-text" v-html="festivalPresentation.desc1Texte"></p>
           <div class="description-highlights">
-            <span class="highlight-chip"><strong>Les plus grandes stars du rap français</strong></span>
-            <span class="highlight-chip"><strong>Boissons & street-food</strong></span>
+            <span class="highlight-chip"><strong>{{ festivalPresentation.desc1Chip1 }}</strong></span>
+            <span class="highlight-chip"><strong>{{ festivalPresentation.desc1Chip2 }}</strong></span>
           </div>
         </div>
-
         <div class="description-right">
-          <!-- CHANGED: bind src via helper -->
           <img :src="normalizePublicPath('/media/description.png')" alt="Golden Coast Festival" class="description-image" />
         </div>
       </div>
 
       <div class="description-container two-col">
         <div class="description-right">
-          <!-- CHANGED: bind src via helper -->
           <img :src="normalizePublicPath('/media/accueil2.jpeg')" alt="Ambiance Golden Coast" class="description-image" />
         </div>
-
         <div class="description-left">
-          <h2 class="description-title"><strong>Une immersion totale</strong></h2>
-
-          <p class="description-text">
-            Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>
-            Les afters confidentiels, réservés à ceux qui veulent prolonger l’instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c’est plus qu’un rendez-vous : c’est l’événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.
-          </p>
+          <h2 class="description-title"><strong>{{ festivalPresentation.desc2Titre }}</strong></h2>
+          <p class="description-text" v-html="festivalPresentation.desc2Texte"></p>
         </div>
       </div>
     </section>
@@ -144,8 +131,8 @@
     <!-- Section Carte -->
     <section class="map-section">
       <div class="map-container">
-        <h2 class="section-title">LOCALISATION</h2>
-        <p class="map-intro">Retrouvez tous les points d'intérêt du festival : scènes, parkings, campings et plus encore.</p>
+        <h2 class="section-title">{{ festivalPresentation.mapTitre }}</h2>
+        <p class="map-intro">{{ festivalPresentation.mapIntro }}</p>
         <!-- pleine largeur avec cadre léger -->
         <div class="map-frame">
           <div class="map-inner">
@@ -161,9 +148,9 @@
     <!-- Section CTA -->
     <section class="cta-section">
       <div class="cta-container">
-        <h2 class="cta-title"><strong>PRÊT À VIVRE L'EXPÉRIENCE ?</strong></h2>
-        <p class="cta-text"><strong>Réservez tes billets dès maintenant</strong> et rejoignez-nous pour trois jours inoubliables !</p>
-        <router-link to="/reservation" class="btn-cta">RÉSERVER MA PLACE</router-link>
+        <h2 class="cta-title"><strong>{{ festivalPresentation.ctaTitre }}</strong></h2>
+        <p class="cta-text"><strong>{{ festivalPresentation.ctaTexte }}</strong></p>
+        <router-link to="/reservation" class="btn-cta">{{ festivalPresentation.ctaBouton }}</router-link>
       </div>
     </section>
 
@@ -242,15 +229,12 @@ export default {
   setup() {
     const router = useRouter();
 
-    // CHANGED: helper pour normaliser les chemins d'assets publics
     const normalizePublicPath = (p) => {
       if (!p) return p;
-      // Convertit "/public/..." en "/..." si jamais un chemin erroné est présent
       return p.replace(/^\/?public\//, '/');
     };
 
     const artists = [
-      // CHANGED: utiliser normalizePublicPath pour garantir un chemin root correct
       { name: 'Booba', img: normalizePublicPath('/media/artistes/booba.jpg') },
       { name: 'SCH', img: normalizePublicPath('/media/artistes/SCH.jpg') },
       { name: 'SDM', img: normalizePublicPath('/media/artistes/SDM.jpg') },
@@ -258,6 +242,43 @@ export default {
       { name: 'Ninho', img: normalizePublicPath('/media/artistes/Ninho.jpg') },
       { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
+
+    // Textes personnalisables
+    const festivalPresentation = ref({
+      titre: 'GOLDEN COAST FESTIVAL V3',
+      date: '28 - 29 - 30 août 2026',
+      lieu: 'CORCELLES-LES-MONTS • DIJON',
+      aboutCard1Titre: '100% RAP FR',
+      aboutCard1Texte: 'Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d\'affiche et les talents émergents.',
+      aboutCard2Titre: 'SITE NATUREL',
+      aboutCard2Texte: 'Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.',
+      aboutCard3Titre: '52 000 FESTIVALIERS',
+      aboutCard3Texte: 'Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.',
+      desc1Titre: 'Le rendez-vous des fans de rap',
+      desc1Texte: 'Plonge au cœur de l\'expérience Golden Coast Festival, l\'événement rap français qui transforme la fin de l\'été en un moment d\'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d\'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.',
+      desc1Chip1: 'Les plus grandes stars du rap français',
+      desc1Chip2: 'Boissons & street-food',
+      desc2Titre: 'Une immersion totale',
+      desc2Texte: 'Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l\'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c\'est plus qu\'un rendez-vous : c\'est l\'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.',
+      ctaTitre: 'PRÊT À VIVRE L\'EXPÉRIENCE ?',
+      ctaTexte: 'Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !',
+      ctaBouton: 'RÉSERVER MA PLACE',
+      mapTitre: 'LOCALISATION',
+      mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
+    });
+
+    // Charger les textes personnalisés
+    const loadPresentationTexts = () => {
+      const savedPresentation = localStorage.getItem('festivalPresentation');
+      if (savedPresentation) {
+        try {
+          const parsed = JSON.parse(savedPresentation);
+          festivalPresentation.value = { ...festivalPresentation.value, ...parsed };
+        } catch (e) {
+          console.error('Erreur lors du chargement de la présentation:', e);
+        }
+      }
+    };
 
     // Données prestataires
     const prestataires = ref([]);
@@ -375,20 +396,29 @@ export default {
     const prestataireUpdateHandler = () => {
       loadPrestataires();
     };
+    const presentationUpdateHandler = () => {
+      loadPresentationTexts();
+    };
     const storageChangeHandler = (e) => {
       if (e.key === 'customPrestataires' || !e.key) {
         loadPrestataires();
+      }
+      if (e.key === 'festivalPresentation' || !e.key) {
+        loadPresentationTexts();
       }
     };
 
     onMounted(() => {
       loadPrestataires();
+      loadPresentationTexts();
       window.addEventListener('prestataire-updated', prestataireUpdateHandler);
+      window.addEventListener('festival-presentation-updated', presentationUpdateHandler);
       window.addEventListener('storage', storageChangeHandler);
     });
 
     onBeforeUnmount(() => {
       window.removeEventListener('prestataire-updated', prestataireUpdateHandler);
+      window.removeEventListener('festival-presentation-updated', presentationUpdateHandler);
       window.removeEventListener('storage', storageChangeHandler);
     });
 
@@ -403,7 +433,8 @@ export default {
       handleImageError,
       normalizePublicPath,
       goToPrestataire,
-      getPrestatairePriceRange
+      getPrestatairePriceRange,
+      festivalPresentation
     };
   },
 };

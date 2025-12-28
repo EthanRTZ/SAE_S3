@@ -26,7 +26,6 @@
             <div class="prestataire-title-section">
               <h1 class="prestataire-title">{{ prestataire.nom }}</h1>
               <span class="prestataire-type-badge">{{ prestataire.type }}</span>
-              <p class="prestataire-description-header">{{ cleanHtml(prestataire.description) }}</p>
             </div>
           </div>
         </div>
@@ -34,6 +33,12 @@
 
       <!-- Contenu principal -->
       <div class="detail-content">
+        <!-- Description WYSIWYG -->
+        <section v-if="prestataire.description" class="detail-section">
+          <h2 class="section-title">Présentation</h2>
+          <div class="description-content" v-html="prestataire.description"></div>
+        </section>
+
         <!-- Services -->
         <section v-if="publicServices.length > 0" class="detail-section">
           <h2 class="section-title">Services</h2>
@@ -912,6 +917,90 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.9);
 }
 
+.description-content {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.description-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 16px 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.description-content :deep(p) {
+  margin-bottom: 14px;
+}
+
+.description-content :deep(h1),
+.description-content :deep(h2),
+.description-content :deep(h3) {
+  color: #FCDC1E;
+  margin: 20px 0 12px;
+  font-weight: 700;
+}
+
+.description-content :deep(h1) {
+  font-size: 1.8rem;
+}
+
+.description-content :deep(h2) {
+  font-size: 1.5rem;
+}
+
+.description-content :deep(h3) {
+  font-size: 1.2rem;
+}
+
+.description-content :deep(ul),
+.description-content :deep(ol) {
+  margin-left: 28px;
+  margin-bottom: 14px;
+}
+
+.description-content :deep(li) {
+  margin-bottom: 6px;
+}
+
+.description-content :deep(a) {
+  color: #FCDC1E;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.description-content :deep(a:hover) {
+  color: #fff176;
+}
+
+.description-content :deep(blockquote) {
+  border-left: 4px solid #FCDC1E;
+  padding-left: 16px;
+  margin: 16px 0;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.description-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.description-content :deep(th),
+.description-content :deep(td) {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  text-align: left;
+}
+
+.description-content :deep(th) {
+  background: rgba(252, 220, 30, 0.1);
+  color: #FCDC1E;
+}
+
 @media (max-width: 768px) {
   .prestataire-main-info {
     flex-direction: column;
@@ -932,4 +1021,3 @@ onMounted(() => {
   }
 }
 </style>
-

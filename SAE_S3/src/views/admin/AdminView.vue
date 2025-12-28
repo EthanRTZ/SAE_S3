@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
 const router = useRouter()
 const authUser = ref(null)
@@ -11,6 +12,40 @@ const prestatairesOriginaux = ref([]) // Données originales pour comparaison
 const customPrestataires = ref({}) // Modifications locales
 const selectedPrestataire = ref(null)
 const users = ref([])
+const selectedUser = ref(null)
+const isCreatingUser = ref(false)
+const newUser = ref({
+  email: '',
+  password: '',
+  role: 'user',
+  prestataireNom: ''
+})
+
+// Statistiques
+const stats = ref({
+  totalUsers: 0,
+  totalPrestataires: 0,
+  totalReservations: 0,
+  totalServices: 0,
+  totalTickets: 0,
+  totalRevenue: 0,
+  ticketsParType: {
+    oneDay: 0,
+    twoDays: 0,
+    threeDays: 0,
+    parking: 0,
+    camping: 0
+  },
+  notesMoyenne: 0,
+  totalAvis: 0,
+  repartitionNotes: {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0
+  }
+})
 
 // Données de programmation
 const programmation = ref({ stages: [], schedules: [] })
@@ -21,17 +56,54 @@ const editingSlot = ref(null)
 
 // Données de présentation du festival (éditeur WYSIWYG)
 const festivalPresentation = ref({
-  titre: 'Golden Coast Festival 2024',
-  description: '<p>Le plus grand festival de musique électronique de la côte.</p>',
-  images: ['/media/festival-banner.jpg']
+  // Hero
+  titre: 'GOLDEN COAST FESTIVAL V3',
+  date: '28 - 29 - 30 août 2026',
+  lieu: 'CORCELLES-LES-MONTS • DIJON',
+
+  // Section About (les 3 cards)
+  aboutCard1Titre: '100% RAP FR',
+  aboutCard1Texte: 'Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d\'affiche et les talents émergents.',
+  aboutCard2Titre: 'SITE NATUREL',
+  aboutCard2Texte: 'Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.',
+  aboutCard3Titre: '52 000 FESTIVALIERS',
+  aboutCard3Texte: 'Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.',
+
+  // Section Description 1
+  desc1Titre: 'Le rendez-vous des fans de rap',
+  desc1Texte: 'Plonge au cœur de l\'expérience Golden Coast Festival, l\'événement rap français qui transforme la fin de l\'été en un moment d\'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d\'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.',
+  desc1Chip1: 'Les plus grandes stars du rap français',
+  desc1Chip2: 'Boissons & street-food',
+
+  // Section Description 2
+  desc2Titre: 'Une immersion totale',
+  desc2Texte: 'Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l\'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c\'est plus qu\'un rendez-vous : c\'est l\'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.',
+
+  // Section CTA
+  ctaTitre: 'PRÊT À VIVRE L\'EXPÉRIENCE ?',
+  ctaTexte: 'Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !',
+  ctaBouton: 'RÉSERVER MA PLACE',
+
+  // Section Map
+  mapTitre: 'LOCALISATION',
+  mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
 })
 
-const stats = ref({
-  totalUsers: 0,
-  totalPrestataires: 0,
-  totalReservations: 0,
-  totalServices: 0
-})
+// Sous-section active pour la présentation
+const presentationSubSection = ref('hero')
+
+const presentationSections = [
+  { id: 'hero', label: ' Hero / Bannière', icon: '🎯' },
+  { id: 'about', label: ' Le Festival (3 cartes)', icon: '📋' },
+  { id: 'desc1', label: ' Description 1', icon: '📝' },
+  { id: 'desc2', label: ' Description 2', icon: '📝' },
+  { id: 'cta', label: ' Appel à l\'action', icon: '🎯' },
+  { id: 'map', label: '️ Carte', icon: '🗺️' }
+]
+
+const selectPresentationSection = (sectionId) => {
+  presentationSubSection.value = sectionId
+}
 
 const loadAuthFromStorage = () => {
   try {
@@ -44,6 +116,63 @@ const loadAuthFromStorage = () => {
 
 const isAdmin = computed(() => authUser.value?.role === 'admin')
 const adminEmail = computed(() => authUser.value?.email || '')
+
+const saveUser = () => {
+  if (isCreatingUser.value) {
+    // Créer un nouvel utilisateur
+    if (!newUser.value.email || !newUser.value.password) {
+      alert('Email et mot de passe sont obligatoires')
+      return
+    }
+
+    // Vérifier si l'email existe déjà
+    if (users.value.some(u => u.email === newUser.value.email)) {
+      alert('Cet email existe déjà')
+      return
+    }
+
+    users.value.push({ ...newUser.value })
+    localStorage.setItem('users', JSON.stringify(users.value))
+    alert('Utilisateur créé avec succès!')
+    changeSection('users')
+  } else if (selectedUser.value) {
+    // Modifier un utilisateur existant
+    const index = users.value.findIndex(u => u.email === selectedUser.value.email)
+    if (index !== -1) {
+      users.value[index] = { ...selectedUser.value }
+      localStorage.setItem('users', JSON.stringify(users.value))
+      alert('Utilisateur modifié avec succès!')
+    }
+  }
+}
+
+const deleteUser = () => {
+  if (!selectedUser.value) return
+
+  if (selectedUser.value.email === authUser.value?.email) {
+    alert('Vous ne pouvez pas supprimer votre propre compte!')
+    return
+  }
+
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${selectedUser.value.email} ?`)) {
+    return
+  }
+
+  const index = users.value.findIndex(u => u.email === selectedUser.value.email)
+  if (index !== -1) {
+    users.value.splice(index, 1)
+    localStorage.setItem('users', JSON.stringify(users.value))
+    alert('Utilisateur supprimé avec succès!')
+    changeSection('users')
+  }
+}
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount)
+}
 
 const loadData = async () => {
   if (!isAdmin.value) {
@@ -62,7 +191,17 @@ const loadData = async () => {
     const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
     const avisData = avisResp.ok ? await avisResp.json() : {}
 
-    users.value = Array.isArray(usersData) ? usersData : []
+    // Charger les utilisateurs avec modifications locales
+    const customUsersRaw = localStorage.getItem('users')
+    if (customUsersRaw) {
+      try {
+        users.value = JSON.parse(customUsersRaw)
+      } catch (e) {
+        users.value = Array.isArray(usersData) ? usersData : []
+      }
+    } else {
+      users.value = Array.isArray(usersData) ? usersData : []
+    }
 
     // Filtrer uniquement les prestataires présents dans avis.json
     const prestatairesValides = Object.keys(avisData)
@@ -93,11 +232,97 @@ const loadData = async () => {
 
     const totalServices = prestataires.value.reduce((acc, p) => acc + (p.services?.length || 0), 0)
 
+    // Charger les réservations
+    const reservationsRaw = localStorage.getItem('reservations')
+    let reservations = []
+    if (reservationsRaw) {
+      try {
+        reservations = JSON.parse(reservationsRaw)
+      } catch (e) {
+        reservations = []
+      }
+    }
+
+    // Calculer les stats de tickets
+    const ticketsStats = {
+      oneDay: 0,
+      twoDays: 0,
+      threeDays: 0,
+      parking: 0,
+      camping: 0
+    }
+    let totalRevenue = 0
+    const TARIFS = {
+      oneDay: 49,
+      twoDays: 89,
+      threeDays: 119,
+      parking: 15,
+      camping: 25
+    }
+
+    reservations.forEach(reservation => {
+      if (reservation.oneDay) {
+        ticketsStats.oneDay += reservation.oneDay
+        totalRevenue += reservation.oneDay * TARIFS.oneDay
+      }
+      if (reservation.twoDays) {
+        ticketsStats.twoDays += reservation.twoDays
+        totalRevenue += reservation.twoDays * TARIFS.twoDays
+      }
+      if (reservation.threeDays) {
+        ticketsStats.threeDays += reservation.threeDays
+        totalRevenue += reservation.threeDays * TARIFS.threeDays
+      }
+      if (reservation.parking) {
+        ticketsStats.parking += reservation.parking
+        totalRevenue += reservation.parking * TARIFS.parking
+      }
+      if (reservation.camping) {
+        ticketsStats.camping += reservation.camping
+        totalRevenue += reservation.camping * TARIFS.camping
+      }
+    })
+
+    const totalTickets = Object.values(ticketsStats).reduce((sum, val) => sum + val, 0)
+
+    // Calculer les stats globales des avis (toutes notes confondues)
+    const localAvisRaw = localStorage.getItem('prestataireAvis')
+    let allAvis = null
+    if (localAvisRaw) {
+      allAvis = JSON.parse(localAvisRaw)
+    } else {
+      allAvis = avisData
+    }
+
+    let totalAvis = 0
+    let sommeNotes = 0
+    const repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+
+    Object.values(allAvis).forEach(entry => {
+      const avisArray = entry.avis || []
+      avisArray.forEach(a => {
+        totalAvis++
+        sommeNotes += a.note || 0
+        const note = a.note || 0
+        if (repartitionNotes[note] !== undefined) {
+          repartitionNotes[note]++
+        }
+      })
+    })
+
+    const notesMoyenne = totalAvis > 0 ? sommeNotes / totalAvis : 0
+
     stats.value = {
       totalUsers: users.value.length,
       totalPrestataires: prestataires.value.length,
-      totalReservations: 0,
-      totalServices
+      totalReservations: reservations.length,
+      totalServices,
+      totalTickets,
+      totalRevenue,
+      ticketsParType: ticketsStats,
+      notesMoyenne,
+      totalAvis,
+      repartitionNotes
     }
 
     // Charger présentation personnalisée si elle existe
@@ -112,6 +337,9 @@ const loadData = async () => {
 
     // Charger la programmation
     await loadProgrammation()
+
+    // Calculer les stats d'avis
+    await computeAvisStatsForPrestataires()
   } catch (e) {
     console.error('Erreur chargement données:', e)
   } finally {
@@ -211,6 +439,24 @@ const selectPrestataire = (prestataire) => {
   currentSection.value = 'prestataire-detail'
 }
 
+const startCreateUser = () => {
+  newUser.value = {
+    email: '',
+    password: '',
+    role: 'user',
+    prestataireNom: ''
+  }
+  isCreatingUser.value = true
+  selectedUser.value = null
+  currentSection.value = 'user-detail'
+}
+
+const selectUser = (user) => {
+  selectedUser.value = { ...user }
+  isCreatingUser.value = false
+  currentSection.value = 'user-detail'
+}
+
 // Vérifier si un prestataire a des modifications
 const hasModifications = (prestataire) => {
   return !!customPrestataires.value[prestataire.nom]
@@ -255,7 +501,40 @@ const resetPrestataire = () => {
 
 const savePresentation = () => {
   localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
+  window.dispatchEvent(new Event('festival-presentation-updated'))
   alert('Présentation sauvegardée avec succès!')
+}
+
+const resetPresentation = () => {
+  if (!confirm('Êtes-vous sûr de vouloir réinitialiser tous les textes aux valeurs par défaut ?')) {
+    return
+  }
+
+  festivalPresentation.value = {
+    titre: 'GOLDEN COAST FESTIVAL V3',
+    date: '28 - 29 - 30 août 2026',
+    lieu: 'CORCELLES-LES-MONTS • DIJON',
+    aboutCard1Titre: '100% RAP FR',
+    aboutCard1Texte: 'Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d\'affiche et les talents émergents.',
+    aboutCard2Titre: 'SITE NATUREL',
+    aboutCard2Texte: 'Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.',
+    aboutCard3Titre: '52 000 FESTIVALIERS',
+    aboutCard3Texte: 'Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.',
+    desc1Titre: 'Le rendez-vous des fans de rap',
+    desc1Texte: 'Plonge au cœur de l\'expérience Golden Coast Festival, l\'événement rap français qui transforme la fin de l\'été en un moment d\'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d\'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.',
+    desc1Chip1: 'Les plus grandes stars du rap français',
+    desc1Chip2: 'Boissons & street-food',
+    desc2Titre: 'Une immersion totale',
+    desc2Texte: 'Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l\'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c\'est plus qu\'un rendez-vous : c\'est l\'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.',
+    ctaTitre: 'PRÊT À VIVRE L\'EXPÉRIENCE ?',
+    ctaTexte: 'Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !',
+    ctaBouton: 'RÉSERVER MA PLACE',
+    mapTitre: 'LOCALISATION',
+    mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
+  }
+
+  localStorage.removeItem('festivalPresentation')
+  alert('Textes réinitialisés aux valeurs par défaut!')
 }
 
 const savePrestataireChanges = () => {
@@ -434,6 +713,12 @@ onMounted(() => {
           >
             📈 Statistiques
           </button>
+          <button
+            @click="changeSection('users')"
+            :class="['nav-item', { active: currentSection === 'users' || currentSection === 'user-detail' }]"
+          >
+            👥 Gestion utilisateurs
+          </button>
         </nav>
       </aside>
 
@@ -473,42 +758,300 @@ onMounted(() => {
               </div>
             </div>
           </div>
+
+          <!-- Carte de notation globale -->
+          <div class="rating-overview-card">
+            <div class="rating-left">
+              <div class="rating-icon">⭐</div>
+              <div class="rating-main">
+                <div class="rating-score">
+                  {{ stats.totalAvis > 0 ? stats.notesMoyenne.toFixed(1) : '—' }}
+                </div>
+                <div class="rating-stars">
+                  <span
+                    v-for="i in 5"
+                    :key="i"
+                    class="star"
+                    :class="{ filled: stats.totalAvis > 0 && i <= Math.round(stats.notesMoyenne) }"
+                  >★</span>
+                </div>
+                <div class="rating-meta">
+                  {{ stats.totalAvis }} avis au total
+                </div>
+              </div>
+            </div>
+
+            <div class="rating-right">
+              <h3>Répartition des notes</h3>
+              <div class="rating-distribution">
+                <div
+                  v-for="i in [5, 4, 3, 2, 1]"
+                  :key="i"
+                  class="distribution-row"
+                >
+                  <span class="distribution-label">{{ i }}★</span>
+                  <div class="distribution-bar">
+                    <div
+                      class="distribution-fill"
+                      :style="{
+                        width: stats.totalAvis > 0 ? (stats.repartitionNotes[i] / stats.totalAvis * 100) + '%' : '0%'
+                      }"
+                    ></div>
+                  </div>
+                  <span class="distribution-count">{{ stats.repartitionNotes[i] }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Présentation Festival (WYSIWYG) -->
         <div v-if="currentSection === 'presentation'" class="section-content">
-          <h1 class="section-title">Présentation du festival</h1>
+          <div class="section-header">
+            <h1 class="section-title">Présentation du festival</h1>
+            <button @click="resetPresentation" class="btn-reset">
+              🔄 Réinitialiser aux valeurs par défaut
+            </button>
+          </div>
+
+          <!-- Menu de navigation des sous-sections -->
+          <div class="presentation-tabs">
+            <button
+              v-for="section in presentationSections"
+              :key="section.id"
+              @click="selectPresentationSection(section.id)"
+              :class="['tab-btn', { active: presentationSubSection === section.id }]"
+            >
+              {{ section.icon }} {{ section.label }}
+            </button>
+          </div>
 
           <div class="editor-container">
-            <div class="form-group">
-              <label>Titre du festival</label>
-              <input
-                v-model="festivalPresentation.titre"
-                type="text"
-                class="form-input"
-                placeholder="Titre du festival"
-              />
+            <!-- Section Hero -->
+            <div v-if="presentationSubSection === 'hero'" class="presentation-group">
+              <h3 class="group-title">🎯 Section Hero (Bannière principale)</h3>
+
+              <div class="form-group">
+                <label>Titre principal</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.titre"
+                  :height="300"
+                  placeholder="GOLDEN COAST FESTIVAL V3"
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Date</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.date"
+                    :height="400"
+                    placeholder="28 - 29 - 30 août 2026"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Lieu</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.lieu"
+                    :height="400"
+                    placeholder="CORCELLES-LES-MONTS • DIJON"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Description (HTML)</label>
-              <textarea
-                v-model="festivalPresentation.description"
-                class="form-textarea"
-                rows="10"
-                placeholder="Description HTML du festival..."
-              ></textarea>
-              <p class="form-hint">Utilisez des balises HTML pour formater le texte</p>
+            <!-- Section About (3 cards) -->
+            <div v-if="presentationSubSection === 'about'" class="presentation-group">
+              <h3 class="group-title">📋 Section "Le Festival" (3 cartes)</h3>
+
+              <div class="card-editor">
+                <h4>Card 1</h4>
+                <div class="form-group">
+                  <label>Titre</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard1Titre"
+                    :height="300"
+                    placeholder="100% RAP FR"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Texte</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard1Texte"
+                    :height="300"
+                    placeholder="Description de la première carte..."
+                  />
+                </div>
+              </div>
+
+              <div class="card-editor">
+                <h4>Card 2</h4>
+                <div class="form-group">
+                  <label>Titre</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard2Titre"
+                    :height="300"
+                    placeholder="SITE NATUREL"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Texte</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard2Texte"
+                    :height="300"
+                    placeholder="Description de la deuxième carte..."
+                  />
+                </div>
+              </div>
+
+              <div class="card-editor">
+                <h4>Card 3</h4>
+                <div class="form-group">
+                  <label>Titre</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard3Titre"
+                    :height="300"
+                    placeholder="52 000 FESTIVALIERS"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Texte</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.aboutCard3Texte"
+                    :height="300"
+                    placeholder="Description de la troisième carte..."
+                  />
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Aperçu</label>
-              <div class="preview-box" v-html="festivalPresentation.description"></div>
+            <!-- Section Description 1 -->
+            <div v-if="presentationSubSection === 'desc1'" class="presentation-group">
+              <h3 class="group-title">📝 Section Description 1</h3>
+
+              <div class="form-group">
+                <label>Titre</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.desc1Titre"
+                  :height="300"
+                  placeholder="Le rendez-vous des fans de rap"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Texte principal</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.desc1Texte"
+                  :height="450"
+                  placeholder="Décrivez l'expérience du festival..."
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chip 1</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.desc1Chip1"
+                    :height="300"
+                    placeholder="Premier point fort"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Chip 2</label>
+                  <WysiwygEditor
+                    v-model="festivalPresentation.desc1Chip2"
+                    :height="300"
+                    placeholder="Deuxième point fort"
+                  />
+                </div>
+              </div>
             </div>
 
-            <button @click="savePresentation" class="btn-save">
-              💾 Sauvegarder les modifications
-            </button>
+            <!-- Section Description 2 -->
+            <div v-if="presentationSubSection === 'desc2'" class="presentation-group">
+              <h3 class="group-title">📝 Section Description 2</h3>
+
+              <div class="form-group">
+                <label>Titre</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.desc2Titre"
+                  :height="300"
+                  placeholder="Une immersion totale"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Texte principal</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.desc2Texte"
+                  :height="500"
+                  placeholder="Détaillez l'ambiance et l'expérience..."
+                />
+              </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div v-if="presentationSubSection === 'cta'" class="presentation-group">
+              <h3 class="group-title">🎯 Section Appel à l'action (CTA)</h3>
+
+              <div class="form-group">
+                <label>Titre</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.ctaTitre"
+                  :height="300"
+                  placeholder="PRÊT À VIVRE L'EXPÉRIENCE ?"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Texte</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.ctaTexte"
+                  :height="250"
+                  placeholder="Message d'invitation..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Texte du bouton</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.ctaBouton"
+                  :height="250"
+                  placeholder="RÉSERVER MA PLACE"
+                />
+              </div>
+            </div>
+
+            <!-- Section Map -->
+            <div v-if="presentationSubSection === 'map'" class="presentation-group">
+              <h3 class="group-title">🗺️ Section Carte</h3>
+
+              <div class="form-group">
+                <label>Titre</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.mapTitre"
+                  :height="300"
+                  placeholder="LOCALISATION"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Texte d'introduction</label>
+                <WysiwygEditor
+                  v-model="festivalPresentation.mapIntro"
+                  :height="250"
+                  placeholder="Retrouvez tous les points d'intérêt..."
+                />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button @click="savePresentation" class="btn-save">
+                💾 Sauvegarder toutes les modifications
+              </button>
+            </div>
           </div>
         </div>
 
@@ -720,12 +1263,13 @@ onMounted(() => {
             </div>
 
             <div class="form-group">
-              <label>Description (HTML)</label>
-              <textarea
+              <label>Description (Éditeur WYSIWYG)</label>
+              <WysiwygEditor
                 v-model="selectedPrestataire.description"
-                class="form-textarea"
-                rows="6"
-              ></textarea>
+                :height="600"
+                placeholder="Décrivez le prestataire, ajoutez des images..."
+              />
+              <p class="form-hint">Utilisez l'éditeur pour formater le texte et insérer des images</p>
             </div>
 
             <div class="form-group">
@@ -804,7 +1348,10 @@ onMounted(() => {
                   class="chart-bar-item"
                 >
                   <span class="bar-label">{{ prestataire.nom }}</span>
-                  <div class="bar-container">
+                  <div
+                    class="bar-container"
+                    :style="{ width: ((prestataire.services?.length || 0) * 20) + '%' }"
+                  >
                     <div
                       class="bar-fill"
                       :style="{ width: ((prestataire.services?.length || 0) * 20) + '%' }"
@@ -836,93 +1383,281 @@ onMounted(() => {
           <!-- ======================================= -->
           <!-- NOUVELLE PARTIE : Stats avis prestataire -->
           <!-- ======================================= -->
-          <div class="stats-charts" style="margin-top: 32px;">
-            <div class="chart-card">
-              <h3>Notes moyennes par prestataire</h3>
-              <p class="info-text">
-                Vue d’ensemble des avis (notes et commentaires) laissés sur chaque prestataire.
-              </p>
+          <div class="avis-stats-section">
+            <h2 class="avis-section-title">📊 Notes et avis des prestataires</h2>
+            <p class="avis-section-subtitle">
+              Vue d'ensemble des avis (notes et commentaires) laissés par les festivaliers sur chaque prestataire.
+            </p>
 
-              <div class="avis-stats-table-wrapper">
-                <table class="avis-stats-table">
-                  <thead>
-                    <tr>
-                      <th>Prestataire</th>
-                      <th>Note moyenne</th>
-                      <th>Nb avis</th>
-                      <th>Dernier commentaire</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="item in avisStatsParPrestataire"
-                      :key="item.nom"
-                      @click="selectPrestataireStats(item)"
-                      :class="{ 'row-clickable': true, 'row-selected': selectedPrestataireStats && selectedPrestataireStats.nom === item.nom }"
-                    >
-                      <td>{{ item.nom }}</td>
-                      <td>
-                        <span v-if="item.nbAvis">
-                          {{ item.moyenne.toFixed(1) }}/5
+            <div class="avis-stats-grid">
+              <!-- Liste des prestataires -->
+              <div class="avis-prestataires-list">
+                <h3 class="list-title">Sélectionner un prestataire</h3>
+                <div class="prestataire-cards">
+                  <div
+                    v-for="item in avisStatsParPrestataire"
+                    :key="item.nom"
+                    @click="selectPrestataireStats(item)"
+                    :class="['prestataire-stat-card', { 'selected': selectedPrestataireStats && selectedPrestataireStats.nom === item.nom }]"
+                  >
+                    <div class="card-header">
+                      <h4>{{ item.nom }}</h4>
+                      <span class="badge-avis">{{ item.nbAvis }} avis</span>
+                    </div>
+                    <div class="card-rating">
+                      <div class="rating-value" v-if="item.nbAvis">
+                        {{ item.moyenne.toFixed(1) }}
+                      </div>
+                      <div class="rating-value no-rating" v-else>—</div>
+                      <div class="rating-stars-mini">
+                        <span
+                          v-for="i in 5"
+                          :key="i"
+                          class="star-mini"
+                          :class="{ filled: item.nbAvis && i <= Math.round(item.moyenne) }"
+                        >★</span>
+                      </div>
+                    </div>
+                    <div class="card-footer" v-if="item.dernierAvis">
+                      <span class="last-comment-label">Dernier avis :</span>
+                      <p class="last-comment-text">
+                        "{{ item.dernierAvis.commentaire.length > 50 ? (item.dernierAvis.commentaire.slice(0, 50) + '...') : item.dernierAvis.commentaire }}"
+                      </p>
+                    </div>
+                    <div class="card-footer" v-else>
+                      <p class="no-comment-text">Aucun avis pour le moment</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Détail du prestataire sélectionné -->
+              <div class="avis-detail-panel" v-if="selectedPrestataireStats">
+                <div class="detail-header">
+                  <h3>{{ selectedPrestataireStats.nom }}</h3>
+                  <button @click="selectedPrestataireStats = null" class="btn-close-detail">✕</button>
+                </div>
+
+                <div class="detail-content">
+                  <div class="detail-score-section">
+                    <div class="detail-score-main">
+                      <div class="detail-score-value">
+                        {{ selectedPrestataireStats.nbAvis ? selectedPrestataireStats.moyenne.toFixed(1) : '—' }}
+                      </div>
+                      <div class="detail-score-label">sur 5</div>
+                    </div>
+                    <div class="detail-score-stars">
+                      <span
+                        v-for="i in 5"
+                        :key="i"
+                        class="star-detail"
+                        :class="{ filled: selectedPrestataireStats.nbAvis && i <= Math.round(selectedPrestataireStats.moyenne) }"
+                      >★</span>
+                    </div>
+                    <div class="detail-score-meta">
+                      Basé sur {{ selectedPrestataireStats.nbAvis }} avis
+                    </div>
+                  </div>
+
+                  <div class="detail-distribution">
+                    <h4>Répartition des notes</h4>
+                    <div class="distribution-bars">
+                      <div
+                        v-for="i in [5,4,3,2,1]"
+                        :key="i"
+                        class="distribution-bar-row"
+                      >
+                        <span class="distribution-star-label">{{ i }}★</span>
+                        <div class="distribution-bar-bg">
+                          <div
+                            class="distribution-bar-fg"
+                            :style="{ width: selectedPrestataireStats.nbAvis ? (selectedPrestataireStats.parNote[i] / selectedPrestataireStats.nbAvis) * 100 + '%' : '0%' }"
+                          ></div>
+                        </div>
+                        <span class="distribution-count-label">
+                          {{ selectedPrestataireStats.parNote[i] }}
                         </span>
-                        <span v-else>—</span>
-                      </td>
-                      <td>{{ item.nbAvis }}</td>
-                      <td class="last-comment">
-                        <span v-if="item.dernierAvis">
-                          "{{ item.dernierAvis.commentaire.length > 60 ? (item.dernierAvis.commentaire.slice(0, 60) + '…') : item.dernierAvis.commentaire }}"
-                        </span>
-                        <span v-else>Pas encore d’avis</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detail-info-box">
+                    <p>💡 Ces statistiques sont basées sur les avis saisis par les festivaliers directement sur la page du prestataire.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Message si aucun prestataire sélectionné -->
+              <div class="avis-detail-panel empty" v-else>
+                <div class="empty-state">
+                  <span class="empty-icon">📊</span>
+                  <h3>Aucun prestataire sélectionné</h3>
+                  <p>Cliquez sur un prestataire dans la liste de gauche pour voir les détails de ses avis.</p>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="chart-card" v-if="selectedPrestataireStats">
-              <h3>Détail des avis — {{ selectedPrestataireStats.nom }}</h3>
-              <div class="detail-avis-stats">
-                <div class="detail-note-block">
-                  <div class="detail-note-value">
-                    {{ selectedPrestataireStats.nbAvis ? selectedPrestataireStats.moyenne.toFixed(1) : '—' }}
-                  </div>
-                  <div class="detail-note-stars">
-                    <span
-                      v-for="i in 5"
-                      :key="i"
-                      class="star"
-                      :class="{ filled: selectedPrestataireStats.nbAvis && i <= Math.round(selectedPrestataireStats.moyenne) }"
-                    >★</span>
-                  </div>
-                  <div class="detail-note-meta">
-                    {{ selectedPrestataireStats.nbAvis }} avis
-                  </div>
+        <!-- Gestion des utilisateurs -->
+        <div v-if="currentSection === 'users'" class="section-content">
+          <div class="section-header">
+            <h1 class="section-title">Gestion des utilisateurs</h1>
+            <button @click="startCreateUser" class="btn-add-user">
+              ➕ Créer un utilisateur
+            </button>
+          </div>
+
+          <div class="users-list">
+            <div
+              v-for="user in users"
+              :key="user.email"
+              class="user-item"
+              @click="selectUser(user)"
+            >
+              <div class="user-icon">
+                <span v-if="user.role === 'admin'">👑</span>
+                <span v-else-if="user.role === 'prestataire'">🏢</span>
+                <span v-else>👤</span>
+              </div>
+              <div class="user-info">
+                <div class="user-email">{{ user.email }}</div>
+                <div class="user-role-badge" :class="`role-${user.role}`">
+                  {{ user.role }}
                 </div>
-
-                <div class="detail-repartition">
-                  <div
-                    v-for="i in [5,4,3,2,1]"
-                    :key="i"
-                    class="avis-repartition-row"
-                  >
-                    <span class="avis-repartition-label">{{ i }}★</span>
-                    <div class="avis-repartition-bar">
-                      <div
-                        class="avis-repartition-fill"
-                        :style="{ width: selectedPrestataireStats.nbAvis ? (selectedPrestataireStats.parNote[i] / selectedPrestataireStats.nbAvis) * 100 + '%' : '0%' }"
-                      ></div>
-                    </div>
-                    <span class="avis-repartition-count">
-                      {{ selectedPrestataireStats.parNote[i] }}
-                    </span>
-                  </div>
+                <div v-if="user.prestataireNom" class="user-prestataire">
+                  📍 {{ user.prestataireNom }}
                 </div>
               </div>
+              <span class="arrow">→</span>
+            </div>
+          </div>
+        </div>
 
-              <p class="info-text small">
-                Ces statistiques sont basées sur les avis saisis par les festivaliers sur chaque page prestataire.
+        <!-- Détail utilisateur -->
+        <div v-if="currentSection === 'user-detail'" class="section-content">
+          <div class="section-header">
+            <button @click="changeSection('users')" class="btn-back">← Retour</button>
+            <h1 class="section-title">
+              {{ isCreatingUser ? 'Créer un utilisateur' : 'Modifier l\'utilisateur' }}
+            </h1>
+          </div>
+
+          <div class="user-editor">
+            <div class="form-group">
+              <label>Email *</label>
+              <input
+                v-if="isCreatingUser"
+                v-model="newUser.email"
+                type="email"
+                class="form-input"
+                placeholder="email@example.com"
+              />
+              <input
+                v-else
+                v-model="selectedUser.email"
+                type="email"
+                class="form-input"
+                placeholder="email@example.com"
+                disabled
+              />
+              <p v-if="!isCreatingUser" class="form-hint">L'email ne peut pas être modifié</p>
+            </div>
+
+            <div class="form-group">
+              <label>Mot de passe {{ isCreatingUser ? '*' : '' }}</label>
+              <input
+                v-if="isCreatingUser"
+                v-model="newUser.password"
+                type="text"
+                class="form-input"
+                placeholder="Mot de passe"
+              />
+              <input
+                v-else
+                v-model="selectedUser.password"
+                type="text"
+                class="form-input"
+                placeholder="Mot de passe"
+              />
+              <p class="form-hint">
+                {{ isCreatingUser ? 'Minimum 6 caractères' : 'Laisser vide pour ne pas modifier' }}
               </p>
+            </div>
+
+            <div class="form-group">
+              <label>Rôle *</label>
+              <select
+                v-if="isCreatingUser"
+                v-model="newUser.role"
+                class="form-input"
+              >
+                <option value="user">Utilisateur</option>
+                <option value="prestataire">Prestataire</option>
+                <option value="admin">Administrateur</option>
+              </select>
+              <select
+                v-else
+                v-model="selectedUser.role"
+                class="form-input"
+              >
+                <option value="user">Utilisateur</option>
+                <option value="prestataire">Prestataire</option>
+                <option value="admin">Administrateur</option>
+              </select>
+            </div>
+
+            <div
+              v-if="(isCreatingUser && newUser.role === 'prestataire') || (!isCreatingUser && selectedUser?.role === 'prestataire')"
+              class="form-group"
+            >
+              <label>Nom du prestataire</label>
+              <select
+                v-if="isCreatingUser"
+                v-model="newUser.prestataireNom"
+                class="form-input"
+              >
+                <option value="">-- Sélectionner un prestataire --</option>
+                <option
+                  v-for="prestataire in prestataires"
+                  :key="prestataire.nom"
+                  :value="prestataire.nom"
+                >
+                  {{ prestataire.nom }}
+                </option>
+              </select>
+              <select
+                v-else
+                v-model="selectedUser.prestataireNom"
+                class="form-input"
+              >
+                <option value="">-- Sélectionner un prestataire --</option>
+                <option
+                  v-for="prestataire in prestataires"
+                  :key="prestataire.nom"
+                  :value="prestataire.nom"
+                >
+                  {{ prestataire.nom }}
+                </option>
+              </select>
+              <p class="form-hint">Requis pour les comptes prestataires</p>
+            </div>
+
+            <div class="user-actions">
+              <button @click="saveUser" class="btn-save">
+                💾 {{ isCreatingUser ? 'Créer l\'utilisateur' : 'Sauvegarder les modifications' }}
+              </button>
+              <button
+                v-if="!isCreatingUser && selectedUser?.email !== authUser?.email"
+                @click="deleteUser"
+                class="btn-delete-user"
+              >
+                🗑️ Supprimer l'utilisateur
+              </button>
+            </div>
+
+            <div v-if="!isCreatingUser && selectedUser?.email === authUser?.email" class="warning-box">
+              ⚠️ Vous ne pouvez pas supprimer votre propre compte
             </div>
           </div>
         </div>
@@ -1115,7 +1850,8 @@ onMounted(() => {
 /* Forms */
 .editor-container,
 .carte-config,
-.prestataire-editor {
+.prestataire-editor,
+.user-editor {
   background: rgba(255, 255, 255, 0.05);
   padding: 32px;
   border-radius: 16px;
@@ -1161,26 +1897,40 @@ onMounted(() => {
 .preview-box {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 20px;
   min-height: 100px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
 }
 
-.btn-save {
-  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
-  color: #0a0a0a;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+.preview-box :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
 }
 
-.btn-save:hover {
-  transform: translateY(-2px);
+.preview-box :deep(p) {
+  margin-bottom: 12px;
+}
+
+.preview-box :deep(h1),
+.preview-box :deep(h2),
+.preview-box :deep(h3) {
+  color: #FCDC1E;
+  margin: 16px 0 8px;
+}
+
+.preview-box :deep(ul),
+.preview-box :deep(ol) {
+  margin-left: 24px;
+  margin-bottom: 12px;
+}
+
+.preview-box :deep(a) {
+  color: #FCDC1E;
+  text-decoration: underline;
 }
 
 /* Prestataires list */
@@ -1549,162 +2299,155 @@ onMounted(() => {
 }
 
 .type-stat-item strong {
-  color: rgba(255, 255, 255, 0.9);
+  color: #FCDC1E;
+  font-weight: 600;
 }
 
 .type-count {
-  color: #FCDC1E;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 700;
   font-size: 1.1rem;
 }
 
-/* Styles pour la table des stats d'avis */
-.avis-stats-table-wrapper {
-  overflow-x: auto;
-}
-
-.avis-stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.avis-stats-table th,
-.avis-stats-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: left;
-}
-
-.avis-stats-table th {
-  color: #FCDC1E;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.avis-stats-table tr:last-child td {
-  border-bottom: none;
-}
-
-.row-clickable {
+/* Gestion utilisateurs - Corrections */
+.btn-add-user {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: transform 0.12s ease;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
 }
 
-.row-clickable:hover {
-  background: rgba(252, 220, 30, 0.06);
+.btn-add-user:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(252, 220, 30, 0.4);
 }
 
-.row-selected {
-  background: rgba(252, 220, 30, 0.12);
+.users-list {
+  display: grid;
+  gap: 16px;
 }
 
-.last-comment {
-  max-width: 320px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Détail avis */
-.detail-avis-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.detail-note-block {
-  min-width: 160px;
-  padding: 16px;
+.user-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(252, 220, 30, 0.4);
-  text-align: center;
-}
-
-.detail-note-value {
-  font-size: 2.3rem;
-  font-weight: 900;
-  color: #FCDC1E;
-  margin-bottom: 4px;
-}
-
-.detail-note-stars .star {
-  color: rgba(255, 255, 255, 0.25);
-  font-size: 1.2rem;
-}
-
-.detail-note-stars .star.filled {
-  color: #FCDC1E;
-}
-
-.detail-note-meta {
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.detail-repartition {
-  flex: 1;
-  min-width: 220px;
-}
-
-/* Réutilisation du style de répartition */
-.avis-repartition-row {
+  border: 1px solid rgba(252, 220, 30, 0.15);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  background: rgba(252, 220, 30, 0.08);
+  transform: translateX(4px);
+}
+
+.user-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(252, 220, 30, 0.15);
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-email {
+  color: #FCDC1E;
+  font-weight: 600;
+  font-size: 1.05rem;
   margin-bottom: 6px;
 }
 
-.avis-repartition-label {
-  width: 32px;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.avis-repartition-bar {
-  flex: 1;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.avis-repartition-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-.avis-repartition-count {
-  width: 30px;
-  text-align: right;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.info-text.small {
+.user-role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 0.8rem;
-  margin-top: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-@media (max-width: 1024px) {
-  .admin-sidebar {
-    width: 220px;
-  }
-
-  .admin-main {
-    padding: 24px;
-  }
+.role-admin {
+  background: rgba(255, 87, 34, 0.2);
+  color: #ff5722;
+  border: 1px solid rgba(255, 87, 34, 0.4);
 }
 
-/* Programmation */
+.role-prestataire {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.role-user {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.user-prestataire {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.user-editor {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+}
+
+.user-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.btn-delete-user {
+  background: rgba(255, 0, 0, 0.15);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #ff6b6b;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-user:hover {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.warning-box {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+/* Programmation - Corrections */
 .programmation-editor {
   background: rgba(255, 255, 255, 0.05);
-  padding: 28px;
+  padding: 32px;
   border-radius: 16px;
   border: 1px solid rgba(252, 220, 30, 0.15);
 }
@@ -1720,34 +2463,36 @@ onMounted(() => {
   color: #FCDC1E;
   font-weight: 600;
   margin-bottom: 8px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .slots-list {
-  margin-top: 24px;
+  margin-top: 32px;
 }
 
 .slots-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(252, 220, 30, 0.2);
 }
 
 .slots-header h3 {
   color: #FCDC1E;
   font-size: 1.4rem;
+  margin: 0;
 }
 
 .slots-grid {
   display: grid;
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .slot-card {
   background: rgba(0, 0, 0, 0.2);
-  padding: 16px;
+  padding: 20px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease;
@@ -1755,6 +2500,7 @@ onMounted(() => {
 
 .slot-card:hover {
   border-color: rgba(252, 220, 30, 0.3);
+  background: rgba(252, 220, 30, 0.05);
 }
 
 .slot-card.editing {
@@ -1775,25 +2521,21 @@ onMounted(() => {
 
 .slot-artist-name {
   color: #FCDC1E;
-  font-weight: 700;
   font-size: 1.1rem;
+  font-weight: 700;
   margin-bottom: 6px;
 }
 
 .slot-time {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-bottom: 4px;
 }
 
 .slot-style {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.85rem;
-}
-
-.slot-editor {
-  display: grid;
-  gap: 12px;
+  font-style: italic;
 }
 
 .slot-actions {
@@ -1805,10 +2547,10 @@ onMounted(() => {
   background: rgba(33, 150, 243, 0.2);
   border: 1px solid rgba(33, 150, 243, 0.4);
   color: #2196F3;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   transition: all 0.2s ease;
 }
 
@@ -1816,28 +2558,28 @@ onMounted(() => {
   background: rgba(33, 150, 243, 0.3);
 }
 
-.btn-save-small {
-  background: rgba(76, 175, 80, 0.2);
-  border: 1px solid rgba(76, 175, 80, 0.4);
-  color: #4CAF50;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
+.slot-editor {
+  display: grid;
+  gap: 16px;
 }
 
-.btn-save-small:hover {
-  background: rgba(76, 175, 80, 0.3);
+.slot-editor .form-row {
+  display: grid;
+  gap: 8px;
+}
+
+.slot-editor .form-row label {
+  color: #FCDC1E;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .btn-cancel {
-  background: rgba(158, 158, 158, 0.2);
-  border: 1px solid rgba(158, 158, 158, 0.4);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 87, 34, 0.2);
+  border: 1px solid rgba(255, 87, 34, 0.4);
+  color: #ff5722;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
@@ -1845,18 +2587,626 @@ onMounted(() => {
 }
 
 .btn-cancel:hover {
-  background: rgba(158, 158, 158, 0.3);
+  background: rgba(255, 87, 34, 0.3);
 }
 
 .empty-slots {
   text-align: center;
-  padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.6);
+  padding: 40px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
 }
 
-.programmation-actions {
+.empty-slots p {
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+  font-size: 1rem;
+}
+
+/* ========================================== */
+/* Stats avis prestataires - Nouveau style   */
+/* ========================================== */
+.avis-stats-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 2px solid rgba(252, 220, 30, 0.2);
+}
+
+.avis-section-title {
+  color: #FCDC1E;
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.avis-section-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.avis-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+  min-height: 600px;
+}
+
+/* Liste des prestataires */
+.avis-prestataires-list {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+  overflow-y: auto;
+  max-height: 800px;
+}
+
+.list-title {
+  color: #FCDC1E;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.prestataire-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.prestataire-stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid rgba(252, 220, 30, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.prestataire-stat-card:hover {
+  background: rgba(252, 220, 30, 0.08);
+  border-color: rgba(252, 220, 30, 0.4);
+  transform: translateX(4px);
+}
+
+.prestataire-stat-card.selected {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.15) 0%, rgba(255, 230, 118, 0.15) 100%);
+  border-color: #FCDC1E;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-header h4 {
+  color: #FCDC1E;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.badge-avis {
+  background: rgba(252, 220, 30, 0.2);
+  color: #FCDC1E;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rating-value {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  line-height: 1;
+}
+
+.rating-value.no-rating {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.rating-stars-mini {
+  display: flex;
+  gap: 2px;
+}
+
+.star-mini {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.star-mini.filled {
+  color: #FCDC1E;
+}
+
+.card-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.last-comment-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.last-comment-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.no-comment-text {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+}
+
+/* Panneau de détail */
+.avis-detail-panel {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+}
+
+.avis-detail-panel.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(252, 220, 30, 0.2);
+}
+
+.detail-header h3 {
+  color: #FCDC1E;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.btn-close-detail {
+  background: rgba(255, 87, 34, 0.2);
+  border: 1px solid rgba(255, 87, 34, 0.4);
+  color: #ff5722;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-close-detail:hover {
+  background: rgba(255, 87, 34, 0.3);
+  transform: rotate(90deg);
+}
+
+.detail-content {
+  display: grid;
+  gap: 24px;
+}
+
+.detail-score-section {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.1) 0%, rgba(255, 230, 118, 0.1) 100%);
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+}
+
+.detail-score-main {
+  margin-bottom: 12px;
+}
+
+.detail-score-value {
+  font-size: 4rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.detail-score-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.detail-score-stars {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.star-detail {
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.star-detail.filled {
+  color: #FCDC1E;
+  filter: drop-shadow(0 2px 4px rgba(252, 220, 30, 0.4));
+}
+
+.detail-score-meta {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.detail-distribution {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.detail-distribution h4 {
+  color: #FCDC1E;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.distribution-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.distribution-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.distribution-star-label {
+  width: 40px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.distribution-bar-bg {
+  flex: 1;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.distribution-bar-fg {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E, #ffe676);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(252, 220, 30, 0.5);
+}
+
+.distribution-count-label {
+  width: 40px;
+  text-align: right;
+  color: #FCDC1E;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.detail-info-box {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.detail-info-box p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media screen and (max-width: 1024px) {
+  .avis-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avis-prestataires-list {
+    max-height: 500px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+
+  .rating-overview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Presentation tabs */
+.presentation-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+}
+
+.tab-btn {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 2px solid rgba(252, 220, 30, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tab-btn:hover {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.15) 0%, rgba(252, 220, 30, 0.1) 100%);
+  border-color: rgba(252, 220, 30, 0.6);
+  color: #FCDC1E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  border-color: #FCDC1E;
+  color: #0a0a0a;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(252, 220, 30, 0.4);
+  transform: translateY(-1px);
+}
+
+.tab-btn.active:hover {
+  background: linear-gradient(135deg, #ffe676 0%, #FCDC1E 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(252, 220, 30, 0.5);
+}
+
+.presentation-group {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid rgba(252, 220, 30, 0.2);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.group-title {
+  color: #FCDC1E;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(252, 220, 30, 0.3);
+}
+
+.card-editor {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-editor:last-child {
+  margin-bottom: 0;
+}
+
+.card-editor h4 {
+  color: rgba(252, 220, 30, 0.8);
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+@media screen and (max-width: 768px) {
+  .presentation-tabs {
+    flex-direction: column;
+  }
+
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+.rating-overview-card {
   margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(252, 220, 30, 0.2);
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.08) 0%, rgba(255, 230, 118, 0.08) 100%);
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.rating-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+}
+
+.rating-icon {
+  font-size: 4rem;
+  filter: drop-shadow(0 4px 8px rgba(252, 220, 30, 0.5));
+}
+
+.rating-main {
+  flex: 1;
+}
+
+.rating-score {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.rating-stars .star {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.2);
+  transition: color 0.2s ease;
+}
+
+.rating-stars .star.filled {
+  color: #FCDC1E;
+  filter: drop-shadow(0 2px 4px rgba(252, 220, 30, 0.4));
+}
+
+.rating-meta {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.rating-right h3 {
+  color: #FCDC1E;
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.rating-distribution {
+  display: grid;
+  gap: 10px;
+}
+
+.distribution-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.distribution-label {
+  width: 40px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.distribution-bar {
+  flex: 1;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.distribution-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FCDC1E, #ffe676);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.distribution-count {
+  width: 40px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 </style>
+

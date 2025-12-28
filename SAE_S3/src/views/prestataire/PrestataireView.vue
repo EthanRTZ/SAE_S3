@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
 const router = useRouter()
 const authUser = ref(null)
@@ -70,13 +71,10 @@ const loadPrestataireInfo = async () => {
 
     prestataireInfo.value = prestataire
 
-    // initialiser les éditeurs/structures
-    // Extraire le texte brut depuis HTML si nécessaire
+    // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
     const htmlContent = prestataire?.presentationHtml || prestataire?.description || ''
-    // Nettoyer le HTML pour obtenir du texte brut
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = htmlContent
-    presentationText.value = tempDiv.textContent || tempDiv.innerText || ''
+    presentationText.value = htmlContent
+
     // services: enrichir avec flags si absent
     services.value = (prestataire?.services || []).map(s => ({
       nom: s.nom || '',
@@ -107,7 +105,7 @@ const saveCustomPrestataire = () => {
     custom = {}
   }
   custom[prestataireNom.value] = {
-    // utiliser la présentation comme description affichée dans les listes publiques
+    // Sauvegarder le HTML directement depuis l'éditeur WYSIWYG
     description: presentationText.value,
     presentationHtml: presentationText.value,
     services: services.value,
@@ -287,7 +285,7 @@ onMounted(() => {
           <div v-if="selectedSection === 'presentation'" class="section-content">
             <div class="section-header">
               <h2>📝 Présentation</h2>
-              <p class="section-description">Rédigez la présentation de votre prestataire visible sur le site.</p>
+              <p class="section-description">Rédigez la présentation de votre prestataire avec texte et images.</p>
             </div>
             <div class="editor-actions">
               <button class="btn btn-primary" type="button" @click="savePresentation">
@@ -295,12 +293,16 @@ onMounted(() => {
               </button>
             </div>
 
-            <textarea 
-              class="textarea presentation-textarea" 
-              v-model="presentationText" 
-              placeholder="Décrivez votre prestataire..."
-              rows="12"
-            ></textarea>
+            <WysiwygEditor
+              v-model="presentationText"
+              :height="500"
+              placeholder="Décrivez votre prestataire, ajoutez des images pour mettre en valeur vos services..."
+            />
+
+            <div class="form-group" style="margin-top: 20px;">
+              <label>Aperçu</label>
+              <div class="preview-box" v-html="presentationText"></div>
+            </div>
           </div>
 
           <!-- Services -->
@@ -1222,5 +1224,44 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 
 .stat-card .star.filled {
   color: #FCDC1E;
+}
+
+.preview-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(252, 220, 30, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 100px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.preview-box :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.preview-box :deep(p) {
+  margin-bottom: 12px;
+}
+
+.preview-box :deep(h1),
+.preview-box :deep(h2),
+.preview-box :deep(h3) {
+  color: #FCDC1E;
+  margin: 16px 0 8px;
+}
+
+.preview-box :deep(ul),
+.preview-box :deep(ol) {
+  margin-left: 24px;
+  margin-bottom: 12px;
+}
+
+.preview-box :deep(a) {
+  color: #FCDC1E;
+  text-decoration: underline;
 }
 </style>
