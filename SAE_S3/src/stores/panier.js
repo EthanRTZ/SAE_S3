@@ -58,14 +58,38 @@ export const usePanierStore = defineStore('panier', () => {
 
   // Supprimer un article du panier
   const removeItem = (itemId) => {
+    const removedItem = items.value.find(item => item.id === itemId)
     items.value = items.value.filter(item => item.id !== itemId)
     savePanier()
+
+    // Émettre un événement personnalisé pour informer de la suppression
+    if (typeof window !== 'undefined' && removedItem) {
+      window.dispatchEvent(new CustomEvent('panier-item-removed', {
+        detail: removedItem
+      }))
+    }
   }
 
   // Vider le panier
   const clearPanier = () => {
+    // Émettre un événement pour chaque article avant de vider
+    if (typeof window !== 'undefined') {
+      items.value.forEach(item => {
+        window.dispatchEvent(new CustomEvent('panier-item-removed', {
+          detail: item
+        }))
+      })
+    }
+
     items.value = []
     currentUserEmail.value = ''
+    savePanier()
+  }
+
+  // Vider le panier après paiement (sans restaurer le stock)
+  const clearPanierAfterPayment = () => {
+    // Ne pas émettre d'événements - les places restent réservées
+    items.value = []
     savePanier()
   }
 
@@ -85,6 +109,15 @@ export const usePanierStore = defineStore('panier', () => {
 
       // Si l'utilisateur a changé, vider le panier
       if (currentUserEmail.value !== newUserEmail) {
+        // Émettre un événement pour chaque article avant de vider
+        if (typeof window !== 'undefined') {
+          items.value.forEach(item => {
+            window.dispatchEvent(new CustomEvent('panier-item-removed', {
+              detail: item
+            }))
+          })
+        }
+
         items.value = []
         currentUserEmail.value = newUserEmail
         savePanier()
@@ -110,6 +143,7 @@ export const usePanierStore = defineStore('panier', () => {
     addItem,
     removeItem,
     clearPanier,
+    clearPanierAfterPayment,
     loadPanier,
     checkUserChange
   }

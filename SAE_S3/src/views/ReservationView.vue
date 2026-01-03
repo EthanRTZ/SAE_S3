@@ -263,7 +263,6 @@
 </template>
 
 <script>
-import forfaitsData from '@/data/forfaits.json'
 import { usePanierStore } from '@/stores/panier'
 
 export default {
@@ -273,14 +272,14 @@ export default {
     return { panierStore }
   },
   data() {
-    const forfaits = JSON.parse(JSON.stringify(forfaitsData))
-    Object.keys(forfaits).forEach((key) => {
-      if (Array.isArray(forfaits[key].days)) {
-        forfaits[key].stock = forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
-      }
-    })
     return {
-      forfaits,
+      forfaits: {
+        oneDay: { label: 'Forfait 1 jour', stock: 0, days: [] },
+        twoDays: { label: 'Forfait 2 jours', stock: 0, days: [] },
+        threeDays: { label: 'Pass 3 jours', stock: 0 },
+        parking: { label: 'Place de parking', stock: 0 },
+        camping: { label: 'Emplacement de camping', stock: 0 }
+      },
       selections: {
         oneDay: '',
         twoDays: ''
@@ -298,7 +297,8 @@ export default {
         threeDays: ''
       },
       showAuthModal: false,
-      authUser: null
+      authUser: null,
+      loading: true
     }
   },
   computed: {
@@ -317,6 +317,143 @@ export default {
     }
   },
   methods: {
+    async loadForfaits() {
+      try {
+        this.loading = true
+        const response = await fetch('/data/forfaits.json')
+        const data = await response.json()
+
+        // Copier les données et calculer les stocks totaux si nécessaire
+        this.forfaits = JSON.parse(JSON.stringify(data))
+        Object.keys(this.forfaits).forEach((key) => {
+          if (Array.isArray(this.forfaits[key].days)) {
+            this.forfaits[key].stock = this.forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
+          }
+        })
+
+        // Déduire TOUTES les réservations payées (de tous les utilisateurs)
+        this.applyPaidReservationsToStock()
+
+        // Déduire les articles déjà dans le panier (réservations temporaires)
+        this.applyPanierToStock()
+
+        this.loading = false
+      } catch (error) {
+        console.error('Erreur lors du chargement des forfaits:', error)
+        this.loading = false
+      }
+    },
+    applyPaidReservationsToStock() {
+      // Déduire TOUTES les réservations payées du stock disponible
+      try {
+        const allReservations = JSON.parse(localStorage.getItem('userReservations') || '[]')
+        allReservations.forEach(reservation => {
+          if (reservation.type && reservation.quantity) {
+            this.decrementStock(reservation.type, reservation.quantity, reservation.optionLabel || '')
+          }
+        })
+      } catch (e) {
+        console.error('Erreur lors de l\'application des réservations payées:', e)
+      }
+    },
+    applyPanierToStock() {
+      // Déduire les quantités du panier du stock disponible
+      const panierItems = this.panierStore.items || []
+      panierItems.forEach(item => {
+        this.decrementStock(item.type, item.quantity, item.optionLabel)
+      })
+    },
+    decrementStock(type, quantity, optionLabel = '') {
+      if (!this.forfaits[type]) return
+
+      if (type === 'oneDay' || type === 'twoDays') {
+        // Décrémenter le stock de l'option spécifique
+        const dayOption = this.getDayOptions(type).find(day => day.label === optionLabel)
+        if (dayOption) {
+          dayOption.stock = Math.max(0, dayOption.stock - quantity)
+
+          // Si c'est twoDays, décrémenter aussi les jours liés
+          if (type === 'twoDays' && Array.isArray(dayOption.linkedDays)) {
+            dayOption.linkedDays.forEach(linkedLabel => {
+              const linkedDay = this.findOneDayOption(linkedLabel)
+              if (linkedDay) {
+                linkedDay.stock = Math.max(0, linkedDay.stock - quantity)
+              }
+            })
+          }
+        }
+      } else if (type === 'threeDays') {
+        // Décrémenter tous les stocks liés
+        if (this.forfaits.threeDays) {
+          this.forfaits.threeDays.stock = Math.max(0, this.forfaits.threeDays.stock - quantity)
+        }
+        this.getDayOptions('oneDay').forEach(day => {
+          day.stock = Math.max(0, day.stock - quantity)
+        })
+        this.getDayOptions('twoDays').forEach(day => {
+          day.stock = Math.max(0, day.stock - quantity)
+        })
+      } else {
+        // parking ou camping
+        this.forfaits[type].stock = Math.max(0, this.forfaits[type].stock - quantity)
+      }
+
+      // Recalculer le stock total si nécessaire
+      if (Array.isArray(this.forfaits[type].days)) {
+        this.forfaits[type].stock = this.forfaits[type].days.reduce((sum, day) => sum + day.stock, 0)
+      }
+    },
+    incrementStock(type, quantity, optionLabel = '') {
+      if (!this.forfaits[type]) return
+
+      if (type === 'oneDay' || type === 'twoDays') {
+        // Incrémenter le stock de l'option spécifique
+        const dayOption = this.getDayOptions(type).find(day => day.label === optionLabel)
+        if (dayOption) {
+          dayOption.stock += quantity
+
+          // Si c'est twoDays, incrémenter aussi les jours liés
+          if (type === 'twoDays' && Array.isArray(dayOption.linkedDays)) {
+            dayOption.linkedDays.forEach(linkedLabel => {
+              const linkedDay = this.findOneDayOption(linkedLabel)
+              if (linkedDay) {
+                linkedDay.stock += quantity
+              }
+            })
+          }
+        }
+      } else if (type === 'threeDays') {
+        // Incrémenter tous les stocks liés
+        if (this.forfaits.threeDays) {
+          this.forfaits.threeDays.stock += quantity
+        }
+        this.getDayOptions('oneDay').forEach(day => {
+          day.stock += quantity
+        })
+        this.getDayOptions('twoDays').forEach(day => {
+          day.stock += quantity
+        })
+      } else {
+        // parking ou camping
+        this.forfaits[type].stock += quantity
+      }
+
+      // Recalculer le stock total si nécessaire
+      if (Array.isArray(this.forfaits[type].days)) {
+        this.forfaits[type].stock = this.forfaits[type].days.reduce((sum, day) => sum + day.stock, 0)
+      }
+    },
+    handlePanierChange() {
+      // Recharger les forfaits et réappliquer le panier
+      this.loadForfaits()
+    },
+    handlePanierItemRemoved(event) {
+      // Restaurer le stock uniquement pour l'article supprimé
+      const item = event.detail
+      if (item && item.type && item.quantity) {
+        this.incrementStock(item.type, item.quantity, item.optionLabel || '')
+      }
+    },
     getAllReservations() {
       try {
         const raw = localStorage.getItem('userReservations')
@@ -519,6 +656,9 @@ export default {
           userEmail: this.authUser.email
         })
 
+        // Décrémenter le stock local
+        this.decrementStock(type, requestedQty, selected.label)
+
         // Réinitialiser la sélection
         this.selections[type] = ''
         this.quantities[type] = 1
@@ -544,6 +684,9 @@ export default {
           userEmail: this.authUser.email
         })
 
+        // Décrémenter le stock local
+        this.decrementStock(type, requestedQty, '3 jours')
+
         this.quantities[type] = 1
         alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
         return
@@ -563,6 +706,9 @@ export default {
             userEmail: this.authUser.email
           })
 
+          // Décrémenter le stock local
+          this.decrementStock(type, requestedQty)
+
           this.quantities[type] = 1
           alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
         }
@@ -578,6 +724,9 @@ export default {
           userEmail: this.authUser.email
         })
 
+        // Décrémenter le stock local
+        this.decrementStock(type, requestedQty)
+
         this.quantities[type] = 1
         alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
       }
@@ -587,13 +736,16 @@ export default {
     }
   },
   mounted() {
+    this.loadForfaits()
     this.loadAuthUser()
     window.addEventListener('storage', this.handleStorageChange)
     window.addEventListener('auth-changed', this.handleStorageChange)
+    window.addEventListener('panier-item-removed', this.handlePanierItemRemoved)
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.handleStorageChange)
     window.removeEventListener('auth-changed', this.handleStorageChange)
+    window.removeEventListener('panier-item-removed', this.handlePanierItemRemoved)
   }
 }
 </script>

@@ -521,8 +521,8 @@ const onSubmit = async () => {
       // Sauvegarder les réservations mises à jour
       localStorage.setItem('userReservations', JSON.stringify(existingReservations))
 
-      // Vider le panier
-      panierStore.clearPanier()
+      // Vider le panier SANS restaurer le stock (places payées = places définitivement réservées)
+      panierStore.clearPanierAfterPayment()
 
       // Rediriger vers la page des réservations
       alert('✅ Paiement effectué avec succès ! Vos billets ont été ajoutés à vos réservations.')
