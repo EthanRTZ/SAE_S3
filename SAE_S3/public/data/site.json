@@ -11,7 +11,7 @@
       "services": [
         { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers","prixMoyen": 10}
       ],
-      "coordone": "47.30455,4.96570"
+      "coordone": "47.30532,4.96457"
     },
     {
       "nom": "Free",
@@ -23,7 +23,8 @@
       "site": "https://free.fr",
       "services": [
         { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site", "prixMoyen": 0 }
-      ]
+      ],
+      "coordone": "47.30519,4.96433"
     },
     {
       "nom": "Allianz",
@@ -35,7 +36,8 @@
       "site": "https://allianz.fr",
       "services": [
         { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool", "prixMoyen": 0 }
-      ]
+      ],
+      "coordone": "47.30508,4.96423"
     },
     {
       "nom": "Poliakov",
@@ -48,7 +50,7 @@
       "services": [
         { "nom": "Bar principal", "description": "Espace boisson et cocktails", "prixMoyen": 12 }
       ],
-      "coordone": "47.30405,4.96495"
+      "coordone": "47.30501,4.96413"
     },
     {
       "nom": "Jack Daniel's",
@@ -61,7 +63,7 @@
       "services": [
         { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's", "prixMoyen": 15 }
       ],
-      "coordone": "47.30462,4.96548"
+      "coordone": "47.30495,4.96406"
     },
     {
       "nom": "Red Bull",
@@ -73,7 +75,8 @@
       "site": "https://redbull.com",
       "services": [
         { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente", "prixMoyen": 8 }
-      ]
+      ],
+      "coordone":"47.30269,4.96492"
     },
     {
       "nom": "Heetch",
@@ -85,7 +88,8 @@
       "site": "https://heetch.com",
       "services": [
         { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale", "prixMoyen": 0 }
-      ]
+      ],
+      "coordone": "47.30400,4.96441"
     },
     {
       "nom": "Decathlon",
@@ -97,7 +101,8 @@
       "site": "https://decathlon.fr",
       "services": [
         { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor", "prixMoyen": 25 }
-      ]
+      ],
+      "coordone": "47.30486,4.96394"
     },
     {
       "nom": "Veolia",
@@ -109,7 +114,8 @@
       "site": "https://www.veolia.com",
       "services": [
         { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles", "prixMoyen": 0 }
-      ]
+      ],
+      "coordone": "47.30278,4.96521"
     },
     {
       "nom": "Securitas",
@@ -121,7 +127,8 @@
       "site": "https://www.securitas.fr",
       "services": [
         { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles", "prixMoyen": 0 }
-      ]
+      ],
+      "coordone": "47.30411,4.96460"
     },
     {
       "nom": "Deezer",
@@ -134,7 +141,7 @@
       "services": [
         { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival", "prixMoyen": 0 }
       ],
-      "coordone": "47.30440,4.96530"
+      "coordone": "47.30477,4.96382"
     },
 
     {
@@ -147,7 +154,8 @@
       "site": "https://www.happn.com",
       "services": [
         { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives", "prixMoyen": 5 }
-      ]
+      ],
+      "coordone": "47.30469,4.96373"
     },
     {
       "nom": "Jeager",
@@ -159,7 +167,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30425,4.96510"
+      "coordone": "47.30424,4.96478"
     },
     {
       "nom": "Ricard",
@@ -171,7 +179,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30475,4.96595"
+      "coordone": "47.30284,4.96550"
     },
     {
       "nom": "JBL",
@@ -183,7 +191,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30430,4.96605"
+      "coordone": "47.30263,4.96467"
     },
     {
       "nom": "Pepsi",
@@ -195,7 +203,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30410,4.96550"
+      "coordone": "47.30291,4.96585"
     },
     {
       "nom": "Lipton",
@@ -207,7 +215,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30395,4.96535"
+      "coordone": "47.30434,4.96500"
     },
     {
       "nom": "Bagels",
@@ -219,7 +227,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30432,4.96580"
+      "coordone": "47.30431,4.96416"
     },
     {
       "nom": "Pizza",
@@ -231,7 +239,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30418,4.96565"
+      "coordone": "47.30444,4.96451"
     },
     {
       "nom": "Ail et fines herbes",
@@ -243,7 +251,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30452,4.96610"
+      "coordone": "47.30256,4.96437"
     },
     {
       "nom": "Nouilles",
@@ -255,7 +263,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30400,4.96600"
+      "coordone": "47.30338,4.96352"
     },
     {
       "nom": "Coiffure",
@@ -267,7 +275,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30388,4.96515"
+      "coordone": "47.30427,4.96669"
     },
     {
       "nom": "Merch",
@@ -279,7 +287,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30442,4.96490"
+      "coordone": "47.30424,4.96672"
     },
     {
       "nom": "Borne d'arcade",
@@ -291,7 +299,7 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30468,4.96525"
+      "coordone": "47.30441,4.96660"
     },
     {
       "nom": "Terrain de basket",
@@ -303,14 +311,15 @@
       "tel": "",
       "site": "",
       "services": [],
-      "coordone": "47.30485,4.96560"
+      "coordone": "47.30356,4.96343"
     }
   ],
   "zones": [
-    { "nom": "parking nord", "type": "parking", "coords": ["47.30510,4.96490", "47.30510,4.96550", "47.30475,4.96550", "47.30475,4.96490"] },
-    { "nom": "parking sud", "type": "parking", "coords": ["47.30340,4.96490", "47.30340,4.96555", "47.30305,4.96555", "47.30305,4.96490"] },
-    { "nom": "camping A", "type": "camping", "coords": ["47.30460,4.96620", "47.30460,4.96700", "47.30390,4.96700", "47.30390,4.96620"] },
-    { "nom": "camping B", "type": "camping", "coords": ["47.30490,4.96650", "47.30490,4.96720", "47.30440,4.96720", "47.30440,4.96650"] }
+    { "nom": "parking 1", "type": "parking", "coords": ["47.30253,4.96490", "47.30284,4.96638", "47.30176,4.96722","47.30125,4.96614"] },
+    { "nom": "parking 2", "type": "parking", "coords": ["47.30046,4.95943", "47.30010,4.96180", "47.30039,4.96235","47.30073,4.96198","47.30119,4.96315","47.30183,4.96262"] },
+    { "nom": "Zone VIP", "type": "VIP", "coords": ["47.30360,4.96338","47.30388,4.96323","47.30359,4.96234", "47.30328,4.96255"] },
+    { "nom": "camping", "type": "camping", "coords": ["47.30052,4.95927","47.30113,4.95822","47.30126,4.95739","47.30139,4.95730","47.30190,4.95873","47.30219,4.95935","47.30306,4.96050","47.30182,4.96093","47.30090,4.96013"] },
+    { "nom": "Zone principale du festival", "type": "festival", "coords": ["47.30388,4.96323","47.30359,4.96234", "47.30328,4.96255","47.30360,4.96338","47.30331,4.96351","47.30331,4.96351","47.30280,4.96211","47.30190,4.96259","47.30234,4.96379","47.30280,4.96549","47.30316,4.96801","47.30485,4.96726","47.30548,4.96666","47.30608,4.96523","47.30533,4.96460","47.30534,4.96445","47.30442,4.96329"] }
   ]
 }
 

@@ -181,11 +181,10 @@ export default {
       try {
         const res = await fetch('/data/site.json');
         const data = await res.json();
-        let zones = data.zones || [];
-        // Ne garder que parking/camping
-        zones = zones.filter(z => ['parking', 'camping'].includes(z.type));
-        this.zones = zones;
-        const typeSet = new Set(this.zones.map(z => z.type));
+        // Afficher toutes les zones
+        this.zones = data.zones || [];
+        // Construire les filtres sans la zone festival (toujours visible)
+        const typeSet = new Set(this.zones.map(z => z.type).filter(t => t !== 'festival'));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
         this.visibleZoneTypes = obj;
@@ -196,10 +195,18 @@ export default {
       }
     },
 
-    // Couleur dérivée du nom du type (hash -> HSL)
+    // Couleur spécifique pour chaque type de service
     colorFromType(type) {
-      const h = type.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
-      return `hsl(${h},70%,45%)`;
+      const colorMap = {
+        'Restauration': '#FF6B6B',      // Rouge/Corail
+        'Boissons': '#4ECDC4',         // Turquoise
+        'Services': '#45B7D1',         // Bleu clair
+        'Mobilité': '#96CEB4',         // Vert menthe
+        'Commerces & Équipements': '#FFE66D', // Jaune
+        'Média & Animation': '#9B59B6',      // Violet vif
+      };
+      // Retourne la couleur du type ou une couleur par défaut si le type n'existe pas
+      return colorMap[type] || '#888888';
     },
 
     // Génère une icône pour un type
@@ -264,6 +271,8 @@ export default {
     getZoneColor(type) {
       if (type === 'parking') return '#0066FF';
       if (type === 'camping') return '#2ECC71';
+      if (type === 'VIP') return '#9B59B6';
+      if (type === 'festival') return '#FFD700'; // Jaune pour le festival
       return '#888888';
     },
 
@@ -282,14 +291,29 @@ export default {
           latlngs.push([parts[0], parts[1]]);
         }
         const color = this.getZoneColor(z.type);
-        const layer = L.polygon(latlngs, {
-          color,
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 0.25,
-        }).bindPopup(`${z.nom} (${z.type})`);
-        layer._zoneType = z.type;
-        this.zoneLayers[`zone_${idx++}`] = layer;
+        
+        // Traitement spécial pour la zone festival
+        if (z.type === 'festival') {
+          const layer = L.polygon(latlngs, {
+            color: '#FFD700', // Jaune
+            weight: 3,
+            fillColor: 'transparent', // Pas de remplissage
+            fillOpacity: 0,
+            interactive: false, // Non cliquable
+          });
+          layer._zoneType = z.type;
+          this.zoneLayers[`zone_${idx++}`] = layer;
+        } else {
+          // Zones normales (parking, camping, VIP)
+          const layer = L.polygon(latlngs, {
+            color,
+            weight: 2,
+            fillColor: color,
+            fillOpacity: 0.25,
+          }).bindPopup(`${z.nom} (${z.type})`);
+          layer._zoneType = z.type;
+          this.zoneLayers[`zone_${idx++}`] = layer;
+        }
       });
     },
 
@@ -309,7 +333,8 @@ export default {
       if (!this.map) return;
       Object.values(this.zoneLayers).forEach(layer => {
         const t = layer._zoneType;
-        const show = !!this.visibleZoneTypes[t];
+        // La zone festival est toujours visible
+        const show = t === 'festival' || !!this.visibleZoneTypes[t];
         const onMap = this.map.hasLayer(layer);
         if (show && !onMap) layer.addTo(this.map);
         if (!show && onMap) this.map.removeLayer(layer);
