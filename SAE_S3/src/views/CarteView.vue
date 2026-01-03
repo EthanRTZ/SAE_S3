@@ -57,6 +57,7 @@ export default {
       zones: [],
       visibleZoneTypes: {},
       zoneLayers: {},
+      zoneMarkers: {}, // Marqueurs de symboles pour les zones
 
       // Référence à l’objet Leaflet (L) + vue initiale
       _L: null,
@@ -183,8 +184,8 @@ export default {
         const data = await res.json();
         // Afficher toutes les zones
         this.zones = data.zones || [];
-        // Construire les filtres sans la zone festival (toujours visible)
-        const typeSet = new Set(this.zones.map(z => z.type).filter(t => t !== 'festival'));
+        // Construire les filtres sans la zone festival et les scènes (toujours visibles)
+        const typeSet = new Set(this.zones.map(z => z.type).filter(t => t !== 'festival' && t !== 'scène'));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
         this.visibleZoneTypes = obj;
@@ -276,11 +277,92 @@ export default {
       return '#888888';
     },
 
+    // Couleur spécifique pour chaque scène
+    getSceneColor(nom) {
+      const sceneColors = {
+        'MOTHERSHIP': '#FF1744',      // Rouge vif
+        'ZERO GRAVITY': '#00E5FF',    // Cyan vif
+        'CARGO': '#FF9800',           // Orange vif
+        'ANTDT CLUB': '#E91E63',      // Rose/Magenta
+      };
+      return sceneColors[nom] || '#9C27B0';
+    },
+
+    // Calcule le centre (centroid) d'un polygone
+    getPolygonCenter(latlngs) {
+      let latSum = 0;
+      let lngSum = 0;
+      latlngs.forEach(coord => {
+        latSum += coord[0];
+        lngSum += coord[1];
+      });
+      return [latSum / latlngs.length, lngSum / latlngs.length];
+    },
+
+    // Crée une icône de symbole pour une zone
+    getZoneIcon(type, nom) {
+      const L = this._L;
+      if (!L) return null;
+
+      let symbol = '';
+      let bgColor = '#FFFFFF';
+      let textColor = '#000000';
+      let borderColor = '#000000';
+
+      if (type === 'parking') {
+        symbol = 'P';
+        bgColor = '#FFFFFF';
+        textColor = '#0066FF';
+        borderColor = '#0066FF';
+      } else if (type === 'camping') {
+        symbol = '🏕️';
+        bgColor = 'rgba(46, 204, 113, 0.9)';
+        textColor = '#FFFFFF';
+        borderColor = '#2ECC71';
+      } else if (type === 'VIP') {
+        symbol = '⭐';
+        bgColor = 'rgba(155, 89, 182, 0.9)';
+        textColor = '#FFFFFF';
+        borderColor = '#9B59B6';
+      } else if (type === 'scène') {
+        symbol = '🎵';
+        const sceneColor = this.getSceneColor(nom);
+        bgColor = sceneColor;
+        textColor = '#FFFFFF';
+        borderColor = sceneColor;
+      }
+
+      const html = `
+        <div style="
+          background-color: ${bgColor};
+          border: 3px solid ${borderColor};
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: ${type === 'parking' ? '24px' : '28px'};
+          font-weight: ${type === 'parking' ? 'bold' : 'normal'};
+          color: ${textColor};
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        ">${symbol}</div>
+      `;
+
+      return L.divIcon({
+        html: html,
+        className: 'zone-icon-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+    },
+
     // Ajout: création des polygones zones
     initZones() {
       const L = this._L;
       if (!L || !this.map) return;
       this.zoneLayers = {};
+      this.zoneMarkers = {};
       let idx = 0;
       this.zones.forEach(z => {
         if (!Array.isArray(z.coords) || z.coords.length < 3) return;
@@ -292,7 +374,7 @@ export default {
         }
         const color = this.getZoneColor(z.type);
         
-        // Traitement spécial pour la zone festival
+        // Traitement spécial pour la zone festival (pas de marqueur)
         if (z.type === 'festival') {
           const layer = L.polygon(latlngs, {
             color: '#FFD700', // Jaune
@@ -303,6 +385,40 @@ export default {
           });
           layer._zoneType = z.type;
           this.zoneLayers[`zone_${idx++}`] = layer;
+        } else if (z.type === 'scène') {
+          // Traitement spécial pour les scènes avec style attrayant
+          const sceneColor = this.getSceneColor(z.nom);
+          const popupContent = `
+            <div class="popup-scene">
+              <h3 style="margin: 0 0 8px 0; color: ${sceneColor}; font-weight: bold; font-size: 1.2em;">
+                🎵 ${z.nom}
+              </h3>
+              ${z.sponsor ? `<p style="margin: 0; color: #666; font-size: 0.9em;">by ${z.sponsor}</p>` : ''}
+            </div>
+          `;
+          const layer = L.polygon(latlngs, {
+            color: sceneColor,
+            weight: 4,
+            fillColor: sceneColor,
+            fillOpacity: 0.4,
+            opacity: 0.9,
+            dashArray: '0',
+          }).bindPopup(popupContent, {
+            className: 'scene-popup'
+          });
+          layer._zoneType = z.type;
+          layer._zoneNom = z.nom;
+          this.zoneLayers[`zone_${idx++}`] = layer;
+          
+          // Ajouter un marqueur de symbole au centre
+          const center = this.getPolygonCenter(latlngs);
+          const icon = this.getZoneIcon(z.type, z.nom);
+          if (icon) {
+            const marker = L.marker(center, { icon, interactive: false });
+            marker._zoneType = z.type;
+            marker._zoneNom = z.nom;
+            this.zoneMarkers[`zone_marker_${idx - 1}`] = marker;
+          }
         } else {
           // Zones normales (parking, camping, VIP)
           const layer = L.polygon(latlngs, {
@@ -313,6 +429,16 @@ export default {
           }).bindPopup(`${z.nom} (${z.type})`);
           layer._zoneType = z.type;
           this.zoneLayers[`zone_${idx++}`] = layer;
+          
+          // Ajouter un marqueur de symbole au centre
+          const center = this.getPolygonCenter(latlngs);
+          const icon = this.getZoneIcon(z.type, z.nom);
+          if (icon) {
+            const marker = L.marker(center, { icon, interactive: false });
+            marker._zoneType = z.type;
+            marker._zoneNom = z.nom;
+            this.zoneMarkers[`zone_marker_${idx - 1}`] = marker;
+          }
         }
       });
     },
@@ -333,11 +459,19 @@ export default {
       if (!this.map) return;
       Object.values(this.zoneLayers).forEach(layer => {
         const t = layer._zoneType;
-        // La zone festival est toujours visible
-        const show = t === 'festival' || !!this.visibleZoneTypes[t];
+        // La zone festival et les scènes sont toujours visibles
+        const show = t === 'festival' || t === 'scène' || !!this.visibleZoneTypes[t];
         const onMap = this.map.hasLayer(layer);
         if (show && !onMap) layer.addTo(this.map);
         if (!show && onMap) this.map.removeLayer(layer);
+      });
+      // Gérer la visibilité des marqueurs de symboles
+      Object.entries(this.zoneMarkers).forEach(([key, marker]) => {
+        const t = marker._zoneType;
+        const show = t === 'scène' || !!this.visibleZoneTypes[t];
+        const onMap = this.map.hasLayer(marker);
+        if (show && !onMap) marker.addTo(this.map);
+        if (!show && onMap) this.map.removeLayer(marker);
       });
     },
     togglePanel() {
@@ -358,6 +492,7 @@ export default {
     if (this.map) {
       Object.values(this.markerLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       Object.values(this.zoneLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
+      Object.values(this.zoneMarkers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       this.map.remove();
       this.map = null;
     }
@@ -549,6 +684,40 @@ export default {
 :deep(.popup-link:hover) {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(252, 220, 30, 0.4);
+}
+
+/* Styles pour les popups des scènes */
+:deep(.scene-popup) {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+:deep(.popup-scene) {
+  padding: 10px;
+  min-width: 180px;
+  text-align: center;
+}
+
+:deep(.popup-scene h3) {
+  margin: 0 0 8px 0;
+  font-weight: bold;
+  font-size: 1.2em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+:deep(.popup-scene p) {
+  margin: 0;
+  color: #666;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+/* Styles pour les icônes de zones */
+:deep(.zone-icon-marker) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 700px) {
