@@ -215,6 +215,118 @@
         </p>
       </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <!-- Section Logo & Description -->
+        <div class="footer-section footer-about">
+          <div class="footer-logo">
+            <h3>Golden Coast</h3>
+          </div>
+          <p class="footer-description">
+            Le plus grand festival de rap français sur la Côte dorée. Trois jours d'exception où musique, culture urbaine et convivialité se rencontrent dans un cadre naturel unique.
+          </p>
+          <div class="footer-social">
+            <a href="https://www.facebook.com/goldencoast.festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+            <a href="https://www.instagram.com/goldencoast_festival/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </a>
+            <a href="https://www.tiktok.com/@goldencoast.festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="TikTok">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+              </svg>
+            </a>
+            <a href="https://x.com/goldencoastfest" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="X (Twitter)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+            <a href="https://www.threads.com/@goldencoast_festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Threads">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.016-5.097.912-6.494 2.663-1.267 1.591-1.903 3.847-1.928 6.217.024 2.375.66 4.63 1.926 6.215 1.395 1.746 3.583 2.64 6.493 2.656 3.098-.017 5.26-1.084 6.425-3.172.65-1.165.854-2.524.606-4.042-.194-1.188-.89-2.157-2.068-2.88-.49-.3-1.03-.542-1.604-.721-.96 1.197-2.406 1.857-4.178 1.9-1.74-.043-3.13-.65-4.134-1.806-.86-1-1.31-2.304-1.336-3.874.026-1.566.475-2.868 1.335-3.868 1.004-1.156 2.394-1.763 4.133-1.806 1.777.044 3.226.706 4.186 1.91.515.64.872 1.397 1.067 2.26.386-.062.773-.094 1.16-.097 1.023.003 1.992.23 2.88.676 1.82 1.037 2.979 2.78 3.35 5.033.386 2.346-.09 4.485-1.412 6.356-1.636 2.314-4.323 3.49-7.986 3.512zm-.014-14.084c-1.235.042-2.194.49-2.85 1.333-.546.7-.824 1.59-.827 2.643.003 1.052.28 1.942.826 2.643.656.843 1.615 1.291 2.85 1.333 1.245-.042 2.207-.49 2.863-1.334.545-.7.823-1.59.827-2.642-.004-1.053-.282-1.943-.827-2.643-.656-.843-1.618-1.291-2.863-1.333z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Section Liens Rapides -->
+        <div class="footer-section">
+          <h4 class="footer-title">Navigation</h4>
+          <ul class="footer-links">
+            <li><router-link to="/">Accueil</router-link></li>
+            <li><router-link to="/programmation">Programmation</router-link></li>
+            <li><router-link to="/prestataire">Prestataires</router-link></li>
+            <li><router-link to="/carte">Carte</router-link></li>
+            <li><router-link to="/reservation">Billetterie</router-link></li>
+          </ul>
+        </div>
+
+        <!-- Section Informations -->
+        <div class="footer-section">
+          <h4 class="footer-title">Informations</h4>
+          <ul class="footer-links">
+            <li><a href="#" @click.prevent>À propos du festival</a></li>
+            <li><a href="#" @click.prevent>Conditions générales</a></li>
+            <li><a href="#" @click.prevent>Politique de confidentialité</a></li>
+            <li><a href="#" @click.prevent>FAQ</a></li>
+            <li><a href="#" @click.prevent>Nos partenaires</a></li>
+          </ul>
+        </div>
+
+        <!-- Section Avis & Contact -->
+        <div class="footer-section">
+          <h4 class="footer-title">Avis & Contact</h4>
+          <div class="footer-avis-cta">
+            <p class="avis-description">
+              Vous avez participé au festival ? Partagez votre expérience !
+            </p>
+            <router-link to="/avis" class="btn-avis">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Laisser un avis
+            </router-link>
+          </div>
+          <ul class="footer-contact">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Combe à la Serpent<br/>Corcelles-lès-Monts, France</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span>+33 (0)3 80 XX XX XX</span>
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span>contact@goldencoast.fr</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom">
+        <div class="footer-bottom-container">
+          <p>&copy; {{ new Date().getFullYear() }} Golden Coast Festival. Tous droits réservés.</p>
+          <p class="footer-credits">Fait avec passion pour la culture urbaine 🎤</p>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -944,13 +1056,13 @@ export default {
   color: #0b1e55;
   background: #FCDC1E;
   border: 2px solid #FCDC1E;
-  box-shadow: 0 10px 24px rgba(252,220,30,0.25);
+  box-shadow: 0 10px 24px rgba(252, 220, 30, 0.25);
   text-decoration: none;
   transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
 }
 .btn-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(252,220,30,0.35);
+  box-shadow: 0 14px 32px rgba(252, 220, 30, 0.35);
   background: transparent;
   color: #FCDC1E;
 }
@@ -1136,155 +1248,353 @@ export default {
   font-style: italic;
 }
 
-/* Responsive Design */
-@media screen and (max-width: 1024px) {
-  .hero-title {
-    font-size: 3.5rem;
-  }
+/* Footer Styles */
+.footer {
+  background: linear-gradient(135deg, #05102b 0%, #0b1e55 100%);
+  color: #ffffff;
+  padding: 70px 0 0;
+  margin-top: 0;
+  border-top: 4px solid #FCDC1E;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+}
 
-  .about-grid,
-  .artists-grid {
+.footer-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 50px;
+  margin-bottom: 50px;
+}
+
+.footer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.footer-about {
+  max-width: 380px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.footer-logo-img {
+  height: 55px;
+  width: auto;
+  filter: drop-shadow(0 4px 8px rgba(252, 220, 30, 0.3));
+  -webkit-user-drag: none;
+}
+
+.footer-logo h3 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.footer-description {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.8;
+  font-size: 1rem;
+  font-weight: 300;
+}
+
+.footer-social {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(252, 220, 30, 0.1);
+  color: #FCDC1E;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(252, 220, 30, 0.3);
+}
+
+.social-link:hover {
+  background: #FCDC1E;
+  color: #05102b;
+  transform: translateY(-4px) scale(1.05);
+  border-color: #FCDC1E;
+  box-shadow: 0 8px 20px rgba(252, 220, 30, 0.4);
+}
+
+.footer-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #FCDC1E;
+  margin-bottom: 4px;
+  position: relative;
+  padding-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.footer-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(90deg, #FCDC1E 0%, transparent 100%);
+  border-radius: 2px;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.footer-links li a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 400;
+  transition: all 0.2s ease;
+  display: inline-block;
+  position: relative;
+  padding-left: 0;
+}
+
+.footer-links li a::before {
+  content: '→';
+  position: absolute;
+  left: -22px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  color: #FCDC1E;
+  font-weight: bold;
+}
+
+.footer-links li a:hover {
+  color: #FCDC1E;
+  padding-left: 22px;
+  transform: translateX(2px);
+}
+
+.footer-links li a:hover::before {
+  opacity: 1;
+  left: 0;
+}
+
+.footer-contact {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.footer-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+.footer-contact li svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #FCDC1E;
+  filter: drop-shadow(0 2px 4px rgba(252, 220, 30, 0.3));
+}
+
+.footer-bottom {
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(252, 220, 30, 0.15);
+  padding: 28px 0;
+  margin-top: 30px;
+}
+
+.footer-bottom-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-bottom-container p {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 300;
+}
+
+.footer-credits {
+  font-size: 0.9rem !important;
+  color: rgba(252, 220, 30, 0.7) !important;
+  font-weight: 400 !important;
+}
+
+/* Section Avis dans le Footer */
+.footer-avis-cta {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: rgba(252, 220, 30, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.avis-description {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  font-weight: 300;
+}
+
+.btn-avis {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: #FCDC1E;
+  color: #05102b;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  border: 2px solid #FCDC1E;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+}
+
+.btn-avis svg {
+  flex-shrink: 0;
+}
+
+.btn-avis:hover {
+  background: transparent;
+  color: #FCDC1E;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(252, 220, 30, 0.4);
+}
+
+/* Responsive Footer */
+@media screen and (max-width: 1200px) {
+  .footer-container {
     grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    padding: 0 30px;
   }
 
-  .artist-card {
-    width: 320px;
-    height: 320px;
-  }
-
-  .carousel-track {
-    gap: 25px;
+  .footer-about {
+    max-width: 100%;
+    grid-column: 1 / -1;
   }
 }
 
 @media screen and (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
+  .footer {
+    padding: 50px 0 0;
   }
 
-  .hero-date {
-    font-size: 1.5rem;
-  }
-
-  .hero-location {
-    font-size: 1rem;
-  }
-
-  .hero-buttons {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .about-grid {
+  .footer-container {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 40px;
+    padding: 0 20px;
   }
 
-  .section-title {
-    font-size: 2.2rem;
+  .footer-about {
+    max-width: 100%;
   }
 
-  .cta-title {
-    font-size: 2rem;
-  }
-
-  .artist-card {
-    width: 280px;
-    height: 280px;
-  }
-
-  .carousel-track {
-    gap: 20px;
-    animation: scroll 30s linear infinite;
-  }
-
-  .artist-name {
+  .footer-logo h3 {
     font-size: 1.5rem;
   }
 
-  /* <-- CHANGED: ajuste la taille sur tablettes --> */
-  .description-text {
-    font-size: 1.15rem; /* augmenté depuis 1rem */
+  .footer-logo-img {
+    height: 45px;
+  }
+
+  .footer-title {
+    font-size: 1.15rem;
+  }
+
+  .footer-bottom-container {
+    padding: 0 20px;
+  }
+
+  .footer-social {
+    justify-content: flex-start;
+  }
+
+  .footer-avis-cta {
+    padding: 16px;
+  }
+
+  .avis-description {
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+  }
+
+  .btn-avis {
+    font-size: 0.9rem;
+    padding: 10px 20px;
   }
 }
 
 @media screen and (max-width: 480px) {
-  /* règles de secours pour très petits écrans */
-  .hero-title {
-    font-size: 1.8rem;
+  .footer {
+    padding: 40px 0 0;
   }
 
-  .artist-card {
-    width: 240px;
-    height: 240px;
+  .footer-logo-img {
+    height: 40px;
   }
 
-  .carousel-track {
-    gap: 15px;
-  }
-
-  .artist-name {
+  .footer-logo h3 {
     font-size: 1.3rem;
   }
 
-  /* <-- CHANGED: ajuste la taille sur très petits écrans --> */
-  .description-text {
-    font-size: 1.05rem; /* augmenté depuis 0.95rem */
-  }
-}
-
-.description-container.two-col {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-}
-
-.description-container.two-col + .description-container.two-col {
-  margin-top: 60px;
-}
-
-.description-left {
-  flex: 1;
-  text-align: left;
-}
-
-.description-right {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.description-image {
-  width: 100%;
-  max-width: 480px;
-  height: auto;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-  object-fit: cover;
-}
-
-/* garde .description-text existant mais s'assure alignement gauche */
-.description-text {
-  text-align: left;
-  /* ...existing style kept... */
-}
-
-/* Responsive: empile les colonnes sur petits écrans */
-@media screen and (max-width: 900px) {
-  .description-container.two-col {
-    flex-direction: column;
-    gap: 20px;
-    padding: 0 20px;
+  .social-link {
+    width: 42px;
+    height: 42px;
   }
 
-  .description-right {
-    width: 100%;
+  .social-link svg {
+    width: 20px;
+    height: 20px;
   }
 
-  .description-image {
-    max-width: 100%;
-    height: auto;
+  .footer-description {
+    font-size: 0.95rem;
+  }
+
+  .footer-links li a,
+  .footer-contact li {
+    font-size: 0.9rem;
   }
 }
 
