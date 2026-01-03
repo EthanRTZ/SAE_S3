@@ -10,6 +10,7 @@ import RegisterView from "@/views/RegisterView.vue";
 import AdminView from "@/views/admin/AdminView.vue";
 import PanierView from "@/views/PanierView.vue";
 import PaymentView from "@/views/PaymentView.vue";
+import AvisView from "@/views/AvisView.vue";
 
 const routes = [
     {
@@ -81,6 +82,11 @@ const routes = [
         path: '/admin',
         name: 'admin',
         component: AdminView,
+    },
+    {
+        path: '/avis',
+        name: 'avis',
+        component: AvisView
     },
     {
         path: '/:pathMatch(.*)*',
