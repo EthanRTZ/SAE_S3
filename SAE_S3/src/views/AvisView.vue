@@ -264,6 +264,14 @@ const submitAvis = () => {
   localAvis.unshift(newAvis);
   localStorage.setItem('festivalAvis', JSON.stringify(localAvis));
 
+  // Émettre un événement global pour notifier les autres composants
+  window.dispatchEvent(new CustomEvent('avis-updated', {
+    detail: {
+      prestataire: newAvis.prestataire,
+      avis: newAvis
+    }
+  }));
+
   // Recharger tous les avis
   loadAvis();
 
