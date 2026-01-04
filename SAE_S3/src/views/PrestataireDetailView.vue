@@ -93,7 +93,7 @@
         </section>
 
         <!-- ========================= -->
-        <!-- NOUVELLE SECTION : AVIS   -->
+        <!-- SECTION : AVIS (lecture seule) -->
         <!-- ========================= -->
         <section class="detail-section">
           <h2 class="section-title">Avis et notes</h2>
@@ -135,51 +135,10 @@
           </div>
 
           <div v-else class="empty-avis">
-            Aucun avis pour le moment. Soyez le premier à donner votre avis !
+            Aucun avis pour le moment.
           </div>
 
-          <!-- Formulaire de nouvel avis -->
-          <div class="avis-form">
-            <h3>Donner votre avis</h3>
-            <div class="avis-form-row">
-              <label>Note</label>
-              <div class="avis-stars-input">
-                <span
-                  v-for="i in 5"
-                  :key="i"
-                  class="star-input"
-                  :class="{ selected: i <= newAvis.note }"
-                  @click="newAvis.note = i"
-                >
-                  ★
-                </span>
-                <span class="note-text" v-if="newAvis.note > 0">
-                  {{ newAvis.note }}/5
-                </span>
-              </div>
-            </div>
-            <div class="avis-form-row">
-              <label>Commentaire</label>
-              <textarea
-                v-model="newAvis.commentaire"
-                class="avis-textarea"
-                rows="4"
-                placeholder="Partagez votre expérience avec ce prestataire..."
-              ></textarea>
-            </div>
-            <div class="avis-form-actions">
-              <button
-                type="button"
-                class="btn-map"
-                @click="submitAvis"
-                :disabled="submitting || newAvis.note === 0 || !newAvis.commentaire.trim()"
-              >
-                {{ submitting ? 'Envoi...' : 'Envoyer mon avis' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Liste des avis -->
+          <!-- Liste des avis (derniers avis) -->
           <div v-if="avisList.length" class="avis-list">
             <h3 class="avis-list-title">Derniers avis</h3>
             <div
@@ -214,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -231,52 +190,58 @@ const noteStats = ref({
   nbAvis: 0,
   parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 })
-const newAvis = ref({ note: 0, commentaire: '' })
-const submitting = ref(false)
-
-const publicServices = computed(() => {
-  if (!prestataire.value || !prestataire.value.services) return []
-  return prestataire.value.services.filter(s => s.public !== false)
-})
 
 // --------- AVIS : chargement / sauvegarde / calcul ---------
 const loadAvisFromStorage = async (prestataireNom) => {
   try {
-    const localRaw = localStorage.getItem('prestataireAvis')
-    let allAvis = localRaw ? JSON.parse(localRaw) : null
-
-    // si aucun avis en local, initialiser depuis avis.json
-    if (!allAvis) {
-      const resp = await fetch('/data/avis.json', { cache: 'no-store' }).catch(() => null)
-      if (resp && resp.ok) {
-        allAvis = await resp.json()
-      } else {
-        allAvis = {}
+x    // 1. Charger les avis depuis avis.json
+    let jsonAvis = []
+    try {
+      const resp = await fetch('/data/avis.json', { cache: 'no-store' })
+      if (resp.ok) {
+        const data = await resp.json()
+        const prestataireData = data[prestataireNom]
+        if (prestataireData && prestataireData.avis) {
+          jsonAvis = prestataireData.avis.map(a => ({
+            ...a,
+            id: `json-${a.id}`,
+            source: 'json'
+          }))
+        }
       }
-      localStorage.setItem('prestataireAvis', JSON.stringify(allAvis))
+    } catch (e) {
+      console.error('Erreur chargement avis.json', e)
     }
 
-    const data = allAvis[prestataireNom] || { avis: [], stats: null }
-    avisList.value = data.avis || []
+    // 2. Charger les avis depuis localStorage (ajoutés via AvisView)
+    let localAvis = []
+    try {
+      const stored = localStorage.getItem('festivalAvis')
+      if (stored) {
+        const allLocalAvis = JSON.parse(stored)
+        // Filtrer uniquement les avis pour ce prestataire
+        localAvis = allLocalAvis
+          .filter(a => a.prestataire === prestataireNom)
+          .map(a => ({
+            ...a,
+            source: 'local'
+          }))
+      }
+    } catch (e) {
+      console.error('Erreur chargement localStorage avis', e)
+    }
+
+    // 3. Fusionner les deux sources (localStorage en premier = plus récent)
+    avisList.value = [...localAvis, ...jsonAvis]
+
+    // 4. Trier par date décroissante
+    avisList.value.sort((a, b) => new Date(b.date) - new Date(a.date))
+
     computeNoteStats()
   } catch (e) {
     console.error('Erreur chargement avis', e)
     avisList.value = []
     computeNoteStats()
-  }
-}
-
-const saveAvisToStorage = (prestataireNom) => {
-  try {
-    const localRaw = localStorage.getItem('prestataireAvis')
-    const allAvis = localRaw ? JSON.parse(localRaw) : {}
-    allAvis[prestataireNom] = {
-      avis: avisList.value,
-      stats: noteStats.value
-    }
-    localStorage.setItem('prestataireAvis', JSON.stringify(allAvis))
-  } catch (e) {
-    console.error('Erreur sauvegarde avis', e)
   }
 }
 
@@ -302,27 +267,6 @@ const computeNoteStats = () => {
   })
   stats.moyenne = total / stats.nbAvis
   noteStats.value = stats
-}
-
-const submitAvis = async () => {
-  if (!prestataire.value) return
-  if (newAvis.value.note === 0 || !newAvis.value.commentaire.trim()) return
-
-  submitting.value = true
-  try {
-    const now = new Date().toISOString()
-    avisList.value.push({
-      id: avisList.value.length + 1,
-      note: newAvis.value.note,
-      commentaire: newAvis.value.commentaire.trim(),
-      date: now
-    })
-    computeNoteStats()
-    saveAvisToStorage(prestataire.value.nom)
-    newAvis.value = { note: 0, commentaire: '' }
-  } finally {
-    submitting.value = false
-  }
 }
 
 // --------- Chargement du prestataire + avis ---------
@@ -390,19 +334,27 @@ const handleImageError = (e) => {
 
 onMounted(() => {
   loadPrestataire()
-  
-  // Écouter les mises à jour
-  const updateHandler = () => loadPrestataire()
+})
+
+// Écouter les mises à jour
+const updateHandler = () => loadPrestataire()
+
+onMounted(() => {
   window.addEventListener('prestataire-updated', updateHandler)
   window.addEventListener('storage', (e) => {
     if (e.key === 'customPrestataires') {
       loadPrestataire()
     }
   })
-  
-  return () => {
-    window.removeEventListener('prestataire-updated', updateHandler)
-  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('prestataire-updated', updateHandler)
+})
+
+const publicServices = computed(() => {
+  if (!prestataire.value?.services) return []
+  return prestataire.value.services.filter(s => s.actif !== false)
 })
 </script>
 
@@ -806,70 +758,6 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Formulaire */
-.avis-form {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.avis-form h3 {
-  margin-bottom: 12px;
-  color: #FCDC1E;
-}
-
-.avis-form-row {
-  margin-bottom: 12px;
-}
-
-.avis-form-row label {
-  display: block;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 6px;
-}
-
-.avis-stars-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.star-input {
-  cursor: pointer;
-  font-size: 1.6rem;
-  color: rgba(255, 255, 255, 0.3);
-  transition: transform 0.1s ease, color 0.15s ease;
-}
-
-.star-input.selected {
-  color: #FCDC1E;
-  transform: scale(1.1);
-}
-
-.note-text {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.avis-textarea {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
-  padding: 10px;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.avis-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
 
 /* Liste des avis */
 .avis-list {
