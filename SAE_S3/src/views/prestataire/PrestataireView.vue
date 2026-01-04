@@ -12,6 +12,10 @@ const presentationText = ref('')
 const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 
+// Données pour la gestion des emplacements
+const emplacementsDisponibles = ref([])
+const emplacementActuel = ref('')
+
 const loadAuthFromStorage = () => {
   try {
     const raw = localStorage.getItem('authUser')
@@ -49,6 +53,18 @@ const loadPrestataireInfo = async () => {
 
     const data = siteResp.ok ? await siteResp.json() : { prestataires: [] }
     const avisData = avisResp.ok ? await avisResp.json() : {}
+
+    // Charger les emplacements disponibles
+    emplacementsDisponibles.value = data.emplacementsDisponibles || []
+
+    // Charger l'emplacement actuel du prestataire
+    try {
+      const emplacementsRaw = localStorage.getItem('prestataireEmplacements')
+      const emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+      emplacementActuel.value = emplacements[prestataireNom.value] || ''
+    } catch (e) {
+      emplacementActuel.value = ''
+    }
 
     // Vérifier que le prestataire est dans avis.json
     const prestatairesValides = Object.keys(avisData)
@@ -159,6 +175,68 @@ const formatPrix = (val) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val)
 }
 
+// Méthodes pour la gestion des emplacements
+const emplacementsLibres = computed(() => {
+  try {
+    const raw = localStorage.getItem('prestataireEmplacements')
+    const emplacements = raw ? JSON.parse(raw) : {}
+    const occupes = Object.values(emplacements)
+    return emplacementsDisponibles.value.filter(e => !occupes.includes(e))
+  } catch (e) {
+    return emplacementsDisponibles.value
+  }
+})
+
+const choisirEmplacement = (coords) => {
+  if (!prestataireNom.value) return
+
+  try {
+    const raw = localStorage.getItem('prestataireEmplacements')
+    const emplacements = raw ? JSON.parse(raw) : {}
+
+    // Si le prestataire avait déjà un emplacement, le libérer
+    if (emplacementActuel.value) {
+      // L'ancien emplacement devient libre automatiquement
+    }
+
+    // Assigner le nouvel emplacement
+    emplacements[prestataireNom.value] = coords
+    localStorage.setItem('prestataireEmplacements', JSON.stringify(emplacements))
+    emplacementActuel.value = coords
+
+    // Déclencher un événement pour mettre à jour la carte
+    window.dispatchEvent(new Event('emplacement-updated'))
+
+    alert('Emplacement sélectionné avec succès !')
+  } catch (e) {
+    console.error('Erreur lors de la sélection de l\'emplacement', e)
+    alert('Erreur lors de la sélection de l\'emplacement')
+  }
+}
+
+const libererEmplacement = () => {
+  if (!prestataireNom.value || !emplacementActuel.value) return
+
+  if (!confirm('Êtes-vous sûr de vouloir libérer votre emplacement actuel ?')) return
+
+  try {
+    const raw = localStorage.getItem('prestataireEmplacements')
+    const emplacements = raw ? JSON.parse(raw) : {}
+
+    delete emplacements[prestataireNom.value]
+    localStorage.setItem('prestataireEmplacements', JSON.stringify(emplacements))
+    emplacementActuel.value = ''
+
+    // Déclencher un événement pour mettre à jour la carte
+    window.dispatchEvent(new Event('emplacement-updated'))
+
+    alert('Emplacement libéré avec succès !')
+  } catch (e) {
+    console.error('Erreur lors de la libération de l\'emplacement', e)
+    alert('Erreur lors de la libération de l\'emplacement')
+  }
+}
+
 // =======================
 // NOUVEAU: stats de ventes
 // =======================
@@ -265,6 +343,10 @@ onMounted(() => {
               <span class="menu-icon">🛠️</span>
               <span>Services</span>
             </li>
+            <li :class="{ active: selectedSection === 'emplacement' }" @click="selectedSection = 'emplacement'">
+              <span class="menu-icon">📍</span>
+              <span>Emplacement</span>
+            </li>
             <li :class="{ active: selectedSection === 'stats' }" @click="selectedSection = 'stats'">
               <span class="menu-icon">📊</span>
               <span>Statistiques</span>
@@ -356,6 +438,68 @@ onMounted(() => {
             <div v-if="!services.length" class="empty-state">
               <p>📭 Aucun service défini.</p>
               <p class="empty-hint">Cliquez sur "Ajouter un service" pour commencer.</p>
+            </div>
+          </div>
+
+          <!-- Emplacement -->
+          <div v-if="selectedSection === 'emplacement'" class="section-content">
+            <div class="section-header">
+              <h2>📍 Emplacement sur la carte</h2>
+              <p class="section-description">Choisissez votre emplacement sur la carte du festival parmi les emplacements disponibles.</p>
+            </div>
+
+            <!-- Emplacement actuel -->
+            <div v-if="emplacementActuel" class="emplacement-actuel">
+              <h3>✅ Votre emplacement actuel</h3>
+              <div class="emplacement-info">
+                <span class="emplacement-coords">📌 {{ emplacementActuel }}</span>
+                <button class="btn btn-danger" @click="libererEmplacement">
+                  🗑️ Libérer cet emplacement
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="emplacement-vide">
+              <p>❌ Vous n'avez pas encore choisi d'emplacement.</p>
+              <p class="empty-hint">Sélectionnez un emplacement disponible ci-dessous.</p>
+            </div>
+
+            <!-- Liste des emplacements disponibles -->
+            <div class="emplacements-section">
+              <h3>Emplacements disponibles ({{ emplacementsLibres.length }})</h3>
+
+              <div v-if="emplacementsLibres.length > 0" class="emplacements-grid">
+                <div
+                  v-for="(coords, idx) in emplacementsLibres"
+                  :key="idx"
+                  class="emplacement-card"
+                  :class="{ selected: coords === emplacementActuel }"
+                >
+                  <div class="emplacement-card-header">
+                    <span class="emplacement-icon">📍</span>
+                    <span class="emplacement-label">Emplacement #{{ idx + 1 }}</span>
+                  </div>
+                  <div class="emplacement-coords-display">{{ coords }}</div>
+                  <button
+                    class="btn btn-primary btn-block"
+                    @click="choisirEmplacement(coords)"
+                    :disabled="coords === emplacementActuel"
+                  >
+                    {{ coords === emplacementActuel ? '✓ Sélectionné' : '➕ Choisir cet emplacement' }}
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="empty-state">
+                <p>📭 Tous les emplacements sont actuellement occupés.</p>
+                <p class="empty-hint">Veuillez réessayer plus tard ou contacter l'administration.</p>
+              </div>
+            </div>
+
+            <!-- Note d'information -->
+            <div class="info-box">
+              <strong>ℹ️ Information :</strong>
+              <p>Une fois votre emplacement choisi, il sera visible sur la carte du festival. Vous pouvez changer d'emplacement à tout moment si d'autres emplacements sont disponibles.</p>
             </div>
           </div>
 
@@ -1264,4 +1408,140 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   color: #FCDC1E;
   text-decoration: underline;
 }
+
+/* Styles pour la section Emplacement */
+.emplacement-actuel {
+  background: rgba(76, 175, 80, 0.1);
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.emplacement-actuel h3 {
+  color: #4caf50;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+}
+
+.emplacement-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.emplacement-coords {
+  font-family: monospace;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.emplacement-vide {
+  background: rgba(244, 67, 54, 0.1);
+  border: 2px solid #f44336;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.emplacement-vide p {
+  margin: 8px 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.emplacements-section {
+  margin-top: 24px;
+}
+
+.emplacements-section h3 {
+  color: #FCDC1E;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.emplacements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.emplacement-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(252, 220, 30, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.emplacement-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(252, 220, 30, 0.6);
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.2);
+}
+
+.emplacement-card.selected {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4caf50;
+}
+
+.emplacement-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.emplacement-icon {
+  font-size: 1.5rem;
+}
+
+.emplacement-label {
+  font-weight: 600;
+  color: #FCDC1E;
+  font-size: 1rem;
+}
+
+.emplacement-coords-display {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.info-box {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.info-box strong {
+  color: #2196F3;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.info-box p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
 </style>
+
+

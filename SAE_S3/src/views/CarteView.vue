@@ -53,6 +53,11 @@ export default {
       // Dictionnaire id -> marker
       markerLayers: {},
 
+      // Emplacements disponibles et choisis
+      emplacementsDisponibles: [],
+      emplacementsChoisis: {}, // { prestataireNom: "coordonnées" }
+      emplacementsLibresMarkers: {}, // Marqueurs pour emplacements vides
+
       // Ajouts zones
       zones: [],
       visibleZoneTypes: {},
@@ -133,6 +138,11 @@ export default {
         // Chargement des prestataires puis init des marqueurs
         this.loadPrestataires();
         this.loadZones();      // ajout
+
+        // Écouter les mises à jour d'emplacements
+        window.addEventListener('emplacement-updated', () => {
+          this.loadPrestataires();
+        });
       })
       .catch((e) => console.error(e));
   },
@@ -165,13 +175,37 @@ export default {
       try {
         const res = await fetch('/data/site.json');
         const data = await res.json();
-        this.prestataires = (data.prestataires || []).filter(p => p.coordone);
-        // Construit l’ensemble des types
+
+        // Charger les emplacements disponibles
+        this.emplacementsDisponibles = data.emplacementsDisponibles || [];
+
+        // Charger les choix d'emplacements depuis localStorage
+        try {
+          const raw = localStorage.getItem('prestataireEmplacements');
+          this.emplacementsChoisis = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+          this.emplacementsChoisis = {};
+        }
+
+        // Charger tous les prestataires (sans coordonnées fixes)
+        this.prestataires = data.prestataires || [];
+
+        // Attribuer les coordonnées aux prestataires qui ont choisi un emplacement
+        this.prestataires = this.prestataires.map(p => {
+          if (this.emplacementsChoisis[p.nom]) {
+            return { ...p, coordone: this.emplacementsChoisis[p.nom] };
+          }
+          return p;
+        });
+
+        // Construit l'ensemble des types
         const typeSet = new Set(this.prestataires.map(a => a.type).filter(Boolean));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
         this.visibleTypes = obj;
+
         this.initMarkers();
+        this.initEmplacementsLibres();
         this.updateMarkersVisibility();
       } catch (e) {
         console.error('Erreur chargement activités', e);
@@ -225,6 +259,70 @@ export default {
         iconSize: [32, 32],
         iconAnchor: [16, 32],
         popupAnchor: [0, -28],
+      });
+    },
+
+    // Génère une icône pour un emplacement vide
+    getEmptyLocationIcon() {
+      const L = this._L;
+      const svg = `
+        <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" fill="#cccccc" stroke="#666666" stroke-width="0.5"/>
+        </svg>
+      `;
+      return L.divIcon({
+        html: svg,
+        className: 'leaflet-div-icon pin-icon empty-location-icon',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -28],
+      });
+    },
+
+    // Initialise les marqueurs pour les emplacements libres
+    initEmplacementsLibres() {
+      const L = this._L;
+      if (!L || !this.map) return;
+
+      // Nettoyer les anciens marqueurs d'emplacements libres
+      Object.values(this.emplacementsLibresMarkers).forEach(m => {
+        if (this.map.hasLayer(m)) this.map.removeLayer(m);
+      });
+      this.emplacementsLibresMarkers = {};
+
+      // Obtenir les emplacements déjà occupés
+      const emplacementsOccupes = Object.values(this.emplacementsChoisis);
+
+      // Créer un marqueur pour chaque emplacement libre
+      this.emplacementsDisponibles.forEach((coords, idx) => {
+        // Ne pas afficher si l'emplacement est déjà occupé
+        if (emplacementsOccupes.includes(coords)) return;
+
+        const parts = coords.split(',').map(s => parseFloat(s.trim()));
+        if (parts.length !== 2 || parts.some(isNaN)) return;
+        const [lat, lng] = parts;
+
+        const icon = this.getEmptyLocationIcon();
+        const marker = L.marker([lat, lng], { icon });
+
+        const html = `
+          <div class="popup-emplacement">
+            <h3>Emplacement disponible</h3>
+            <p>Cet emplacement est libre.</p>
+            <p class="coordinates">${coords}</p>
+          </div>
+        `;
+
+        marker.bindPopup(html);
+        marker.bindTooltip('Emplacement disponible', {
+          permanent: false,
+          direction: 'top',
+          offset: [0, -10]
+        });
+
+        marker._emplacementCoords = coords;
+        marker.addTo(this.map);
+        this.emplacementsLibresMarkers[`empty_${idx}`] = marker;
       });
     },
 
@@ -568,9 +666,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  background: var(--filter-bg) !important;
-  /* si vous préférez un fond plus léger: utilisez rgba */
-  /* background: rgba(255, 233, 168, 0.35) !important; */
+  background: rgba(255, 233, 168, 0.35) !important;
   padding: 6px;
   border-radius: 6px;
 }
@@ -578,7 +674,7 @@ export default {
 /* Badges/étiquettes de filtre: appliquer le fond (texte inchangé) */
 .type-label {
   font-weight: 600;
-  background: var(--filter-bg) !important;
+  background: rgba(255, 233, 168, 0.35) !important;
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -601,6 +697,15 @@ export default {
   border: none !important;
   box-shadow: none !important;
   padding: 0;
+}
+
+:deep(.empty-location-icon) {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+:deep(.empty-location-icon:hover) {
+  opacity: 1;
 }
 
 /* Bouton unique bas gauche */
@@ -665,6 +770,36 @@ export default {
   margin: 4px 0;
   color: #333;
   font-size: 0.9rem;
+}
+
+/* Styles pour le popup des emplacements disponibles */
+:deep(.popup-emplacement) {
+  padding: 12px;
+  min-width: 200px;
+  text-align: center;
+}
+
+:deep(.popup-emplacement h3) {
+  margin: 0 0 8px 0;
+  color: #888;
+  font-size: 1rem;
+}
+
+:deep(.popup-emplacement p) {
+  margin: 4px 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+:deep(.popup-emplacement .coordinates) {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  display: inline-block;
 }
 
 :deep(.popup-link) {

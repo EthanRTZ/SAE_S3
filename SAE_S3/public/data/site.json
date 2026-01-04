@@ -1,4 +1,31 @@
 {
+  "emplacementsDisponibles": [
+    "47.30532,4.96457",
+    "47.30519,4.96433",
+    "47.30508,4.96423",
+    "47.30501,4.96413",
+    "47.30495,4.96406",
+    "47.30269,4.96492",
+    "47.30400,4.96441",
+    "47.30486,4.96394",
+    "47.30278,4.96521",
+    "47.30411,4.96460",
+    "47.30477,4.96382",
+    "47.30469,4.96373",
+    "47.30424,4.96478",
+    "47.30284,4.96550",
+    "47.30263,4.96467",
+    "47.30291,4.96585",
+    "47.30434,4.96500",
+    "47.30431,4.96416",
+    "47.30444,4.96451",
+    "47.30256,4.96437",
+    "47.30338,4.96352",
+    "47.30427,4.96669",
+    "47.30424,4.96672",
+    "47.30441,4.96660",
+    "47.30356,4.96343"
+  ],
   "prestataires": [
     {
       "nom": "OTacos",
@@ -10,8 +37,7 @@
       "site": "https://o-tacos.com",
       "services": [
         { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers","prixMoyen": 10}
-      ],
-      "coordone": "47.30532,4.96457"
+      ]
     },
     {
       "nom": "Free",
@@ -23,8 +49,7 @@
       "site": "https://free.fr",
       "services": [
         { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30519,4.96433"
+      ]
     },
     {
       "nom": "Allianz",
@@ -36,8 +61,7 @@
       "site": "https://allianz.fr",
       "services": [
         { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30508,4.96423"
+      ]
     },
     {
       "nom": "Poliakov",
@@ -49,8 +73,7 @@
       "site": "https://poliakov.fr",
       "services": [
         { "nom": "Bar principal", "description": "Espace boisson et cocktails", "prixMoyen": 12 }
-      ],
-      "coordone": "47.30501,4.96413"
+      ]
     },
     {
       "nom": "Jack Daniel's",
@@ -62,8 +85,7 @@
       "site": "https://jackdaniels.com",
       "services": [
         { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's", "prixMoyen": 15 }
-      ],
-      "coordone": "47.30495,4.96406"
+      ]
     },
     {
       "nom": "Red Bull",
@@ -75,8 +97,7 @@
       "site": "https://redbull.com",
       "services": [
         { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente", "prixMoyen": 8 }
-      ],
-      "coordone":"47.30269,4.96492"
+      ]
     },
     {
       "nom": "Heetch",
@@ -88,8 +109,7 @@
       "site": "https://heetch.com",
       "services": [
         { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30400,4.96441"
+      ]
     },
     {
       "nom": "Decathlon",
@@ -101,8 +121,7 @@
       "site": "https://decathlon.fr",
       "services": [
         { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor", "prixMoyen": 25 }
-      ],
-      "coordone": "47.30486,4.96394"
+      ]
     },
     {
       "nom": "Veolia",
@@ -114,8 +133,7 @@
       "site": "https://www.veolia.com",
       "services": [
         { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30278,4.96521"
+      ]
     },
     {
       "nom": "Securitas",
@@ -127,8 +145,7 @@
       "site": "https://www.securitas.fr",
       "services": [
         { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30411,4.96460"
+      ]
     },
     {
       "nom": "Deezer",
@@ -140,8 +157,7 @@
       "site": "https://Deezer.com",
       "services": [
         { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival", "prixMoyen": 0 }
-      ],
-      "coordone": "47.30477,4.96382"
+      ]
     },
 
     {
@@ -154,8 +170,7 @@
       "site": "https://www.happn.com",
       "services": [
         { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives", "prixMoyen": 5 }
-      ],
-      "coordone": "47.30469,4.96373"
+      ]
     },
     {
       "nom": "Jeager",
@@ -166,8 +181,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30424,4.96478"
+      "services": []
     },
     {
       "nom": "Ricard",
@@ -178,8 +192,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30284,4.96550"
+      "services": []
     },
     {
       "nom": "JBL",
@@ -190,8 +203,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30263,4.96467"
+      "services": []
     },
     {
       "nom": "Pepsi",
@@ -202,8 +214,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30291,4.96585"
+      "services": []
     },
     {
       "nom": "Lipton",
@@ -214,8 +225,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30434,4.96500"
+      "services": []
     },
     {
       "nom": "Bagels",
@@ -226,8 +236,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30431,4.96416"
+      "services": []
     },
     {
       "nom": "Pizza",
@@ -238,8 +247,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30444,4.96451"
+      "services": []
     },
     {
       "nom": "Ail et fines herbes",
@@ -250,8 +258,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30256,4.96437"
+      "services": []
     },
     {
       "nom": "Nouilles",
@@ -262,8 +269,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30338,4.96352"
+      "services": []
     },
     {
       "nom": "Coiffure",
@@ -274,8 +280,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30427,4.96669"
+      "services": []
     },
     {
       "nom": "Merch",
@@ -286,8 +291,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30424,4.96672"
+      "services": []
     },
     {
       "nom": "Borne d'arcade",
@@ -298,8 +302,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30441,4.96660"
+      "services": []
     },
     {
       "nom": "Terrain de basket",
@@ -310,8 +313,7 @@
       "email": "",
       "tel": "",
       "site": "",
-      "services": [],
-      "coordone": "47.30356,4.96343"
+      "services": []
     }
   ],
   "zones": [
