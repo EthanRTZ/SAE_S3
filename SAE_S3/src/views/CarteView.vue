@@ -59,7 +59,11 @@ export default {
       zoneLayers: {},
       zoneMarkers: {}, // Marqueurs de symboles pour les zones
 
-      // Référence à l’objet Leaflet (L) + vue initiale
+      // Équipements (toilettes, points d'eau)
+      equipements: [],
+      equipementLayers: {},
+
+      // Référence à l'objet Leaflet (L) + vue initiale
       _L: null,
       lat: 47.304164,
       lng: 4.965223,
@@ -133,6 +137,7 @@ export default {
         // Chargement des prestataires puis init des marqueurs
         this.loadPrestataires();
         this.loadZones();      // ajout
+        this.loadEquipements(); // ajout équipements
       })
       .catch((e) => console.error(e));
   },
@@ -195,6 +200,17 @@ export default {
         console.error('Erreur chargement zones', e);
       }
     },
+    // Ajout: chargement des équipements (toilettes, points d'eau)
+    async loadEquipements() {
+      try {
+        const res = await fetch('/data/site.json');
+        const data = await res.json();
+        this.equipements = data.equipements || [];
+        this.initEquipements();
+      } catch (e) {
+        console.error('Erreur chargement équipements', e);
+      }
+    },
 
     // Couleur spécifique pour chaque type de service
     colorFromType(type) {
@@ -205,6 +221,8 @@ export default {
         'Mobilité': '#96CEB4',         // Vert menthe
         'Commerces & Équipements': '#FFE66D', // Jaune
         'Média & Animation': '#9B59B6',      // Violet vif
+        'Point d\'eau': '#2196F3',     // Bleu pour l'eau
+        'Toilettes': '#9E9E9E',        // Gris pour les toilettes
       };
       // Retourne la couleur du type ou une couleur par défaut si le type n'existe pas
       return colorMap[type] || '#888888';
@@ -214,11 +232,36 @@ export default {
     getIconForType(type) {
       const L = this._L;
       const color = this.colorFromType(type || '');
-      const svg = `
-        <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" fill="${color}"/>
-        </svg>
-      `;
+      
+      let svg = '';
+      
+      // Icône spéciale pour les points d'eau (goutte d'eau)
+      if (type === 'Point d\'eau') {
+        svg = `
+          <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2.69c0 0 5.66 5.66 5.66 9.66 0 4-4.53 7.16-5.66 7.16s-5.66-3.16-5.66-7.16c0-4 5.66-9.66 5.66-9.66z" fill="${color}" stroke="#FFFFFF" stroke-width="1.2"/>
+            <circle cx="12" cy="10" r="2.5" fill="#FFFFFF" opacity="0.9"/>
+          </svg>
+        `;
+      }
+      // Icône spéciale pour les toilettes
+      else if (type === 'Toilettes') {
+        svg = `
+          <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="${color}" stroke="#FFFFFF" stroke-width="1.5"/>
+            <text x="12" y="17" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">WC</text>
+          </svg>
+        `;
+      }
+      // Icône par défaut (pin) pour les autres types
+      else {
+        svg = `
+          <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2c-3.9 0-7 3.1-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" fill="${color}"/>
+          </svg>
+        `;
+      }
+      
       return L.divIcon({
         html: svg,
         className: 'leaflet-div-icon pin-icon',
@@ -266,6 +309,41 @@ export default {
         });
         const id = `act_${idx++}`;
         this.markerLayers[id] = layer;
+      });
+    },
+
+    // Crée les marqueurs pour les équipements (toilettes, points d'eau)
+    initEquipements() {
+      const L = this._L;
+      if (!L || !this.map) return;
+      this.equipementLayers = {};
+      let idx = 0;
+      this.equipements.forEach(eq => {
+        if (!eq.coordone) return;
+        const parts = eq.coordone.split(',').map(s => parseFloat(s.trim()));
+        if (parts.length !== 2 || parts.some(isNaN)) return;
+        const [lat, lng] = parts;
+        const icon = this.getIconForType(eq.type);
+        const layer = L.marker([lat, lng], { icon });
+        
+        const html = `
+          <div class="popup-activite">
+            <h3>${eq.type}</h3>
+          </div>
+        `;
+        layer._equipementType = eq.type;
+        layer.bindPopup(html);
+        
+        // Tooltip au survol
+        layer.bindTooltip(eq.type, {
+          permanent: false,
+          direction: 'top',
+          offset: [0, -10]
+        });
+        
+        const id = `eq_${idx++}`;
+        this.equipementLayers[id] = layer;
+        layer.addTo(this.map); // Toujours visible
       });
     },
 
@@ -493,6 +571,7 @@ export default {
       Object.values(this.markerLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       Object.values(this.zoneLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       Object.values(this.zoneMarkers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
+      Object.values(this.equipementLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       this.map.remove();
       this.map = null;
     }
