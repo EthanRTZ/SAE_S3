@@ -692,22 +692,6 @@ export default {
   color: #000000;
 }
 
-/* Style minimal pour le bouton Connexion ajouté */
-.btn-login {
-  background: transparent;
-  color: #FCDC1E;
-  border: 3px solid rgba(252,220,30,0.9);
-  padding: 18px 36px;
-  border-radius: 50px;
-  font-weight: 700;
-  text-transform: uppercase;
-  transition: all 0.25s ease;
-}
-.btn-login:hover {
-  background: #FCDC1E;
-  color: #000;
-}
-
 /* Section About */
 .about-section {
   padding: 80px 20px;
@@ -787,20 +771,6 @@ export default {
   max-width: 1100px;
   margin: 0 auto;
   text-align: center;
-}
-
-.description-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-radius: 999px;
-  background: rgba(252, 220, 30, 0.15);
-  color: #FCDC1E;
-  font-size: 0.95rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 20px;
 }
 
 .description-title {
@@ -1087,9 +1057,6 @@ export default {
   height: 100%;
 }
 
-/* (Optionnel) si besoin, on peut limiter UNIQUEMENT la carte interne, mais garder le filtre visible */
-/* .map-content-wrapper ::v-deep #map { max-width: 100%; } */
-
 /* Responsive: la hauteur de la carte */
 @media screen and (max-width: 1024px) {
   .map-inner { height: 440px; }
@@ -1365,13 +1332,6 @@ export default {
   margin-bottom: 20px;
 }
 
-.footer-logo-img {
-  height: 55px;
-  width: auto;
-  filter: drop-shadow(0 4px 8px rgba(252, 220, 30, 0.3));
-  -webkit-user-drag: none;
-}
-
 .footer-logo h3 {
   font-size: 1.8rem;
   font-weight: 900;
@@ -1614,10 +1574,6 @@ export default {
     font-size: 1.5rem;
   }
 
-  .footer-logo-img {
-    height: 45px;
-  }
-
   .footer-title {
     font-size: 1.15rem;
   }
@@ -1648,10 +1604,6 @@ export default {
 @media screen and (max-width: 480px) {
   .footer {
     padding: 40px 0 0;
-  }
-
-  .footer-logo-img {
-    height: 40px;
   }
 
   .footer-logo h3 {
