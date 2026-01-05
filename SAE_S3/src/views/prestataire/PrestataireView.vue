@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
@@ -15,6 +15,14 @@ const userFields = ref({ email: '', tel: '', site: '' })
 // Données pour la gestion des emplacements
 const emplacementsDisponibles = ref([])
 const emplacementActuel = ref('')
+const mapInstance = ref(null)
+const mapLoaded = ref(false)
+const mapContainer = ref(null)
+
+// Données pour les zones
+const zones = ref([])
+const zoneLayers = ref({})
+const zoneMarkers = ref({})
 
 const loadAuthFromStorage = () => {
   try {
@@ -56,6 +64,9 @@ const loadPrestataireInfo = async () => {
 
     // Charger les emplacements disponibles
     emplacementsDisponibles.value = data.emplacementsDisponibles || []
+
+    // Charger les zones
+    zones.value = data.zones || []
 
     // Charger l'emplacement actuel du prestataire
     try {
@@ -187,6 +198,399 @@ const emplacementsLibres = computed(() => {
   }
 })
 
+const emplacementsOccupes = computed(() => {
+  try {
+    const raw = localStorage.getItem('prestataireEmplacements')
+    const emplacements = raw ? JSON.parse(raw) : {}
+    return Object.values(emplacements)
+  } catch (e) {
+    return []
+  }
+})
+
+const parseCoords = (coords) => {
+  // Gérer le format "(lat, lng)" ou "lat,lng"
+  const match = coords.match(/\(?([^,\)]+),\s*([^)\s]+)\)?/)
+  if (match) {
+    return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) }
+  }
+  return null
+}
+
+const initMap = async () => {
+  if (typeof window === 'undefined' || !mapContainer.value) return
+
+  // Chargement de Leaflet via CDN
+  const ver = '1.9.4'
+  const cssHref = `https://unpkg.com/leaflet@${ver}/dist/leaflet.css`
+  const jsSrc = `https://unpkg.com/leaflet@${ver}/dist/leaflet.js`
+
+  // Injecter le CSS Leaflet
+  if (!document.querySelector(`link[href="${cssHref}"]`)) {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = cssHref
+    document.head.appendChild(link)
+  }
+
+  // Charger Leaflet
+  const loadLeaflet = () => new Promise((resolve, reject) => {
+    if (window.L) return resolve(window.L)
+    const existing = document.querySelector(`script[src="${jsSrc}"]`)
+    if (existing) {
+      const wait = () => (window.L ? resolve(window.L) : setTimeout(wait, 50))
+      return wait()
+    }
+    const script = document.createElement('script')
+    script.src = jsSrc
+    script.onload = () => resolve(window.L)
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+
+  try {
+    const L = await loadLeaflet()
+
+    // Initialiser la carte
+    if (mapInstance.value) {
+      mapInstance.value.remove()
+    }
+
+    const map = L.map(mapContainer.value, {
+      center: [47.304164, 4.965223],
+      zoom: 16.4,
+      minZoom: 16.4,
+      maxZoom: 19,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      maxBoundsViscosity: 1.0
+    })
+
+    // Ajouter le fond OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map)
+
+    // Définir les limites
+    const initialBounds = map.getBounds()
+    map.setMaxBounds(initialBounds)
+
+    mapInstance.value = map
+    mapLoaded.value = true
+
+    // Ajouter les marqueurs et les zones
+    updateMapMarkers()
+    initZones()
+
+  } catch (e) {
+    console.error('Erreur lors du chargement de la carte:', e)
+  }
+}
+
+const updateMapMarkers = () => {
+  if (!mapInstance.value || !window.L) return
+
+  const L = window.L
+  const map = mapInstance.value
+
+  // Supprimer uniquement les CircleMarkers d'emplacements (pas les zones)
+  map.eachLayer((layer) => {
+    if (layer instanceof L.CircleMarker) {
+      map.removeLayer(layer)
+    }
+  })
+
+  // Ajouter les marqueurs pour chaque emplacement disponible
+  emplacementsDisponibles.value.forEach(coords => {
+    const parsed = parseCoords(coords)
+    if (!parsed) return
+
+    const isOccupied = emplacementsOccupes.value.includes(coords)
+    const isCurrent = coords === emplacementActuel.value
+
+    let color = '#4caf50' // Vert - disponible
+    let radius = 8
+    let label = 'Disponible'
+
+    if (isCurrent) {
+      color = '#FCDC1E' // Jaune - actuel
+      radius = 12
+      label = 'Votre emplacement'
+    } else if (isOccupied) {
+      color = '#f44336' // Rouge - occupé
+      label = 'Occupé'
+    }
+
+    const marker = L.circleMarker([parsed.lat, parsed.lng], {
+      radius: radius,
+      fillColor: color,
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: isCurrent ? 1 : 0.8
+    }).addTo(map)
+
+    // Créer le contenu du popup avec bouton
+    let popupContent = `
+      <div style="text-align: center; font-family: Arial, sans-serif; padding: 8px;">
+        <strong style="color: ${color}; font-size: 14px;">${label}</strong>
+    `
+
+    if (isCurrent) {
+      // Pour l'emplacement actuel : bouton pour libérer
+      popupContent += `
+        <br><br>
+        <button
+          onclick="window.libererEmplacementFromMap()"
+          style="
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+          "
+          onmouseover="this.style.background='#d32f2f'"
+          onmouseout="this.style.background='#f44336'"
+        >
+          🗑️ Libérer
+        </button>
+      `
+    } else if (!isOccupied) {
+      // Pour les emplacements disponibles : bouton pour sélectionner
+      popupContent += `
+        <br><br>
+        <button
+          onclick="window.choisirEmplacementFromMap('${coords}')"
+          style="
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+          "
+          onmouseover="this.style.background='#45a049'"
+          onmouseout="this.style.background='#4caf50'"
+        >
+          ✓ Sélectionner
+        </button>
+      `
+    } else {
+      // Pour les emplacements occupés : juste un message
+      popupContent += `
+        <br>
+        <small style="color: #999;">Cet emplacement est déjà pris</small>
+      `
+    }
+
+    popupContent += `</div>`
+
+    marker.bindPopup(popupContent)
+
+    if (isCurrent) {
+      // Animation pour l'emplacement actuel
+      setInterval(() => {
+        marker.setRadius(marker.getRadius() === 12 ? 14 : 12)
+      }, 1000)
+    }
+  })
+
+  // Exposer les fonctions pour les appels depuis les boutons du popup
+  window.choisirEmplacementFromMap = (coords) => {
+    choisirEmplacement(coords)
+  }
+
+  window.libererEmplacementFromMap = () => {
+    libererEmplacement()
+  }
+}
+
+// Fonctions pour gérer les zones
+const getZoneColor = (type) => {
+  if (type === 'parking') return '#0066FF'
+  if (type === 'camping') return '#2ECC71'
+  if (type === 'VIP') return '#9B59B6'
+  if (type === 'festival') return '#FFD700'
+  return '#888888'
+}
+
+const getSceneColor = (nom) => {
+  const sceneColors = {
+    'MOTHERSHIP': '#FF1744',
+    'ZERO GRAVITY': '#00E5FF',
+    'CARGO': '#FF9800',
+    'ANTDT CLUB': '#E91E63',
+  }
+  return sceneColors[nom] || '#9C27B0'
+}
+
+const getPolygonCenter = (latlngs) => {
+  let latSum = 0
+  let lngSum = 0
+  latlngs.forEach(coord => {
+    latSum += coord[0]
+    lngSum += coord[1]
+  })
+  return [latSum / latlngs.length, lngSum / latlngs.length]
+}
+
+const getZoneIcon = (type, nom) => {
+  const L = window.L
+  if (!L) return null
+
+  let symbol = ''
+  let bgColor = '#FFFFFF'
+  let textColor = '#000000'
+  let borderColor = '#000000'
+
+  if (type === 'parking') {
+    symbol = 'P'
+    bgColor = '#FFFFFF'
+    textColor = '#0066FF'
+    borderColor = '#0066FF'
+  } else if (type === 'camping') {
+    symbol = '🏕️'
+    bgColor = 'rgba(46, 204, 113, 0.9)'
+    textColor = '#FFFFFF'
+    borderColor = '#2ECC71'
+  } else if (type === 'VIP') {
+    symbol = '⭐'
+    bgColor = 'rgba(155, 89, 182, 0.9)'
+    textColor = '#FFFFFF'
+    borderColor = '#9B59B6'
+  } else if (type === 'scène') {
+    symbol = '🎵'
+    const sceneColor = getSceneColor(nom)
+    bgColor = sceneColor
+    textColor = '#FFFFFF'
+    borderColor = sceneColor
+  }
+
+  const html = `
+    <div style="
+      background-color: ${bgColor};
+      border: 3px solid ${borderColor};
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: ${type === 'parking' ? '24px' : '28px'};
+      font-weight: ${type === 'parking' ? 'bold' : 'normal'};
+      color: ${textColor};
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${symbol}</div>
+  `
+
+  return L.divIcon({
+    html: html,
+    className: 'zone-icon-marker',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  })
+}
+
+const initZones = () => {
+  const L = window.L
+  if (!L || !mapInstance.value) return
+
+  zoneLayers.value = {}
+  zoneMarkers.value = {}
+  let idx = 0
+
+  zones.value.forEach(z => {
+    if (!Array.isArray(z.coords) || z.coords.length < 3) return
+    const latlngs = []
+    for (const c of z.coords) {
+      const parts = String(c).split(',').map(s => parseFloat(s.trim()))
+      if (parts.length !== 2 || parts.some(isNaN)) return
+      latlngs.push([parts[0], parts[1]])
+    }
+    const color = getZoneColor(z.type)
+
+    if (z.type === 'festival') {
+      // Zone festival : contour jaune sans remplissage
+      const layer = L.polygon(latlngs, {
+        color: '#FFD700',
+        weight: 3,
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        interactive: false,
+      })
+      layer._zoneType = z.type
+      zoneLayers.value[`zone_${idx++}`] = layer
+      layer.addTo(mapInstance.value)
+    } else if (z.type === 'scène') {
+      // Scènes avec style spécial
+      const sceneColor = getSceneColor(z.nom)
+      const popupContent = `
+        <div class="popup-scene">
+          <h3 style="margin: 0 0 8px 0; color: ${sceneColor}; font-weight: bold; font-size: 1.2em;">
+            🎵 ${z.nom}
+          </h3>
+          ${z.sponsor ? `<p style="margin: 0; color: #666; font-size: 0.9em;">by ${z.sponsor}</p>` : ''}
+        </div>
+      `
+      const layer = L.polygon(latlngs, {
+        color: sceneColor,
+        weight: 4,
+        fillColor: sceneColor,
+        fillOpacity: 0.4,
+        opacity: 0.9,
+        dashArray: '0',
+      }).bindPopup(popupContent, {
+        className: 'scene-popup'
+      })
+      layer._zoneType = z.type
+      layer._zoneNom = z.nom
+      zoneLayers.value[`zone_${idx++}`] = layer
+      layer.addTo(mapInstance.value)
+
+      // Marqueur de symbole au centre
+      const center = getPolygonCenter(latlngs)
+      const icon = getZoneIcon(z.type, z.nom)
+      if (icon) {
+        const marker = L.marker(center, { icon, interactive: false })
+        marker._zoneType = z.type
+        marker._zoneNom = z.nom
+        zoneMarkers.value[`zone_marker_${idx - 1}`] = marker
+        marker.addTo(mapInstance.value)
+      }
+    } else {
+      // Zones normales (parking, camping, VIP)
+      const layer = L.polygon(latlngs, {
+        color,
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 0.25,
+      }).bindPopup(`${z.nom} (${z.type})`)
+      layer._zoneType = z.type
+      zoneLayers.value[`zone_${idx++}`] = layer
+      layer.addTo(mapInstance.value)
+
+      // Marqueur de symbole au centre
+      const center = getPolygonCenter(latlngs)
+      const icon = getZoneIcon(z.type, z.nom)
+      if (icon) {
+        const marker = L.marker(center, { icon, interactive: false })
+        marker._zoneType = z.type
+        marker._zoneNom = z.nom
+        zoneMarkers.value[`zone_marker_${idx - 1}`] = marker
+        marker.addTo(mapInstance.value)
+      }
+    }
+  })
+}
+
 const choisirEmplacement = (coords) => {
   if (!prestataireNom.value) return
 
@@ -207,7 +611,10 @@ const choisirEmplacement = (coords) => {
     // Déclencher un événement pour mettre à jour la carte
     window.dispatchEvent(new Event('emplacement-updated'))
 
-    alert('Emplacement sélectionné avec succès !')
+    // Forcer la mise à jour en utilisant nextTick pour s'assurer que les computed sont recalculés
+    nextTick(() => {
+      updateMapMarkers()
+    })
   } catch (e) {
     console.error('Erreur lors de la sélection de l\'emplacement', e)
     alert('Erreur lors de la sélection de l\'emplacement')
@@ -230,7 +637,10 @@ const libererEmplacement = () => {
     // Déclencher un événement pour mettre à jour la carte
     window.dispatchEvent(new Event('emplacement-updated'))
 
-    alert('Emplacement libéré avec succès !')
+    // Forcer la mise à jour en utilisant nextTick pour s'assurer que les computed sont recalculés
+    nextTick(() => {
+      updateMapMarkers()
+    })
   } catch (e) {
     console.error('Erreur lors de la libération de l\'emplacement', e)
     alert('Erreur lors de la libération de l\'emplacement')
@@ -245,6 +655,14 @@ const statsNotes = ref({
   nbAvis: 0,
   parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   derniersAvis: []
+})
+
+// Watch pour initialiser la carte quand on sélectionne la section emplacement
+watch(selectedSection, async (newVal) => {
+  if (newVal === 'emplacement') {
+    await nextTick()
+    initMap()
+  }
 })
 
 const loadStatsNotes = () => {
@@ -376,9 +794,9 @@ onMounted(() => {
             </div>
 
             <WysiwygEditor
-              v-model="presentationText"
-              :height="500"
-              placeholder="Décrivez votre prestataire, ajoutez des images pour mettre en valeur vos services..."
+                v-model="presentationText"
+                :height="500"
+                placeholder="Décrivez votre prestataire, ajoutez des images pour mettre en valeur vos services..."
             />
 
             <div class="form-group" style="margin-top: 20px;">
@@ -410,14 +828,14 @@ onMounted(() => {
                 <div class="service-price-row">
                   <label class="price-label">
                     💰 Prix (€)
-                    <input 
-                      type="number" 
-                      class="input input-price" 
-                      v-model.number="s.prix" 
-                      @input="updateServiceField" 
-                      placeholder="0" 
-                      min="0"
-                      step="0.01"
+                    <input
+                        type="number"
+                        class="input input-price"
+                        v-model.number="s.prix"
+                        @input="updateServiceField"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
                     />
                   </label>
                   <span v-if="s.prix > 0" class="price-display">{{ formatPrix(s.prix) }}</span>
@@ -445,7 +863,7 @@ onMounted(() => {
           <div v-if="selectedSection === 'emplacement'" class="section-content">
             <div class="section-header">
               <h2>📍 Emplacement sur la carte</h2>
-              <p class="section-description">Choisissez votre emplacement sur la carte du festival parmi les emplacements disponibles.</p>
+              <p class="section-description">Cliquez sur un marqueur vert pour sélectionner votre emplacement sur la carte du festival.</p>
             </div>
 
             <!-- Emplacement actuel -->
@@ -461,45 +879,34 @@ onMounted(() => {
 
             <div v-else class="emplacement-vide">
               <p>❌ Vous n'avez pas encore choisi d'emplacement.</p>
-              <p class="empty-hint">Sélectionnez un emplacement disponible ci-dessous.</p>
+              <p class="empty-hint">Cliquez sur un marqueur vert ci-dessous et utilisez le bouton "Sélectionner".</p>
             </div>
 
-            <!-- Liste des emplacements disponibles -->
-            <div class="emplacements-section">
-              <h3>Emplacements disponibles ({{ emplacementsLibres.length }})</h3>
+            <!-- Carte interactive -->
+            <div class="carte-container">
+              <div ref="mapContainer" class="carte-map" id="prestataire-map"></div>
 
-              <div v-if="emplacementsLibres.length > 0" class="emplacements-grid">
-                <div
-                  v-for="(coords, idx) in emplacementsLibres"
-                  :key="idx"
-                  class="emplacement-card"
-                  :class="{ selected: coords === emplacementActuel }"
-                >
-                  <div class="emplacement-card-header">
-                    <span class="emplacement-icon">📍</span>
-                    <span class="emplacement-label">Emplacement #{{ idx + 1 }}</span>
-                  </div>
-                  <div class="emplacement-coords-display">{{ coords }}</div>
-                  <button
-                    class="btn btn-primary btn-block"
-                    @click="choisirEmplacement(coords)"
-                    :disabled="coords === emplacementActuel"
-                  >
-                    {{ coords === emplacementActuel ? '✓ Sélectionné' : '➕ Choisir cet emplacement' }}
-                  </button>
+              <!-- Légende -->
+              <div class="carte-legende">
+                <div class="legende-item">
+                  <div class="legende-marker disponible"></div>
+                  <span>Disponible</span>
                 </div>
-              </div>
-
-              <div v-else class="empty-state">
-                <p>📭 Tous les emplacements sont actuellement occupés.</p>
-                <p class="empty-hint">Veuillez réessayer plus tard ou contacter l'administration.</p>
+                <div class="legende-item">
+                  <div class="legende-marker actuel"></div>
+                  <span>Votre emplacement</span>
+                </div>
+                <div class="legende-item">
+                  <div class="legende-marker occupe"></div>
+                  <span>Occupé</span>
+                </div>
               </div>
             </div>
 
             <!-- Note d'information -->
             <div class="info-box">
               <strong>ℹ️ Information :</strong>
-              <p>Une fois votre emplacement choisi, il sera visible sur la carte du festival. Vous pouvez changer d'emplacement à tout moment si d'autres emplacements sont disponibles.</p>
+              <p>Cliquez sur un marqueur vert pour voir le bouton "Sélectionner". Une fois votre emplacement choisi, il apparaîtra en jaune sur la carte et sera visible sur la carte publique du festival. Pour changer d'emplacement, libérez d'abord votre emplacement actuel puis sélectionnez-en un autre.</p>
             </div>
           </div>
 
@@ -545,15 +952,15 @@ onMounted(() => {
               <h3 class="stats-section-title">Répartition des notes</h3>
               <div v-if="statsNotes.nbAvis" class="avis-repartition">
                 <div
-                  v-for="i in [5,4,3,2,1]"
-                  :key="i"
-                  class="avis-repartition-row"
+                    v-for="i in [5,4,3,2,1]"
+                    :key="i"
+                    class="avis-repartition-row"
                 >
                   <span class="avis-repartition-label">{{ i }}★</span>
                   <div class="avis-repartition-bar">
                     <div
-                      class="avis-repartition-fill"
-                      :style="{ width: (statsNotes.parNote[i] / statsNotes.nbAvis) * 100 + '%' }"
+                        class="avis-repartition-fill"
+                        :style="{ width: (statsNotes.parNote[i] / statsNotes.nbAvis) * 100 + '%' }"
                     ></div>
                   </div>
                   <span class="avis-repartition-count">{{ statsNotes.parNote[i] }}</span>
@@ -573,24 +980,24 @@ onMounted(() => {
               <div class="data-table-container">
                 <table class="data-table transactions-table">
                   <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Note</th>
-                      <th>Commentaire</th>
-                    </tr>
+                  <tr>
+                    <th>Date</th>
+                    <th>Note</th>
+                    <th>Commentaire</th>
+                  </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="avis in statsNotes.derniersAvis" :key="avis.id">
-                      <td class="transaction-date">
-                        {{ new Date(avis.date).toLocaleString('fr-FR') }}
-                      </td>
-                      <td class="table-value">
-                        {{ avis.note }}/5
-                      </td>
-                      <td class="transaction-client">
-                        {{ avis.commentaire }}
-                      </td>
-                    </tr>
+                  <tr v-for="avis in statsNotes.derniersAvis" :key="avis.id">
+                    <td class="transaction-date">
+                      {{ new Date(avis.date).toLocaleString('fr-FR') }}
+                    </td>
+                    <td class="table-value">
+                      {{ avis.note }}/5
+                    </td>
+                    <td class="transaction-client">
+                      {{ avis.commentaire }}
+                    </td>
+                  </tr>
                   </tbody>
                 </table>
               </div>
@@ -692,14 +1099,14 @@ onMounted(() => {
   flex: 1;
 }
 
-.prestataire-header h1 { 
-  color: #FCDC1E; 
+.prestataire-header h1 {
+  color: #FCDC1E;
   margin-bottom: 8px;
   font-size: 2.2rem;
   font-weight: 900;
 }
 
-.welcome { 
+.welcome {
   color: rgba(255,255,255,0.95);
   font-size: 1.1rem;
   margin-bottom: 4px;
@@ -756,7 +1163,7 @@ onMounted(() => {
   top: 80px;
 }
 
-.side-menu ul { 
+.side-menu ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -828,20 +1235,20 @@ onMounted(() => {
 }
 
 /* editor */
-.editor-actions { 
-  display:flex; 
-  gap:10px; 
-  margin-bottom:16px; 
-  align-items:center; 
+.editor-actions {
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+  align-items:center;
   justify-content: flex-end;
 }
 
-.btn { 
-  background:#FCDC1E; 
-  color:#2046b3; 
-  border:none; 
-  padding:10px 16px; 
-  border-radius:10px; 
+.btn {
+  background:#FCDC1E;
+  color:#2046b3;
+  border:none;
+  padding:10px 16px;
+  border-radius:10px;
   cursor:pointer;
   font-weight: 700;
   transition: all 0.2s ease;
@@ -859,8 +1266,8 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(252,220,30,0.3);
 }
 
-.btn-danger { 
-  background:#d32f2f; 
+.btn-danger {
+  background:#d32f2f;
   color:#fff;
 }
 
@@ -878,13 +1285,13 @@ onMounted(() => {
   min-width: 36px;
 }
 
-input.input, textarea.textarea, select.input { 
-  width:100%; 
-  padding:12px; 
-  border-radius:10px; 
-  border:1px solid rgba(255,255,255,0.15); 
-  background:rgba(0,0,0,0.3); 
-  color:#fff; 
+input.input, textarea.textarea, select.input {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(0,0,0,0.3);
+  color:#fff;
   margin-top:8px;
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -918,10 +1325,10 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   gap: 16px;
 }
 
-.service-card { 
-  background: rgba(0,0,0,0.2); 
-  padding:20px; 
-  border-radius:12px; 
+.service-card {
+  background: rgba(0,0,0,0.2);
+  padding:20px;
+  border-radius:12px;
   border: 1px solid rgba(252,220,30,0.15);
   transition: all 0.2s ease;
 }
@@ -931,10 +1338,10 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   box-shadow: 0 4px 12px rgba(252,220,30,0.1);
 }
 
-.service-card-header { 
-  display:flex; 
-  justify-content:space-between; 
-  gap:12px; 
+.service-card-header {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
   align-items:center;
   margin-bottom: 12px;
 }
@@ -1033,7 +1440,7 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   margin-bottom: 24px;
 }
 
-.form-row { 
+.form-row {
   margin-bottom: 0;
 }
 
@@ -1045,7 +1452,7 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   font-size: 0.95rem;
 }
 
-.form-actions { 
+.form-actions {
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid rgba(252,220,30,0.2);
@@ -1094,39 +1501,6 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   text-decoration: none;
 }
 
-/* responsive */
-@media (max-width: 900px) {
-  .admin-layout { 
-    grid-template-columns: 1fr; 
-  }
-  
-  .side-menu { 
-    order: 2;
-    position: relative;
-    top: 0;
-  }
-  
-  .main-panel { 
-    order: 1; 
-    margin-bottom: 20px;
-    padding: 20px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .header-image {
-    width: 100px;
-    height: 100px;
-  }
-
-  .prestataire-header h1 {
-    font-size: 1.8rem;
-  }
-}
-
 /* Tableaux de données */
 .data-table-container {
   margin-top: 24px;
@@ -1171,136 +1545,6 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   color: rgba(255,255,255,0.9);
 }
 
-.data-table tfoot {
-  background: rgba(252,220,30,0.1);
-  border-top: 2px solid rgba(252,220,30,0.3);
-}
-
-.data-table tfoot td {
-  padding: 16px 20px;
-  color: #FCDC1E;
-  font-weight: 700;
-}
-
-/* === STYLES SPÉCIFIQUES VENTES === */
-.ventes-table .service-name-cell {
-  min-width: 200px;
-}
-
-.service-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  background: linear-gradient(
-    135deg,
-    rgba(252, 220, 30, 0.2) 0%,
-    rgba(252, 220, 30, 0.1) 100%
-  );
-  border: 1px solid rgba(252, 220, 30, 0.3);
-  border-radius: 8px;
-  color: #FCDC1E;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.service-badge.small {
-  padding: 4px 10px;
-  font-size: 0.8rem;
-}
-
-.table-montant {
-  font-weight: 700;
-  color: #4caf50;
-  font-size: 1.05rem;
-}
-
-.table-moyenne {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.95rem;
-}
-
-.percent-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.percent-value {
-  font-weight: 700;
-  color: #FCDC1E;
-  min-width: 50px;
-}
-
-.percent-bar-track {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  height: 8px;
-  overflow: hidden;
-}
-
-.percent-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #FCDC1E 0%, #ffe676 100%);
-  border-radius: 6px;
-  transition: width 0.5s ease;
-  box-shadow: 0 0 8px rgba(252, 220, 30, 0.4);
-}
-
-/* Évolution mensuelle / tendances */
-.table-day {
-  font-weight: 600;
-  color: #FCDC1E;
-}
-
-.table-value {
-  font-weight: 700;
-  color: #fff;
-}
-
-.table-evolution {
-  font-weight: 600;
-}
-
-.table-evolution.positive {
-  color: #4caf50;
-}
-
-.table-evolution.negative {
-  color: #f44336;
-}
-
-.table-trend {
-  text-align: center;
-}
-
-.trend-icon {
-  font-size: 1.1rem;
-}
-
-.trend-icon.up {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-/* Transactions récentes */
-.transactions-table {
-  font-size: 0.9rem;
-}
-
-.transaction-id {
-  font-family: monospace;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 .transaction-date {
   color: rgba(255, 255, 255, 0.8);
 }
@@ -1310,17 +1554,12 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   font-style: italic;
 }
 
-/* Hover / animation légère sur les lignes */
-.data-table tbody tr {
-  transition: background 0.2s ease, transform 0.15s ease;
+.table-value {
+  font-weight: 700;
+  color: #fff;
 }
 
-.data-table tbody tr:hover {
-  background: rgba(252, 220, 30, 0.05);
-  transform: translateY(-1px);
-}
-
-/* réutilisation styles avis / répartition dans le back-office */
+/* Répartition des avis */
 .avis-repartition {
   display: flex;
   flex-direction: column;
@@ -1359,15 +1598,6 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   text-align: right;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.8);
-}
-
-.stat-card .star {
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 1.1rem;
-}
-
-.stat-card .star.filled {
-  color: #FCDC1E;
 }
 
 .preview-box {
@@ -1455,72 +1685,58 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.emplacements-section {
-  margin-top: 24px;
-}
-
-.emplacements-section h3 {
-  color: #FCDC1E;
-  margin-bottom: 16px;
-  font-size: 1.1rem;
-}
-
-.emplacements-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.emplacement-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(252, 220, 30, 0.2);
+/* Styles pour la carte interactive */
+.carte-container {
+  margin: 24px 0;
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.carte-map {
+  width: 100%;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.carte-legende {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 20px;
   padding: 16px;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
 }
 
-.emplacement-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(252, 220, 30, 0.6);
-  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.2);
-}
-
-.emplacement-card.selected {
-  background: rgba(76, 175, 80, 0.1);
-  border-color: #4caf50;
-}
-
-.emplacement-card-header {
+.legende-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-}
-
-.emplacement-icon {
-  font-size: 1.5rem;
-}
-
-.emplacement-label {
-  font-weight: 600;
-  color: #FCDC1E;
-  font-size: 1rem;
-}
-
-.emplacement-coords-display {
-  font-family: monospace;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  margin-bottom: 12px;
-  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.btn-block {
-  width: 100%;
+.legende-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.legende-marker.disponible {
+  background: #4caf50;
+}
+
+.legende-marker.actuel {
+  background: #FCDC1E;
+}
+
+.legende-marker.occupe {
+  background: #f44336;
 }
 
 .info-box {
@@ -1542,6 +1758,148 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
 }
+
+/* responsive */
+@media (max-width: 900px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side-menu {
+    order: 2;
+    position: relative;
+    top: 0;
+  }
+
+  .main-panel {
+    order: 1;
+    margin-bottom: 20px;
+    padding: 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .header-image {
+    width: 100px;
+    height: 100px;
+  }
+
+  .prestataire-header h1 {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .carte-legende {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .carte-map {
+    height: 400px;
+  }
+}
+
+/* Styles pour les icônes de zones (similaires à CarteView) */
+:deep(.zone-icon-marker) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Styles pour les popups de scènes */
+:deep(.scene-popup .leaflet-popup-content-wrapper) {
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid currentColor;
+  border-radius: 12px;
+  padding: 8px;
+}
+
+:deep(.scene-popup .leaflet-popup-content) {
+  margin: 0;
+}
+
+:deep(.scene-popup .leaflet-popup-tip) {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Statistiques - cartes de stats */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.1) 0%, rgba(32, 70, 179, 0.1) 100%);
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(252, 220, 30, 0.2);
+  border-color: rgba(252, 220, 30, 0.5);
+}
+
+.stat-icon {
+  font-size: 3rem;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(252, 220, 30, 0.2);
+  border-radius: 50%;
+  border: 2px solid rgba(252, 220, 30, 0.4);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #FCDC1E;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.stat-meta {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stats-section {
+  margin-bottom: 32px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(252, 220, 30, 0.15);
+}
+
+.stats-section-title {
+  color: #FCDC1E;
+  font-size: 1.3rem;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+}
 </style>
-
-
