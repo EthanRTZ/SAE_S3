@@ -838,6 +838,86 @@ export default {
   text-transform: uppercase;
 }
 
+/* Mise en page deux colonnes */
+.description-container.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  margin-bottom: 80px;
+  text-align: left;
+}
+
+.description-container.two-col:last-child {
+  margin-bottom: 0;
+}
+
+.description-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.description-right {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.description-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 20px;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.description-right:hover .description-image {
+  transform: scale(1.05);
+}
+
+/* Responsive pour la section description */
+@media screen and (max-width: 968px) {
+  .description-container.two-col {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+
+  .description-container.two-col:nth-child(even) .description-right {
+    order: -1;
+  }
+
+  .description-left {
+    text-align: center;
+  }
+
+  .description-highlights {
+    justify-content: center;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .description-section {
+    padding: 50px 20px;
+  }
+
+  .description-container.two-col {
+    gap: 30px;
+    margin-bottom: 60px;
+  }
+
+  .description-title {
+    font-size: 2rem;
+  }
+
+  .description-text {
+    font-size: 1.1rem;
+  }
+}
+
 /* Section Artistes - Carrousel */
 .artists-section {
   padding: 80px 0;
