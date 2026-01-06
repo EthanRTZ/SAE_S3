@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const { sequelize } = require('./models');
 
 // Import des routes
 const routesAuth = require('./routes/auth');
@@ -37,7 +38,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => console.log(`API listening on port ${PORT}`));
+// Synchroniser Sequelize et démarrer le serveur
+sequelize.sync({ alter: false }) // alter: false pour ne pas modifier la structure existante
+  .then(() => {
+    console.log('✅ Sequelize models synchronized');
+    app.listen(PORT, () => console.log(`API listening on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('❌ Failed to sync Sequelize:', err);
+    process.exit(1);
+  });
 
 
 

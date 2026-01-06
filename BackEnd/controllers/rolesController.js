@@ -1,14 +1,14 @@
-const pool = require('../db');
+const { Role } = require('../models');
 
 /**
  * GET /api/roles - Récupérer tous les rôles (TRIVIAL)
  */
 exports.getAllRoles = async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM rôles ORDER BY id_rôle'
-        );
-        res.json(result.rows);
+        const roles = await Role.findAll({
+            order: [['id_rôle', 'ASC']]
+        });
+        res.json(roles);
     } catch (error) {
         console.error('Error fetching roles:', error);
         res.status(500).json({ error: 'Failed to fetch roles' });
@@ -21,16 +21,13 @@ exports.getAllRoles = async (req, res) => {
 exports.getRoleById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM rôles WHERE id_rôle = $1',
-            [id]
-        );
+        const role = await Role.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!role) {
             return res.status(404).json({ error: 'Role not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(role);
     } catch (error) {
         console.error('Error fetching role:', error);
         res.status(500).json({ error: 'Failed to fetch role' });
@@ -48,14 +45,9 @@ exports.createRole = async (req, res) => {
             return res.status(400).json({ error: 'nom_rôle is required' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO rôles (nom_rôle)
-             VALUES ($1)
-             RETURNING *`,
-            [nom_rôle]
-        );
+        const role = await Role.create({ nom_rôle });
 
-        res.status(201).json(result.rows[0]);
+        res.status(201).json(role);
     } catch (error) {
         console.error('Error creating role:', error);
         res.status(500).json({ error: 'Failed to create role' });

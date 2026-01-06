@@ -1,14 +1,14 @@
-const pool = require('../db');
+const { Service, Prestataire } = require('../models');
 
 /**
  * GET /api/services - Récupérer tous les services
  */
 exports.getAllServices = async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM services ORDER BY id_service'
-        );
-        res.json(result.rows);
+        const services = await Service.findAll({
+            order: [['id_service', 'ASC']]
+        });
+        res.json(services);
     } catch (error) {
         console.error('Error fetching services:', error);
         res.status(500).json({ error: 'Failed to fetch services' });
@@ -21,20 +21,15 @@ exports.getAllServices = async (req, res) => {
  */
 exports.getAllServicesWithPrestataires = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT s.*, 
-                    p.nom as nom_prestataire, 
-                    p.type_prestataire, 
-                    p.description as description_prestataire,
-                    p.contact_email,
-                    p.contact_tel,
-                    p.site_web,
-                    p.photo_url as photo_prestataire
-             FROM services s
-             JOIN prestataire p ON s.id_prestataire = p.id_prestataire
-             ORDER BY s.id_service`
-        );
-        res.json(result.rows);
+        const services = await Service.findAll({
+            include: [{
+                model: Prestataire,
+                as: 'prestataire',
+                attributes: ['nom', 'type_prestataire', 'description', 'contact_email', 'contact_tel', 'site_web', 'photo_url']
+            }],
+            order: [['id_service', 'ASC']]
+        });
+        res.json(services);
     } catch (error) {
         console.error('Error fetching services with prestataires:', error);
         res.status(500).json({ error: 'Failed to fetch services with prestataires' });
@@ -47,16 +42,13 @@ exports.getAllServicesWithPrestataires = async (req, res) => {
 exports.getServiceById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM services WHERE id_service = $1',
-            [id]
-        );
+        const service = await Service.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!service) {
             return res.status(404).json({ error: 'Service not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(service);
     } catch (error) {
         console.error('Error fetching service:', error);
         res.status(500).json({ error: 'Failed to fetch service' });
@@ -74,14 +66,14 @@ exports.createService = async (req, res) => {
             return res.status(400).json({ error: 'id_prestataire and nom_service are required' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO services (id_prestataire, nom_service, description, prix_estime)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [id_prestataire, nom_service, description, prix_estime]
-        );
+        const service = await Service.create({
+            id_prestataire,
+            nom_service,
+            description,
+            prix_estime
+        });
 
-        res.status(201).json(result.rows[0]);
+        res.status(201).json(service);
     } catch (error) {
         console.error('Error creating service:', error);
         res.status(500).json({ error: 'Failed to create service' });
@@ -96,22 +88,20 @@ exports.updateService = async (req, res) => {
         const { id } = req.params;
         const { id_prestataire, nom_service, description, prix_estime } = req.body;
 
-        const result = await pool.query(
-            `UPDATE services 
-             SET id_prestataire = COALESCE($1, id_prestataire),
-                 nom_service = COALESCE($2, nom_service),
-                 description = COALESCE($3, description),
-                 prix_estime = COALESCE($4, prix_estime)
-             WHERE id_service = $5
-             RETURNING *`,
-            [id_prestataire, nom_service, description, prix_estime, id]
-        );
+        const service = await Service.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!service) {
             return res.status(404).json({ error: 'Service not found' });
         }
 
-        res.json(result.rows[0]);
+        await service.update({
+            id_prestataire: id_prestataire || service.id_prestataire,
+            nom_service: nom_service || service.nom_service,
+            description: description !== undefined ? description : service.description,
+            prix_estime: prix_estime !== undefined ? prix_estime : service.prix_estime
+        });
+
+        res.json(service);
     } catch (error) {
         console.error('Error updating service:', error);
         res.status(500).json({ error: 'Failed to update service' });
@@ -125,16 +115,16 @@ exports.deleteService = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM services WHERE id_service = $1 RETURNING *',
-            [id]
-        );
+        const service = await Service.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!service) {
             return res.status(404).json({ error: 'Service not found' });
         }
 
-        res.json({ message: 'Service deleted successfully', service: result.rows[0] });
+        const deletedService = service.toJSON();
+        await service.destroy();
+
+        res.json({ message: 'Service deleted successfully', service: deletedService });
     } catch (error) {
         console.error('Error deleting service:', error);
         res.status(500).json({ error: 'Failed to delete service' });

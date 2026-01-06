@@ -1,14 +1,14 @@
-const pool = require('../db');
+const { Artiste } = require('../models');
 
 /**
  * GET /api/artistes - Récupérer tous les artistes
  */
 exports.getAllArtistes = async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM artiste ORDER BY id_artiste'
-        );
-        res.json(result.rows);
+        const artistes = await Artiste.findAll({
+            order: [['id_artiste', 'ASC']]
+        });
+        res.json(artistes);
     } catch (error) {
         console.error('Error fetching artistes:', error);
         res.status(500).json({ error: 'Failed to fetch artistes' });
@@ -21,16 +21,13 @@ exports.getAllArtistes = async (req, res) => {
 exports.getArtisteById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM artiste WHERE id_artiste = $1',
-            [id]
-        );
+        const artiste = await Artiste.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!artiste) {
             return res.status(404).json({ error: 'Artiste not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(artiste);
     } catch (error) {
         console.error('Error fetching artiste:', error);
         res.status(500).json({ error: 'Failed to fetch artiste' });
@@ -48,14 +45,17 @@ exports.createArtiste = async (req, res) => {
             return res.status(400).json({ error: 'Nom and style_musique are required' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO artiste (nom, style_musique, description, pays_origine, photo_url, cachet, lien_deezer)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING *`,
-            [nom, style_musique, description, pays_origine, photo_url, cachet, lien_deezer]
-        );
+        const artiste = await Artiste.create({
+            nom,
+            style_musique,
+            description,
+            pays_origine,
+            photo_url,
+            cachet,
+            lien_deezer
+        });
 
-        res.status(201).json(result.rows[0]);
+        res.status(201).json(artiste);
     } catch (error) {
         console.error('Error creating artiste:', error);
         res.status(500).json({ error: 'Failed to create artiste' });
@@ -70,25 +70,23 @@ exports.updateArtiste = async (req, res) => {
         const { id } = req.params;
         const { nom, style_musique, description, pays_origine, photo_url, cachet, lien_deezer } = req.body;
 
-        const result = await pool.query(
-            `UPDATE artiste 
-             SET nom = COALESCE($1, nom),
-                 style_musique = COALESCE($2, style_musique),
-                 description = COALESCE($3, description),
-                 pays_origine = COALESCE($4, pays_origine),
-                 photo_url = COALESCE($5, photo_url),
-                 cachet = COALESCE($6, cachet),
-                 lien_deezer = COALESCE($7, lien_deezer)
-             WHERE id_artiste = $8
-             RETURNING *`,
-            [nom, style_musique, description, pays_origine, photo_url, cachet, lien_deezer, id]
-        );
+        const artiste = await Artiste.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!artiste) {
             return res.status(404).json({ error: 'Artiste not found' });
         }
 
-        res.json(result.rows[0]);
+        await artiste.update({
+            nom: nom || artiste.nom,
+            style_musique: style_musique || artiste.style_musique,
+            description: description !== undefined ? description : artiste.description,
+            pays_origine: pays_origine !== undefined ? pays_origine : artiste.pays_origine,
+            photo_url: photo_url !== undefined ? photo_url : artiste.photo_url,
+            cachet: cachet !== undefined ? cachet : artiste.cachet,
+            lien_deezer: lien_deezer !== undefined ? lien_deezer : artiste.lien_deezer
+        });
+
+        res.json(artiste);
     } catch (error) {
         console.error('Error updating artiste:', error);
         res.status(500).json({ error: 'Failed to update artiste' });
@@ -102,16 +100,16 @@ exports.deleteArtiste = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM artiste WHERE id_artiste = $1 RETURNING *',
-            [id]
-        );
+        const artiste = await Artiste.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!artiste) {
             return res.status(404).json({ error: 'Artiste not found' });
         }
 
-        res.json({ message: 'Artiste deleted successfully', artiste: result.rows[0] });
+        const deletedArtiste = artiste.toJSON();
+        await artiste.destroy();
+
+        res.json({ message: 'Artiste deleted successfully', artiste: deletedArtiste });
     } catch (error) {
         console.error('Error deleting artiste:', error);
         res.status(500).json({ error: 'Failed to delete artiste' });

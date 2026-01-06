@@ -1,14 +1,14 @@
-const pool = require('../db');
+const { Emplacement } = require('../models');
 
 /**
  * GET /api/emplacements - Récupérer tous les emplacements
  */
 exports.getAllEmplacements = async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM emplacements ORDER BY id_emplacement'
-        );
-        res.json(result.rows);
+        const emplacements = await Emplacement.findAll({
+            order: [['id_emplacement', 'ASC']]
+        });
+        res.json(emplacements);
     } catch (error) {
         console.error('Error fetching emplacements:', error);
         res.status(500).json({ error: 'Failed to fetch emplacements' });
@@ -21,16 +21,13 @@ exports.getAllEmplacements = async (req, res) => {
 exports.getEmplacementById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM emplacements WHERE id_emplacement = $1',
-            [id]
-        );
+        const emplacement = await Emplacement.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!emplacement) {
             return res.status(404).json({ error: 'Emplacement not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(emplacement);
     } catch (error) {
         console.error('Error fetching emplacement:', error);
         res.status(500).json({ error: 'Failed to fetch emplacement' });
@@ -48,14 +45,15 @@ exports.createEmplacement = async (req, res) => {
             return res.status(400).json({ error: 'nom_emplacement is required' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO emplacements (nom_emplacement, coord_x, coord_y, zone, description)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [nom_emplacement, coord_x, coord_y, zone, description]
-        );
+        const emplacement = await Emplacement.create({
+            nom_emplacement,
+            coord_x,
+            coord_y,
+            zone,
+            description
+        });
 
-        res.status(201).json(result.rows[0]);
+        res.status(201).json(emplacement);
     } catch (error) {
         console.error('Error creating emplacement:', error);
         res.status(500).json({ error: 'Failed to create emplacement' });
@@ -70,23 +68,21 @@ exports.updateEmplacement = async (req, res) => {
         const { id } = req.params;
         const { nom_emplacement, coord_x, coord_y, zone, description } = req.body;
 
-        const result = await pool.query(
-            `UPDATE emplacements 
-             SET nom_emplacement = COALESCE($1, nom_emplacement),
-                 coord_x = COALESCE($2, coord_x),
-                 coord_y = COALESCE($3, coord_y),
-                 zone = COALESCE($4, zone),
-                 description = COALESCE($5, description)
-             WHERE id_emplacement = $6
-             RETURNING *`,
-            [nom_emplacement, coord_x, coord_y, zone, description, id]
-        );
+        const emplacement = await Emplacement.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!emplacement) {
             return res.status(404).json({ error: 'Emplacement not found' });
         }
 
-        res.json(result.rows[0]);
+        await emplacement.update({
+            nom_emplacement: nom_emplacement || emplacement.nom_emplacement,
+            coord_x: coord_x !== undefined ? coord_x : emplacement.coord_x,
+            coord_y: coord_y !== undefined ? coord_y : emplacement.coord_y,
+            zone: zone !== undefined ? zone : emplacement.zone,
+            description: description !== undefined ? description : emplacement.description
+        });
+
+        res.json(emplacement);
     } catch (error) {
         console.error('Error updating emplacement:', error);
         res.status(500).json({ error: 'Failed to update emplacement' });
@@ -100,16 +96,16 @@ exports.deleteEmplacement = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM emplacements WHERE id_emplacement = $1 RETURNING *',
-            [id]
-        );
+        const emplacement = await Emplacement.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!emplacement) {
             return res.status(404).json({ error: 'Emplacement not found' });
         }
 
-        res.json({ message: 'Emplacement deleted successfully', emplacement: result.rows[0] });
+        const deletedEmplacement = emplacement.toJSON();
+        await emplacement.destroy();
+
+        res.json({ message: 'Emplacement deleted successfully', emplacement: deletedEmplacement });
     } catch (error) {
         console.error('Error deleting emplacement:', error);
         res.status(500).json({ error: 'Failed to delete emplacement' });

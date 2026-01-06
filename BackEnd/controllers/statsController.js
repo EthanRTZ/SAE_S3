@@ -1,4 +1,5 @@
-const pool = require('../db');
+const { sequelize, Utilisateur, Prestataire, Artiste, Service, Emplacement, Role, SessionAuthentification, PrestataireEmplacement } = require('../models');
+const { Op } = require('sequelize');
 
 /**
  * GET /api/stats/dashboard - Statistiques globales du dashboard
@@ -7,59 +8,80 @@ const pool = require('../db');
 exports.getDashboardStats = async (req, res) => {
     try {
         // Compte total des utilisateurs
-        const usersCount = await pool.query('SELECT COUNT(*) as total FROM utilisateurs');
+        const totalUtilisateurs = await Utilisateur.count();
 
         // Compte total des prestataires
-        const prestatairesCount = await pool.query('SELECT COUNT(*) as total FROM prestataire');
+        const totalPrestataires = await Prestataire.count();
 
         // Compte total des artistes
-        const artistesCount = await pool.query('SELECT COUNT(*) as total FROM artiste');
+        const totalArtistes = await Artiste.count();
 
         // Compte total des services
-        const servicesCount = await pool.query('SELECT COUNT(*) as total FROM services');
+        const totalServices = await Service.count();
 
         // Compte total des emplacements
-        const emplacementsCount = await pool.query('SELECT COUNT(*) as total FROM emplacements');
+        const totalEmplacements = await Emplacement.count();
 
         // Distribution des utilisateurs par rôle
-        const usersByRole = await pool.query(
-            `SELECT r.nom_rôle, COUNT(u.id_utilisateur) as count
-             FROM rôles r
-             LEFT JOIN utilisateurs u ON r.id_rôle = u.id_rôle
-             GROUP BY r.nom_rôle
-             ORDER BY count DESC`
-        );
+        const usersByRole = await Role.findAll({
+            attributes: [
+                'nom_rôle',
+                [sequelize.fn('COUNT', sequelize.col('utilisateurs.id_utilisateur')), 'count']
+            ],
+            include: [{
+                model: Utilisateur,
+                as: 'utilisateurs',
+                attributes: []
+            }],
+            group: ['Role.id_rôle', 'Role.nom_rôle'],
+            order: [[sequelize.fn('COUNT', sequelize.col('utilisateurs.id_utilisateur')), 'DESC']],
+            raw: true
+        });
 
         // Distribution des prestataires par type
-        const prestatairesByType = await pool.query(
-            `SELECT type_prestataire, COUNT(*) as count
-             FROM prestataire
-             GROUP BY type_prestataire
-             ORDER BY count DESC`
-        );
+        const prestatairesByType = await Prestataire.findAll({
+            attributes: [
+                'type_prestataire',
+                [sequelize.fn('COUNT', sequelize.col('id_prestataire')), 'count']
+            ],
+            group: ['type_prestataire'],
+            order: [[sequelize.fn('COUNT', sequelize.col('id_prestataire')), 'DESC']],
+            raw: true
+        });
 
         // Sessions actives
-        const activeSessions = await pool.query(
-            `SELECT COUNT(*) as total 
-             FROM session_authentification 
-             WHERE actif = TRUE AND date_expiration > NOW()`
-        );
+        const sessionsActives = await SessionAuthentification.count({
+            where: {
+                actif: true,
+                date_expiration: {
+                    [Op.gt]: new Date()
+                }
+            }
+        });
 
         // Artistes avec cachet moyen
-        const averageCachet = await pool.query(
-            'SELECT AVG(cachet) as moyenne FROM artiste WHERE cachet IS NOT NULL'
-        );
+        const cachetStats = await Artiste.findOne({
+            attributes: [
+                [sequelize.fn('AVG', sequelize.col('cachet')), 'moyenne']
+            ],
+            where: {
+                cachet: {
+                    [Op.ne]: null
+                }
+            },
+            raw: true
+        });
 
         res.json({
-            totalUtilisateurs: parseInt(usersCount.rows[0].total),
-            totalPrestataires: parseInt(prestatairesCount.rows[0].total),
-            totalArtistes: parseInt(artistesCount.rows[0].total),
-            totalServices: parseInt(servicesCount.rows[0].total),
-            totalEmplacements: parseInt(emplacementsCount.rows[0].total),
-            sessionsActives: parseInt(activeSessions.rows[0].total),
-            utilisateursParRole: usersByRole.rows,
-            prestatairesParType: prestatairesByType.rows,
-            cachetMoyen: parseFloat(averageCachet.rows[0].moyenne || 0)
+            totalUtilisateurs,
+            totalPrestataires,
+            totalArtistes,
+            totalServices,
+            totalEmplacements,
+            sessionsActives,
+            utilisateursParRole: usersByRole,
+            prestatairesParType: prestatairesByType,
+            cachetMoyen: parseFloat(cachetStats?.moyenne || 0)
         });
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -73,21 +95,36 @@ exports.getDashboardStats = async (req, res) => {
  */
 exports.getPrestatairesStats = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT 
-                p.id_prestataire,
-                p.nom,
-                p.type_prestataire,
-                COUNT(DISTINCT s.id_service) as nb_services,
-                COUNT(DISTINCT pe.id_emplacement) as nb_emplacements
-             FROM prestataire p
-             LEFT JOIN services s ON p.id_prestataire = s.id_prestataire
-             LEFT JOIN prestataire_emplacement pe ON p.id_prestataire = pe.id_prestataire
-             GROUP BY p.id_prestataire, p.nom, p.type_prestataire
-             ORDER BY nb_services DESC, nb_emplacements DESC`
-        );
+        const result = await Prestataire.findAll({
+            attributes: [
+                'id_prestataire',
+                'nom',
+                'type_prestataire',
+                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('services.id_service'))), 'nb_services'],
+                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('emplacements.id_emplacement'))), 'nb_emplacements']
+            ],
+            include: [
+                {
+                    model: Service,
+                    as: 'services',
+                    attributes: []
+                },
+                {
+                    model: Emplacement,
+                    as: 'emplacements',
+                    attributes: [],
+                    through: { attributes: [] }
+                }
+            ],
+            group: ['Prestataire.id_prestataire', 'Prestataire.nom', 'Prestataire.type_prestataire'],
+            order: [
+                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('services.id_service'))), 'DESC'],
+                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('emplacements.id_emplacement'))), 'DESC']
+            ],
+            raw: true
+        });
 
-        res.json(result.rows);
+        res.json(result);
     } catch (error) {
         console.error('Error fetching prestataires stats:', error);
         res.status(500).json({ error: 'Failed to fetch prestataires stats' });
@@ -100,19 +137,25 @@ exports.getPrestatairesStats = async (req, res) => {
  */
 exports.getEmplacementsStats = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT 
-                e.id_emplacement,
-                e.nom_emplacement,
-                e.zone,
-                COUNT(pe.id_prestataire) as nb_prestataires
-             FROM emplacements e
-             LEFT JOIN prestataire_emplacement pe ON e.id_emplacement = pe.id_emplacement
-             GROUP BY e.id_emplacement, e.nom_emplacement, e.zone
-             ORDER BY nb_prestataires DESC`
-        );
+        const result = await Emplacement.findAll({
+            attributes: [
+                'id_emplacement',
+                'nom_emplacement',
+                'zone',
+                [sequelize.fn('COUNT', sequelize.col('prestataires.id_prestataire')), 'nb_prestataires']
+            ],
+            include: [{
+                model: Prestataire,
+                as: 'prestataires',
+                attributes: [],
+                through: { attributes: [] }
+            }],
+            group: ['Emplacement.id_emplacement', 'Emplacement.nom_emplacement', 'Emplacement.zone'],
+            order: [[sequelize.fn('COUNT', sequelize.col('prestataires.id_prestataire')), 'DESC']],
+            raw: true
+        });
 
-        res.json(result.rows);
+        res.json(result);
     } catch (error) {
         console.error('Error fetching emplacements stats:', error);
         res.status(500).json({ error: 'Failed to fetch emplacements stats' });
@@ -124,21 +167,25 @@ exports.getEmplacementsStats = async (req, res) => {
  */
 exports.getArtistesStats = async (req, res) => {
     try {
-        // Récupération des artistes avec statistiques
-        const result = await pool.query(
-            `SELECT 
-                style_musique,
-                COUNT(*) as nb_artistes,
-                AVG(cachet) as cachet_moyen,
-                MIN(cachet) as cachet_min,
-                MAX(cachet) as cachet_max
-             FROM artiste
-             WHERE cachet IS NOT NULL
-             GROUP BY style_musique
-             ORDER BY nb_artistes DESC`
-        );
+        const result = await Artiste.findAll({
+            attributes: [
+                'style_musique',
+                [sequelize.fn('COUNT', sequelize.col('id_artiste')), 'nb_artistes'],
+                [sequelize.fn('AVG', sequelize.col('cachet')), 'cachet_moyen'],
+                [sequelize.fn('MIN', sequelize.col('cachet')), 'cachet_min'],
+                [sequelize.fn('MAX', sequelize.col('cachet')), 'cachet_max']
+            ],
+            where: {
+                cachet: {
+                    [Op.ne]: null
+                }
+            },
+            group: ['style_musique'],
+            order: [[sequelize.fn('COUNT', sequelize.col('id_artiste')), 'DESC']],
+            raw: true
+        });
 
-        res.json(result.rows);
+        res.json(result);
     } catch (error) {
         console.error('Error fetching artistes stats:', error);
         res.status(500).json({ error: 'Failed to fetch artistes stats' });

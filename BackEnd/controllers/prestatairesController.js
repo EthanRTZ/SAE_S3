@@ -1,14 +1,14 @@
-const pool = require('../db');
+const { Prestataire, Service, Emplacement, PrestataireEmplacement } = require('../models');
 
 /**
  * GET /api/prestataires - Récupérer tous les prestataires
  */
 exports.getAllPrestataires = async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM prestataire ORDER BY id_prestataire'
-        );
-        res.json(result.rows);
+        const prestataires = await Prestataire.findAll({
+            order: [['id_prestataire', 'ASC']]
+        });
+        res.json(prestataires);
     } catch (error) {
         console.error('Error fetching prestataires:', error);
         res.status(500).json({ error: 'Failed to fetch prestataires' });
@@ -21,16 +21,13 @@ exports.getAllPrestataires = async (req, res) => {
 exports.getPrestataireById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM prestataire WHERE id_prestataire = $1',
-            [id]
-        );
+        const prestataire = await Prestataire.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(prestataire);
     } catch (error) {
         console.error('Error fetching prestataire:', error);
         res.status(500).json({ error: 'Failed to fetch prestataire' });
@@ -48,14 +45,17 @@ exports.createPrestataire = async (req, res) => {
             return res.status(400).json({ error: 'Nom and type_prestataire are required' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO prestataire (nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING *`,
-            [nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url]
-        );
+        const prestataire = await Prestataire.create({
+            nom,
+            type_prestataire,
+            description,
+            contact_email,
+            contact_tel,
+            site_web,
+            photo_url
+        });
 
-        res.status(201).json(result.rows[0]);
+        res.status(201).json(prestataire);
     } catch (error) {
         console.error('Error creating prestataire:', error);
         res.status(500).json({ error: 'Failed to create prestataire' });
@@ -70,25 +70,23 @@ exports.updatePrestataire = async (req, res) => {
         const { id } = req.params;
         const { nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url } = req.body;
 
-        const result = await pool.query(
-            `UPDATE prestataire 
-             SET nom = COALESCE($1, nom),
-                 type_prestataire = COALESCE($2, type_prestataire),
-                 description = COALESCE($3, description),
-                 contact_email = COALESCE($4, contact_email),
-                 contact_tel = COALESCE($5, contact_tel),
-                 site_web = COALESCE($6, site_web),
-                 photo_url = COALESCE($7, photo_url)
-             WHERE id_prestataire = $8
-             RETURNING *`,
-            [nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url, id]
-        );
+        const prestataire = await Prestataire.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
-        res.json(result.rows[0]);
+        await prestataire.update({
+            nom: nom || prestataire.nom,
+            type_prestataire: type_prestataire || prestataire.type_prestataire,
+            description: description !== undefined ? description : prestataire.description,
+            contact_email: contact_email !== undefined ? contact_email : prestataire.contact_email,
+            contact_tel: contact_tel !== undefined ? contact_tel : prestataire.contact_tel,
+            site_web: site_web !== undefined ? site_web : prestataire.site_web,
+            photo_url: photo_url !== undefined ? photo_url : prestataire.photo_url
+        });
+
+        res.json(prestataire);
     } catch (error) {
         console.error('Error updating prestataire:', error);
         res.status(500).json({ error: 'Failed to update prestataire' });
@@ -102,16 +100,16 @@ exports.deletePrestataire = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM prestataire WHERE id_prestataire = $1 RETURNING *',
-            [id]
-        );
+        const prestataire = await Prestataire.findByPk(id);
 
-        if (result.rows.length === 0) {
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
-        res.json({ message: 'Prestataire deleted successfully', prestataire: result.rows[0] });
+        const deletedPrestataire = prestataire.toJSON();
+        await prestataire.destroy();
+
+        res.json({ message: 'Prestataire deleted successfully', prestataire: deletedPrestataire });
     } catch (error) {
         console.error('Error deleting prestataire:', error);
         res.status(500).json({ error: 'Failed to delete prestataire' });
@@ -126,29 +124,24 @@ exports.getPrestataireServices = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Vérifier que le prestataire existe
-        const prestataireResult = await pool.query(
-            'SELECT * FROM prestataire WHERE id_prestataire = $1',
-            [id]
-        );
+        const prestataire = await Prestataire.findByPk(id, {
+            include: [{
+                model: Service,
+                as: 'services'
+            }]
+        });
 
-        if (prestataireResult.rows.length === 0) {
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
-        // Récupérer tous les services du prestataire
-        const servicesResult = await pool.query(
-            `SELECT s.*, p.nom as nom_prestataire, p.type_prestataire
-             FROM services s
-             JOIN prestataire p ON s.id_prestataire = p.id_prestataire
-             WHERE s.id_prestataire = $1
-             ORDER BY s.id_service`,
-            [id]
-        );
-
         res.json({
-            prestataire: prestataireResult.rows[0],
-            services: servicesResult.rows
+            prestataire: {
+                id_prestataire: prestataire.id_prestataire,
+                nom: prestataire.nom,
+                type_prestataire: prestataire.type_prestataire
+            },
+            services: prestataire.services
         });
     } catch (error) {
         console.error('Error fetching prestataire services:', error);
@@ -164,29 +157,25 @@ exports.getPrestataireEmplacements = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Vérifier que le prestataire existe
-        const prestataireResult = await pool.query(
-            'SELECT * FROM prestataire WHERE id_prestataire = $1',
-            [id]
-        );
+        const prestataire = await Prestataire.findByPk(id, {
+            include: [{
+                model: Emplacement,
+                as: 'emplacements',
+                through: { attributes: [] } // Exclure les attributs de la table de liaison
+            }]
+        });
 
-        if (prestataireResult.rows.length === 0) {
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
-        // Récupérer tous les emplacements du prestataire
-        const emplacementsResult = await pool.query(
-            `SELECT e.*
-             FROM emplacements e
-             JOIN prestataire_emplacement pe ON e.id_emplacement = pe.id_emplacement
-             WHERE pe.id_prestataire = $1
-             ORDER BY e.id_emplacement`,
-            [id]
-        );
-
         res.json({
-            prestataire: prestataireResult.rows[0],
-            emplacements: emplacementsResult.rows
+            prestataire: {
+                id_prestataire: prestataire.id_prestataire,
+                nom: prestataire.nom,
+                type_prestataire: prestataire.type_prestataire
+            },
+            emplacements: prestataire.emplacements
         });
     } catch (error) {
         console.error('Error fetching prestataire emplacements:', error);
@@ -199,7 +188,6 @@ exports.getPrestataireEmplacements = async (req, res) => {
  * NON-TRIVIAL: Interagit avec prestataire + emplacements + prestataire_emplacement
  */
 exports.assignEmplacementToPrestataire = async (req, res) => {
-    const client = await pool.connect();
     try {
         const { id } = req.params;
         const { id_emplacement } = req.body;
@@ -208,61 +196,44 @@ exports.assignEmplacementToPrestataire = async (req, res) => {
             return res.status(400).json({ error: 'id_emplacement is required' });
         }
 
-        await client.query('BEGIN');
-
         // Vérifier que le prestataire existe
-        const prestataireResult = await client.query(
-            'SELECT * FROM prestataire WHERE id_prestataire = $1',
-            [id]
-        );
-
-        if (prestataireResult.rows.length === 0) {
-            await client.query('ROLLBACK');
+        const prestataire = await Prestataire.findByPk(id);
+        if (!prestataire) {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
         // Vérifier que l'emplacement existe
-        const emplacementResult = await client.query(
-            'SELECT * FROM emplacements WHERE id_emplacement = $1',
-            [id_emplacement]
-        );
-
-        if (emplacementResult.rows.length === 0) {
-            await client.query('ROLLBACK');
+        const emplacement = await Emplacement.findByPk(id_emplacement);
+        if (!emplacement) {
             return res.status(404).json({ error: 'Emplacement not found' });
         }
 
         // Vérifier si l'association existe déjà
-        const existingAssoc = await client.query(
-            'SELECT * FROM prestataire_emplacement WHERE id_prestataire = $1 AND id_emplacement = $2',
-            [id, id_emplacement]
-        );
+        const existingAssoc = await PrestataireEmplacement.findOne({
+            where: {
+                id_prestataire: id,
+                id_emplacement: id_emplacement
+            }
+        });
 
-        if (existingAssoc.rows.length > 0) {
-            await client.query('ROLLBACK');
+        if (existingAssoc) {
             return res.status(409).json({ error: 'This emplacement is already assigned to this prestataire' });
         }
 
         // Créer l'association
-        await client.query(
-            `INSERT INTO prestataire_emplacement (id_prestataire, id_emplacement)
-             VALUES ($1, $2)`,
-            [id, id_emplacement]
-        );
-
-        await client.query('COMMIT');
+        await PrestataireEmplacement.create({
+            id_prestataire: id,
+            id_emplacement: id_emplacement
+        });
 
         res.status(201).json({
             message: 'Emplacement assigned successfully',
-            prestataire: prestataireResult.rows[0],
-            emplacement: emplacementResult.rows[0]
+            prestataire: prestataire.toJSON(),
+            emplacement: emplacement.toJSON()
         });
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error assigning emplacement:', error);
         res.status(500).json({ error: 'Failed to assign emplacement' });
-    } finally {
-        client.release();
     }
 };
 
@@ -274,14 +245,18 @@ exports.removeEmplacementFromPrestataire = async (req, res) => {
     try {
         const { id, idEmplacement } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM prestataire_emplacement WHERE id_prestataire = $1 AND id_emplacement = $2 RETURNING *',
-            [id, idEmplacement]
-        );
+        const association = await PrestataireEmplacement.findOne({
+            where: {
+                id_prestataire: id,
+                id_emplacement: idEmplacement
+            }
+        });
 
-        if (result.rows.length === 0) {
+        if (!association) {
             return res.status(404).json({ error: 'Association not found' });
         }
+
+        await association.destroy();
 
         res.json({ message: 'Emplacement removed successfully' });
     } catch (error) {

@@ -1,4 +1,4 @@
-const pool = require('../db');
+const { Utilisateur, Role } = require('../models');
 const bcrypt = require('bcrypt');
 
 /**
@@ -6,13 +6,16 @@ const bcrypt = require('bcrypt');
  */
 exports.getAllUtilisateurs = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT u.id_utilisateur, u.nom_utilisateur, u.email, u.date_creation, r.nom_rôle
-             FROM utilisateurs u
-             JOIN rôles r ON u.id_rôle = r.id_rôle
-             ORDER BY u.id_utilisateur`
-        );
-        res.json(result.rows);
+        const utilisateurs = await Utilisateur.findAll({
+            include: [{
+                model: Role,
+                as: 'role',
+                attributes: ['nom_rôle']
+            }],
+            attributes: ['id_utilisateur', 'nom_utilisateur', 'email', 'date_creation'],
+            order: [['id_utilisateur', 'ASC']]
+        });
+        res.json(utilisateurs);
     } catch (error) {
         console.error('Error fetching utilisateurs:', error);
         res.status(500).json({ error: 'Failed to fetch utilisateurs' });
@@ -25,19 +28,20 @@ exports.getAllUtilisateurs = async (req, res) => {
 exports.getUtilisateurById = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            `SELECT u.id_utilisateur, u.nom_utilisateur, u.email, u.date_creation, r.nom_rôle
-             FROM utilisateurs u
-             JOIN rôles r ON u.id_rôle = r.id_rôle
-             WHERE u.id_utilisateur = $1`,
-            [id]
-        );
+        const utilisateur = await Utilisateur.findByPk(id, {
+            include: [{
+                model: Role,
+                as: 'role',
+                attributes: ['nom_rôle']
+            }],
+            attributes: ['id_utilisateur', 'nom_utilisateur', 'email', 'date_creation']
+        });
 
-        if (result.rows.length === 0) {
+        if (!utilisateur) {
             return res.status(404).json({ error: 'Utilisateur not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(utilisateur);
     } catch (error) {
         console.error('Error fetching utilisateur:', error);
         res.status(500).json({ error: 'Failed to fetch utilisateur' });
@@ -52,26 +56,26 @@ exports.updateUtilisateur = async (req, res) => {
         const { id } = req.params;
         const { nom_utilisateur, email, mot_de_passe } = req.body;
 
-        let hashedPassword = null;
-        if (mot_de_passe) {
-            hashedPassword = await bcrypt.hash(mot_de_passe, 10);
-        }
+        const utilisateur = await Utilisateur.findByPk(id);
 
-        const result = await pool.query(
-            `UPDATE utilisateurs 
-             SET nom_utilisateur = COALESCE($1, nom_utilisateur),
-                 email = COALESCE($2, email),
-                 mot_de_passe = COALESCE($3, mot_de_passe)
-             WHERE id_utilisateur = $4
-             RETURNING id_utilisateur, nom_utilisateur, email, date_creation`,
-            [nom_utilisateur, email, hashedPassword, id]
-        );
-
-        if (result.rows.length === 0) {
+        if (!utilisateur) {
             return res.status(404).json({ error: 'Utilisateur not found' });
         }
 
-        res.json(result.rows[0]);
+        const updateData = {
+            nom_utilisateur: nom_utilisateur || utilisateur.nom_utilisateur,
+            email: email || utilisateur.email
+        };
+
+        if (mot_de_passe) {
+            updateData.mot_de_passe = await bcrypt.hash(mot_de_passe, 10);
+        }
+
+        await utilisateur.update(updateData);
+
+        // Retourner sans le mot de passe
+        const { mot_de_passe: _, ...utilisateurSafe } = utilisateur.toJSON();
+        res.json(utilisateurSafe);
     } catch (error) {
         console.error('Error updating utilisateur:', error);
         res.status(500).json({ error: 'Failed to update utilisateur' });
@@ -85,16 +89,18 @@ exports.deleteUtilisateur = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            'DELETE FROM utilisateurs WHERE id_utilisateur = $1 RETURNING id_utilisateur, nom_utilisateur, email',
-            [id]
-        );
+        const utilisateur = await Utilisateur.findByPk(id, {
+            attributes: ['id_utilisateur', 'nom_utilisateur', 'email']
+        });
 
-        if (result.rows.length === 0) {
+        if (!utilisateur) {
             return res.status(404).json({ error: 'Utilisateur not found' });
         }
 
-        res.json({ message: 'Utilisateur deleted successfully', utilisateur: result.rows[0] });
+        const deletedUtilisateur = utilisateur.toJSON();
+        await utilisateur.destroy();
+
+        res.json({ message: 'Utilisateur deleted successfully', utilisateur: deletedUtilisateur });
     } catch (error) {
         console.error('Error deleting utilisateur:', error);
         res.status(500).json({ error: 'Failed to delete utilisateur' });

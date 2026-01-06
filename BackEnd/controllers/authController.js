@@ -1,4 +1,4 @@
-const pool = require('../db');
+const { Utilisateur, Role, SessionAuthentification } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -10,7 +10,6 @@ const JWT_EXPIRES_IN = '7d';
  * NON-TRIVIAL: Interagit avec utilisateurs + rôles
  */
 exports.register = async (req, res) => {
-    const client = await pool.connect();
     try {
         const { nom_utilisateur, email, mot_de_passe, role } = req.body;
 
@@ -18,47 +17,32 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
-        await client.query('BEGIN');
-
         // Vérifier si l'email existe déjà
-        const userExists = await client.query(
-            'SELECT id_utilisateur FROM utilisateurs WHERE email = $1',
-            [email]
-        );
+        const userExists = await Utilisateur.findOne({ where: { email } });
 
-        if (userExists.rows.length > 0) {
-            await client.query('ROLLBACK');
+        if (userExists) {
             return res.status(409).json({ error: 'Email already exists' });
         }
 
         // Récupérer l'ID du rôle (par défaut: public)
         const roleName = role || 'public';
-        const roleResult = await client.query(
-            'SELECT id_rôle FROM rôles WHERE nom_rôle = $1',
-            [roleName]
-        );
+        const roleRecord = await Role.findOne({ where: { nom_rôle: roleName } });
 
-        if (roleResult.rows.length === 0) {
-            await client.query('ROLLBACK');
+        if (!roleRecord) {
             return res.status(400).json({ error: 'Invalid role' });
         }
-
-        const id_role = roleResult.rows[0].id_rôle;
 
         // Hasher le mot de passe
         const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
 
         // Créer l'utilisateur
-        const userResult = await client.query(
-            `INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, id_rôle)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id_utilisateur, nom_utilisateur, email, id_rôle, date_creation`,
-            [nom_utilisateur, email, hashedPassword, id_role]
-        );
+        const user = await Utilisateur.create({
+            nom_utilisateur,
+            email,
+            mot_de_passe: hashedPassword,
+            id_rôle: roleRecord.id_rôle
+        });
 
-        await client.query('COMMIT');
-
-        const user = userResult.rows[0];
         res.status(201).json({
             message: 'User registered successfully',
             user: {
@@ -69,11 +53,8 @@ exports.register = async (req, res) => {
             }
         });
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Failed to register user' });
-    } finally {
-        client.release();
     }
 };
 
@@ -82,7 +63,6 @@ exports.register = async (req, res) => {
  * NON-TRIVIAL: Interagit avec utilisateurs + rôles + session_authentification
  */
 exports.login = async (req, res) => {
-    const client = await pool.connect();
     try {
         const { email, mot_de_passe } = req.body;
 
@@ -90,29 +70,24 @@ exports.login = async (req, res) => {
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
-        await client.query('BEGIN');
-
         // Récupérer l'utilisateur avec son rôle
-        const result = await client.query(
-            `SELECT u.id_utilisateur, u.nom_utilisateur, u.email, u.mot_de_passe, r.nom_rôle
-             FROM utilisateurs u
-             JOIN rôles r ON u.id_rôle = r.id_rôle
-             WHERE u.email = $1`,
-            [email]
-        );
+        const user = await Utilisateur.findOne({
+            where: { email },
+            include: [{
+                model: Role,
+                as: 'role',
+                attributes: ['nom_rôle']
+            }]
+        });
 
-        if (result.rows.length === 0) {
-            await client.query('ROLLBACK');
+        if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        const user = result.rows[0];
 
         // Vérifier le mot de passe
         const isPasswordValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
 
         if (!isPasswordValid) {
-            await client.query('ROLLBACK');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -121,7 +96,7 @@ exports.login = async (req, res) => {
             {
                 id: user.id_utilisateur,
                 email: user.email,
-                role: user.nom_rôle
+                role: user.role.nom_rôle
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -131,13 +106,12 @@ exports.login = async (req, res) => {
         const expirationDate = new Date();
         expirationDate.setDate(expirationDate.getDate() + 7);
 
-        await client.query(
-            `INSERT INTO session_authentification (id_utilisateur, token, date_expiration, actif)
-             VALUES ($1, $2, $3, $4)`,
-            [user.id_utilisateur, token, expirationDate, true]
-        );
-
-        await client.query('COMMIT');
+        await SessionAuthentification.create({
+            id_utilisateur: user.id_utilisateur,
+            token,
+            date_expiration: expirationDate,
+            actif: true
+        });
 
         res.json({
             message: 'Login successful',
@@ -146,15 +120,12 @@ exports.login = async (req, res) => {
                 id: user.id_utilisateur,
                 nom: user.nom_utilisateur,
                 email: user.email,
-                role: user.nom_rôle
+                role: user.role.nom_rôle
             }
         });
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error logging in:', error);
         res.status(500).json({ error: 'Failed to login' });
-    } finally {
-        client.release();
     }
 };
 
@@ -170,9 +141,9 @@ exports.logout = async (req, res) => {
             return res.status(400).json({ error: 'Token required' });
         }
 
-        await pool.query(
-            'UPDATE session_authentification SET actif = FALSE WHERE token = $1',
-            [token]
+        await SessionAuthentification.update(
+            { actif: false },
+            { where: { token } }
         );
 
         res.json({ message: 'Logout successful' });
@@ -198,40 +169,37 @@ exports.getCurrentUser = async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
 
         // Vérifier que la session est active
-        const sessionResult = await pool.query(
-            `SELECT actif, date_expiration FROM session_authentification 
-             WHERE token = $1 AND actif = TRUE`,
-            [token]
-        );
+        const session = await SessionAuthentification.findOne({
+            where: { token, actif: true }
+        });
 
-        if (sessionResult.rows.length === 0) {
+        if (!session) {
             return res.status(401).json({ error: 'Invalid or expired session' });
         }
 
-        const session = sessionResult.rows[0];
         if (new Date(session.date_expiration) < new Date()) {
             return res.status(401).json({ error: 'Session expired' });
         }
 
         // Récupérer les infos complètes de l'utilisateur
-        const userResult = await pool.query(
-            `SELECT u.id_utilisateur, u.nom_utilisateur, u.email, r.nom_rôle, u.date_creation
-             FROM utilisateurs u
-             JOIN rôles r ON u.id_rôle = r.id_rôle
-             WHERE u.id_utilisateur = $1`,
-            [decoded.id]
-        );
+        const user = await Utilisateur.findByPk(decoded.id, {
+            include: [{
+                model: Role,
+                as: 'role',
+                attributes: ['nom_rôle']
+            }],
+            attributes: ['id_utilisateur', 'nom_utilisateur', 'email', 'date_creation']
+        });
 
-        if (userResult.rows.length === 0) {
+        if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const user = userResult.rows[0];
         res.json({
             id: user.id_utilisateur,
             nom: user.nom_utilisateur,
             email: user.email,
-            role: user.nom_rôle,
+            role: user.role.nom_rôle,
             date_creation: user.date_creation
         });
     } catch (error) {
