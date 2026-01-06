@@ -336,6 +336,208 @@
     { "nom": "ZERO GRAVITY", "type": "scène", "coords": ["47.30591,4.96562", "47.30573,4.96547", "47.30556,4.96589", "47.30572,4.96607"], "sponsor": "DEEZER" },
     { "nom": "CARGO", "type": "scène", "coords": ["47.30388,4.96324", "47.30371,4.96334", "47.30376,4.96350", "47.30393,4.96340"], "sponsor": "JBL" },
     { "nom": "ANTDT CLUB", "type": "scène", "coords": ["47.30444,4.96533", "47.30427,4.96552", "47.30415,4.96528", "47.30434,4.96506"], "sponsor": "ANTDT" }
-  ]
+  ],
+  "emplacements": [
+    {
+      "id": 1,
+      "coordonnees": "47.30532,4.96457",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 2,
+      "coordonnees": "47.30519,4.96433",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 3,
+      "coordonnees": "47.30508,4.96423",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 4,
+      "coordonnees": "47.30501,4.96413",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 5,
+      "coordonnees": "47.30495,4.96406",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 6,
+      "coordonnees": "47.30269,4.96492",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 7,
+      "coordonnees": "47.30400,4.96441",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 8,
+      "coordonnees": "47.30486,4.96394",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 9,
+      "coordonnees": "47.30278,4.96521",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 10,
+      "coordonnees": "47.30411,4.96460",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 11,
+      "coordonnees": "47.30477,4.96382",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 12,
+      "coordonnees": "47.30469,4.96373",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 13,
+      "coordonnees": "47.30424,4.96478",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 14,
+      "coordonnees": "47.30284,4.96550",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 15,
+      "coordonnees": "47.30263,4.96467",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 16,
+      "coordonnees": "47.30291,4.96585",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 17,
+      "coordonnees": "47.30434,4.96500",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 18,
+      "coordonnees": "47.30431,4.96416",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 19,
+      "coordonnees": "47.30444,4.96451",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 20,
+      "coordonnees": "47.30256,4.96437",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 21,
+      "coordonnees": "47.30338,4.96352",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 22,
+      "coordonnees": "47.30427,4.96669",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 23,
+      "coordonnees": "47.30424,4.96672",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 24,
+      "coordonnees": "47.30441,4.96660",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    },
+    {
+      "id": 25,
+      "coordonnees": "47.30356,4.96343",
+      "statut": "libre",
+      "prestataireNom": null,
+      "dateAttribution": null,
+      "dateDemande": null
+    }
+  ],
+  "demandesEmplacement": []
 }
-
