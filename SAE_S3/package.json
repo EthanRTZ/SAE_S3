@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fawmi/vue-google-maps": "^0.9.79",
+    "chart.js": "^4.5.1",
     "mapbox-gl": "^3.16.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.18",

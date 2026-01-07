@@ -76,6 +76,9 @@ export default {
 
       // Panneau de filtres rétractable
       panelCollapsed: false,
+
+      // MODIFICATION: Emplacements avec statut
+      emplacements: [], // Tous les emplacements avec leur statut
     };
   },
   mounted() {
@@ -94,7 +97,7 @@ export default {
       document.head.appendChild(link);
     }
 
-    // Fonction utilitaire: s’assure que Leaflet (window.L) est chargé avant d’initialiser la carte
+    // Fonction utilitaire: s'assure que Leaflet (window.L) est chargé avant d'initialiser la carte
     const ensureLeaflet = () =>
       new Promise((resolve, reject) => {
         if (window.L) return resolve(window.L);
@@ -103,12 +106,16 @@ export default {
           const wait = () => (window.L ? resolve(window.L) : setTimeout(wait, 50));
           return wait();
         }
-        const script = document.createElement('script');
-        script.src = jsSrc;
-        script.async = true;
-        script.onload = () => resolve(window.L);
-        script.onerror = () => reject(new Error('Leaflet load failed'));
-        document.body.appendChild(script);
+        try {
+          const script = document.createElement('script');
+          script.src = jsSrc;
+          script.async = true;
+          script.onload = () => resolve(window.L);
+          script.onerror = () => reject(new Error('Leaflet load failed'));
+          document.body.appendChild(script);
+        } catch (e) {
+          reject(e);
+        }
       });
 
     ensureLeaflet()
@@ -175,30 +182,73 @@ export default {
     },
   },
   methods: {
-    // Charge le JSON et prépare les filtres + marqueurs
+    // MODIFICATION: Charger les emplacements avec statut
     async loadPrestataires() {
       try {
         const res = await fetch('/data/site.json');
         const data = await res.json();
 
-        // Charger les emplacements disponibles
-        this.emplacementsDisponibles = data.emplacementsDisponibles || [];
+        // Charger les emplacements avec statut
+        this.emplacements = data.emplacements || [];
 
-        // Charger les choix d'emplacements depuis localStorage
+        // Charger les emplacements attribués depuis localStorage
         try {
-          const raw = localStorage.getItem('prestataireEmplacements');
-          this.emplacementsChoisis = raw ? JSON.parse(raw) : {};
+          const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
+          const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+
+          // Mettre à jour le statut des emplacements
+          this.emplacements = this.emplacements.map(e => {
+            const prestataireAttribue = Object.entries(emplacementsAttribues).find(
+              ([, coords]) => coords === e.coordonnees
+            )
+
+            if (prestataireAttribue) {
+              return {
+                ...e,
+                statut: 'pris',
+                prestataireNom: prestataireAttribue[0]
+              }
+            }
+            return e
+          })
         } catch (e) {
-          this.emplacementsChoisis = {};
+          console.error('Erreur chargement emplacements attribués', e)
         }
 
-        // Charger tous les prestataires (sans coordonnées fixes)
-        this.prestataires = data.prestataires || [];
+        // Charger les demandes en attente
+        try {
+          const demandesRaw = localStorage.getItem('demandesEmplacement')
+          const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
 
-        // Attribuer les coordonnées aux prestataires qui ont choisi un emplacement
-        this.prestataires = this.prestataires.map(p => {
-          if (this.emplacementsChoisis[p.nom]) {
-            return { ...p, coordone: this.emplacementsChoisis[p.nom] };
+          // Mettre à jour le statut des emplacements avec demande en attente
+          this.emplacements = this.emplacements.map(e => {
+            const demandePendante = demandes.find(
+              d => d.coordonnees === e.coordonnees && d.statut === 'en_attente'
+            )
+
+            if (demandePendante && e.statut !== 'pris') {
+              return {
+                ...e,
+                statut: 'en_attente',
+                prestataireNom: demandePendante.prestataireNom
+              }
+            }
+            return e
+          })
+        } catch (e) {
+          console.error('Erreur chargement demandes', e)
+        }
+
+        // Charger les prestataires
+        this.prestataires = (data.prestataires || []).map(p => {
+          // Chercher l'emplacement attribué au prestataire
+          const emplacement = this.emplacements.find(e =>
+            (e.statut === 'pris' || e.statut === 'en_attente') &&
+            e.prestataireNom === p.nom
+          );
+
+          if (emplacement) {
+            return { ...p, coordone: emplacement.coordonnees };
           }
           return p;
         });
@@ -322,7 +372,7 @@ export default {
       });
     },
 
-    // Initialise les marqueurs pour les emplacements libres
+    // MODIFICATION: Initialise les marqueurs pour les emplacements libres
     initEmplacementsLibres() {
       const L = this._L;
       if (!L || !this.map) return;
@@ -333,39 +383,64 @@ export default {
       });
       this.emplacementsLibresMarkers = {};
 
-      // Obtenir les emplacements déjà occupés
-      const emplacementsOccupes = Object.values(this.emplacementsChoisis);
-
-      // Créer un marqueur pour chaque emplacement libre
-      this.emplacementsDisponibles.forEach((coords, idx) => {
-        // Ne pas afficher si l'emplacement est déjà occupé
-        if (emplacementsOccupes.includes(coords)) return;
-
+      // Créer un marqueur pour chaque emplacement
+      this.emplacements.forEach((emplacement) => {
+        const coords = emplacement.coordonnees;
         const parts = coords.split(',').map(s => parseFloat(s.trim()));
         if (parts.length !== 2 || parts.some(isNaN)) return;
         const [lat, lng] = parts;
 
-        const icon = this.getEmptyLocationIcon();
-        const marker = L.marker([lat, lng], { icon });
+        let color = '#4caf50'; // Vert - disponible
+        let radius = 8;
+        let label = 'Disponible';
+        let fillOpacity = 0.8;
+
+        if (emplacement.statut === 'pris') {
+          color = '#FCDC1E'; // Jaune - occupé
+          radius = 10;
+          label = `Occupé par ${emplacement.prestataireNom || 'Prestataire'}`;
+          fillOpacity = 0.9;
+        } else if (emplacement.statut === 'en_attente') {
+          color = '#ff9800'; // Orange - en attente
+          radius = 9;
+          label = `En attente: ${emplacement.prestataireNom || 'Prestataire'}`;
+          fillOpacity = 0.85;
+        }
+
+        const marker = L.circleMarker([lat, lng], {
+          radius: radius,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: fillOpacity
+        });
 
         const html = `
           <div class="popup-emplacement">
-            <h3>Emplacement disponible</h3>
-            <p>Cet emplacement est libre.</p>
+            <h3 style="color: ${color};">${label}</h3>
+            <p>Emplacement #${emplacement.id}</p>
             <p class="coordinates">${coords}</p>
+            ${emplacement.statut !== 'libre' ? `<p class="status-badge status-${emplacement.statut}">${emplacement.statut === 'pris' ? 'Attribué' : 'Demande en cours'}</p>` : ''}
           </div>
         `;
 
         marker.bindPopup(html);
-        marker.bindTooltip('Emplacement disponible', {
+
+        const tooltipText = emplacement.statut === 'libre'
+          ? 'Emplacement disponible'
+          : `${emplacement.prestataireNom} - ${label}`;
+
+        marker.bindTooltip(tooltipText, {
           permanent: false,
           direction: 'top',
           offset: [0, -10]
         });
 
         marker._emplacementCoords = coords;
+        marker._emplacementStatut = emplacement.statut;
         marker.addTo(this.map);
-        this.emplacementsLibresMarkers[`empty_${idx}`] = marker;
+        this.emplacementsLibresMarkers[`empty_${emplacement.id}`] = marker;
       });
     },
 
@@ -932,6 +1007,30 @@ export default {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* AJOUT: Styles pour les badges de statut */
+:deep(.status-badge) {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+:deep(.status-pris) {
+  background: rgba(252, 220, 30, 0.2);
+  border: 2px solid #FCDC1E;
+  color: #FCDC1E;
+}
+
+:deep(.status-en_attente) {
+  background: rgba(255, 152, 0, 0.2);
+  border: 2px solid #ff9800;
+  color: #ff9800;
 }
 
 @media (max-width: 700px) {

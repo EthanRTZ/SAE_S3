@@ -13,16 +13,34 @@ const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 
 // Données pour la gestion des emplacements
-const emplacementsDisponibles = ref([])
-const emplacementActuel = ref('')
-const mapInstance = ref(null)
-const mapLoaded = ref(false)
-const mapContainer = ref(null)
+const emplacements = ref([]) // Tous les emplacements avec leur statut
+const emplacementActuel = ref(null) // Emplacement actuel du prestataire
+const demandePendante = ref(null) // Demande en attente
 
 // Données pour les zones
 const zones = ref([])
 const zoneLayers = ref({})
 const zoneMarkers = ref({})
+
+// AJOUT: Variables pour la carte
+const mapContainer = ref(null)
+const mapInstance = ref(null)
+const mapLoaded = ref(false)
+
+// AJOUT: Variables pour les statistiques
+const statsNotes = ref({
+  moyenne: 0,
+  nbAvis: 0,
+  parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  derniersAvis: []
+})
+
+// AJOUT: Helper pour parser les coordonnées
+const parseCoords = (coordStr) => {
+  const parts = coordStr.split(',').map(s => parseFloat(s.trim()))
+  if (parts.length !== 2 || parts.some(isNaN)) return null
+  return { lat: parts[0], lng: parts[1] }
+}
 
 const loadAuthFromStorage = () => {
   try {
@@ -44,10 +62,56 @@ const loadPrestataireInfo = async () => {
   }
 
   try {
+    // Charger les emplacements depuis le JSON
     const [siteResp, avisResp] = await Promise.all([
       fetch('/data/site.json', { cache: 'no-store' }),
       fetch('/data/avis.json', { cache: 'no-store' })
     ])
+    const siteData = siteResp.ok ? await siteResp.json() : { emplacements: [], prestataires: [] }
+    emplacements.value = siteData.emplacements || []
+    zones.value = siteData.zones || []
+
+    // MODIFICATION: Charger les emplacements attribués
+    try {
+      const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
+      const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+
+      const coordActuel = emplacementsAttribues[prestataireNom.value]
+      if (coordActuel) {
+        const emplacement = siteData.emplacements?.find(e => e.coordonnees === coordActuel)
+        if (emplacement) {
+          emplacementActuel.value = {
+            ...emplacement,
+            dateAttribution: new Date().toISOString()
+          }
+        }
+      } else {
+        emplacementActuel.value = null
+      }
+    } catch (e) {
+      emplacementActuel.value = null
+    }
+
+    // MODIFICATION: Charger la demande en attente
+    try {
+      const demandesRaw = localStorage.getItem('demandesEmplacement')
+      const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
+      demandePendante.value = demandes.find(d =>
+        d.prestataireNom === prestataireNom.value && d.statut === 'en_attente'
+      ) || null
+    } catch (e) {
+      demandePendante.value = null
+    }
+
+    const avisData = avisResp.ok ? await avisResp.json() : {}
+
+    // Vérifier que le prestataire est dans avis.json
+    const prestatairesValides = Object.keys(avisData)
+    if (!prestatairesValides.includes(prestataireNom.value)) {
+      prestataireInfo.value = null
+      loading.value = false
+      return
+    }
 
     const customRaw = localStorage.getItem('customPrestataires')
     let customPrestataires = null
@@ -59,43 +123,15 @@ const loadPrestataireInfo = async () => {
       }
     }
 
-    const data = siteResp.ok ? await siteResp.json() : { prestataires: [] }
-    const avisData = avisResp.ok ? await avisResp.json() : {}
-
-    // Charger les emplacements disponibles
-    emplacementsDisponibles.value = data.emplacementsDisponibles || []
-
-    // Charger les zones
-    zones.value = data.zones || []
-
-    // Charger l'emplacement actuel du prestataire
-    try {
-      const emplacementsRaw = localStorage.getItem('prestataireEmplacements')
-      const emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
-      emplacementActuel.value = emplacements[prestataireNom.value] || ''
-    } catch (e) {
-      emplacementActuel.value = ''
-    }
-
-    // Vérifier que le prestataire est dans avis.json
-    const prestatairesValides = Object.keys(avisData)
-    if (!prestatairesValides.includes(prestataireNom.value)) {
-      prestataireInfo.value = null
-      loading.value = false
-      return
-    }
-
-    const prestataires = data.prestataires || []
-
+    const prestataires = siteData.prestataires || []
     let prestataire = prestataires.find(p => p.nom === prestataireNom.value) || null
-
+    // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
     // Appliquer les modifications locales si elles existent
     if (prestataire) {
       const local = customPrestataires && customPrestataires[prestataireNom.value] ? customPrestataires[prestataireNom.value] : {}
       // merge shallow
       prestataire = { ...prestataire, ...local }
     }
-
     prestataireInfo.value = prestataire
 
     // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
@@ -120,28 +156,6 @@ const loadPrestataireInfo = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const saveCustomPrestataire = () => {
-  if (!prestataireNom.value) return
-  let custom = {}
-  try {
-    const raw = localStorage.getItem('customPrestataires')
-    custom = raw ? JSON.parse(raw) : {}
-  } catch (e) {
-    custom = {}
-  }
-  custom[prestataireNom.value] = {
-    // Sauvegarder le HTML directement depuis l'éditeur WYSIWYG
-    description: presentationText.value,
-    presentationHtml: presentationText.value,
-    services: services.value,
-    email: userFields.value.email,
-    tel: userFields.value.tel,
-    site: userFields.value.site
-  }
-  localStorage.setItem('customPrestataires', JSON.stringify(custom))
-  window.dispatchEvent(new Event('prestataire-updated'))
 }
 
 
@@ -186,35 +200,110 @@ const formatPrix = (val) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val)
 }
 
-// Méthodes pour la gestion des emplacements
+// Calculer les emplacements libres
 const emplacementsLibres = computed(() => {
-  try {
-    const raw = localStorage.getItem('prestataireEmplacements')
-    const emplacements = raw ? JSON.parse(raw) : {}
-    const occupes = Object.values(emplacements)
-    return emplacementsDisponibles.value.filter(e => !occupes.includes(e))
-  } catch (e) {
-    return emplacementsDisponibles.value
-  }
+  return emplacements.value.filter(e => e.statut === 'libre')
 })
 
+// Calculer les emplacements occupés (pour la carte)
 const emplacementsOccupes = computed(() => {
-  try {
-    const raw = localStorage.getItem('prestataireEmplacements')
-    const emplacements = raw ? JSON.parse(raw) : {}
-    return Object.values(emplacements)
-  } catch (e) {
-    return []
-  }
+  return emplacements.value
+    .filter(e => e.statut === 'pris' || e.statut === 'en_attente')
+    .map(e => e.coordonnees)
 })
 
-const parseCoords = (coords) => {
-  // Gérer le format "(lat, lng)" ou "lat,lng"
-  const match = coords.match(/\(?([^,\)]+),\s*([^)\s]+)\)?/)
-  if (match) {
-    return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) }
+// MODIFICATION: Nouvelle fonction pour créer une demande (fonctionnelle)
+const demanderEmplacement = async (coords) => {
+  if (!prestataireNom.value) return
+
+  try {
+    // Récupérer les demandes existantes
+    const demandesRaw = localStorage.getItem('demandesEmplacement')
+    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
+
+    // Vérifier si une demande existe déjà pour ce prestataire
+    const demandeExistante = demandes.find(d =>
+      d.prestataireNom === prestataireNom.value && d.statut === 'en_attente'
+    )
+
+    if (demandeExistante) {
+      if (!confirm('Vous avez déjà une demande en attente. Voulez-vous la remplacer ?')) return
+      // Supprimer l'ancienne demande
+      demandes = demandes.filter(d => d.id !== demandeExistante.id)
+    }
+
+    // Créer une nouvelle demande
+    const nouvelleDemande = {
+      id: Date.now().toString(),
+      prestataireNom: prestataireNom.value,
+      coordonnees: coords,
+      statut: 'en_attente',
+      dateDemande: new Date().toISOString()
+    }
+
+    demandes.push(nouvelleDemande)
+    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
+
+    // Recharger les données
+    await loadPrestataireInfo()
+
+    // Déclencher un événement pour l'admin
+    window.dispatchEvent(new Event('demandes-updated'))
+
+    alert('✅ Demande d\'emplacement envoyée avec succès !\n\nL\'administrateur sera notifié et pourra accepter ou refuser votre demande.')
+  } catch (e) {
+    console.error('Erreur lors de l\'envoi de la demande', e)
+    alert('❌ Erreur lors de l\'envoi de la demande')
   }
-  return null
+}
+
+// MODIFICATION: Fonction pour annuler une demande (fonctionnelle)
+const annulerDemande = async () => {
+  if (!prestataireNom.value || !demandePendante.value) return
+
+  if (!confirm('Êtes-vous sûr de vouloir annuler votre demande d\'emplacement ?')) return
+
+  try {
+    const demandesRaw = localStorage.getItem('demandesEmplacement')
+    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
+
+    // Supprimer la demande
+    demandes = demandes.filter(d => d.id !== demandePendante.value.id)
+    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
+
+    demandePendante.value = null
+
+    // Déclencher un événement
+    window.dispatchEvent(new Event('demandes-updated'))
+
+    alert('✅ Demande annulée avec succès !')
+  } catch (e) {
+    console.error('Erreur lors de l\'annulation', e)
+    alert('❌ Erreur lors de l\'annulation')
+  }
+}
+
+const libererEmplacement = async () => {
+  if (!confirm('Êtes-vous sûr de vouloir libérer votre emplacement ?')) return
+
+  try {
+    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
+    let emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+
+    // Supprimer l'emplacement du prestataire
+    delete emplacements[prestataireNom.value]
+    localStorage.setItem('emplacementsAttribues', JSON.stringify(emplacements))
+
+    emplacementActuel.value = null
+
+    // Déclencher un événement
+    window.dispatchEvent(new Event('emplacements-updated'))
+
+    alert('✅ Emplacement libéré avec succès !')
+  } catch (e) {
+    console.error('Erreur lors de la libération', e)
+    alert('❌ Erreur lors de la libération')
+  }
 }
 
 const initMap = async () => {
@@ -225,7 +314,7 @@ const initMap = async () => {
   const cssHref = `https://unpkg.com/leaflet@${ver}/dist/leaflet.css`
   const jsSrc = `https://unpkg.com/leaflet@${ver}/dist/leaflet.js`
 
-  // Injecter le CSS Leaflet
+  // Injecter la feuille de style Leaflet si absente
   if (!document.querySelector(`link[href="${cssHref}"]`)) {
     const link = document.createElement('link')
     link.rel = 'stylesheet'
@@ -233,7 +322,6 @@ const initMap = async () => {
     document.head.appendChild(link)
   }
 
-  // Charger Leaflet
   const loadLeaflet = () => new Promise((resolve, reject) => {
     if (window.L) return resolve(window.L)
     const existing = document.querySelector(`script[src="${jsSrc}"]`)
@@ -294,32 +382,38 @@ const updateMapMarkers = () => {
   const L = window.L
   const map = mapInstance.value
 
-  // Supprimer uniquement les CircleMarkers d'emplacements (pas les zones)
+  // Supprimer uniquement les CircleMarkers d'emplacements
   map.eachLayer((layer) => {
     if (layer instanceof L.CircleMarker) {
       map.removeLayer(layer)
     }
   })
 
-  // Ajouter les marqueurs pour chaque emplacement disponible
-  emplacementsDisponibles.value.forEach(coords => {
+  // MODIFICATION: Ajouter les marqueurs pour chaque emplacement
+  emplacements.value.forEach(emplacement => {
+    const coords = emplacement.coordonnees
     const parsed = parseCoords(coords)
     if (!parsed) return
 
-    const isOccupied = emplacementsOccupes.value.includes(coords)
-    const isCurrent = coords === emplacementActuel.value
+    const isCurrent = emplacementActuel.value && coords === emplacementActuel.value.coordonnees
+    const isPending = demandePendante.value && coords === demandePendante.value.coordonnees
+    const isOccupied = emplacement.statut === 'pris' || emplacement.statut === 'en_attente'
 
     let color = '#4caf50' // Vert - disponible
     let radius = 8
     let label = 'Disponible'
 
     if (isCurrent) {
-      color = '#FCDC1E' // Jaune - actuel
+      color = '#FCDC1E' // Jaune - actuel validé
       radius = 12
-      label = 'Votre emplacement'
+      label = 'Votre emplacement validé'
+    } else if (isPending) {
+      color = '#ff9800' // Orange - demande en attente
+      radius = 10
+      label = 'Votre demande en attente'
     } else if (isOccupied) {
       color = '#f44336' // Rouge - occupé
-      label = 'Occupé'
+      label = `Occupé${emplacement.prestataireNom ? ` par ${emplacement.prestataireNom}` : ''}`
     }
 
     const marker = L.circleMarker([parsed.lat, parsed.lng], {
@@ -328,66 +422,45 @@ const updateMapMarkers = () => {
       color: '#fff',
       weight: 2,
       opacity: 1,
-      fillOpacity: isCurrent ? 1 : 0.8
+      fillOpacity: isCurrent || isPending ? 1 : 0.8
     }).addTo(map)
 
-    // Créer le contenu du popup avec bouton
+    // Créer le contenu du popup
     let popupContent = `
       <div style="text-align: center; font-family: Arial, sans-serif; padding: 8px;">
         <strong style="color: ${color}; font-size: 14px;">${label}</strong>
+        <br><small style="color: #666;">Emplacement #${emplacement.id}</small>
     `
 
     if (isCurrent) {
-      // Pour l'emplacement actuel : bouton pour libérer
       popupContent += `
         <br><br>
         <button
           onclick="window.libererEmplacementFromMap()"
-          style="
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-          "
-          onmouseover="this.style.background='#d32f2f'"
-          onmouseout="this.style.background='#f44336'"
+          style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;"
         >
           🗑️ Libérer
         </button>
       `
-    } else if (!isOccupied) {
-      // Pour les emplacements disponibles : bouton pour sélectionner
+    } else if (isPending) {
       popupContent += `
         <br><br>
         <button
-          onclick="window.choisirEmplacementFromMap('${coords}')"
-          style="
-            background: #4caf50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-          "
-          onmouseover="this.style.background='#45a049'"
-          onmouseout="this.style.background='#4caf50'"
+          onclick="window.annulerDemandeFromMap()"
+          style="background: #ff9800; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;"
         >
-          ✓ Sélectionner
+          ❌ Annuler la demande
         </button>
       `
-    } else {
-      // Pour les emplacements occupés : juste un message
+    } else if (emplacement.statut === 'libre') {
       popupContent += `
-        <br>
-        <small style="color: #999;">Cet emplacement est déjà pris</small>
+        <br><br>
+        <button
+          onclick="window.demanderEmplacementFromMap('${coords}')"
+          style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;"
+        >
+          📨 Demander cet emplacement
+        </button>
       `
     }
 
@@ -395,17 +468,20 @@ const updateMapMarkers = () => {
 
     marker.bindPopup(popupContent)
 
-    if (isCurrent) {
-      // Animation pour l'emplacement actuel
+    if (isCurrent || isPending) {
       setInterval(() => {
-        marker.setRadius(marker.getRadius() === 12 ? 14 : 12)
+        marker.setRadius(marker.getRadius() === radius ? radius + 2 : radius)
       }, 1000)
     }
   })
 
-  // Exposer les fonctions pour les appels depuis les boutons du popup
-  window.choisirEmplacementFromMap = (coords) => {
-    choisirEmplacement(coords)
+  // Exposer les fonctions
+  window.demanderEmplacementFromMap = (coords) => {
+    demanderEmplacement(coords)
+  }
+
+  window.annulerDemandeFromMap = () => {
+    annulerDemande()
   }
 
   window.libererEmplacementFromMap = () => {
@@ -591,79 +667,20 @@ const initZones = () => {
   })
 }
 
-const choisirEmplacement = (coords) => {
-  if (!prestataireNom.value) return
+// MODIFICATION: Fonction globale pour sélectionner un emplacement depuis le popup
+if (typeof window !== 'undefined') {
+  window.demanderEmplacementFromMap = (coords) => {
+    demanderEmplacement(coords)
+  }
 
-  try {
-    const raw = localStorage.getItem('prestataireEmplacements')
-    const emplacements = raw ? JSON.parse(raw) : {}
+  window.annulerDemandeFromMap = () => {
+    annulerDemande()
+  }
 
-    // Si le prestataire avait déjà un emplacement, le libérer
-    if (emplacementActuel.value) {
-      // L'ancien emplacement devient libre automatiquement
-    }
-
-    // Assigner le nouvel emplacement
-    emplacements[prestataireNom.value] = coords
-    localStorage.setItem('prestataireEmplacements', JSON.stringify(emplacements))
-    emplacementActuel.value = coords
-
-    // Déclencher un événement pour mettre à jour la carte
-    window.dispatchEvent(new Event('emplacement-updated'))
-
-    // Forcer la mise à jour en utilisant nextTick pour s'assurer que les computed sont recalculés
-    nextTick(() => {
-      updateMapMarkers()
-    })
-  } catch (e) {
-    console.error('Erreur lors de la sélection de l\'emplacement', e)
-    alert('Erreur lors de la sélection de l\'emplacement')
+  window.libererEmplacementFromMap = () => {
+    libererEmplacement()
   }
 }
-
-const libererEmplacement = () => {
-  if (!prestataireNom.value || !emplacementActuel.value) return
-
-  if (!confirm('Êtes-vous sûr de vouloir libérer votre emplacement actuel ?')) return
-
-  try {
-    const raw = localStorage.getItem('prestataireEmplacements')
-    const emplacements = raw ? JSON.parse(raw) : {}
-
-    delete emplacements[prestataireNom.value]
-    localStorage.setItem('prestataireEmplacements', JSON.stringify(emplacements))
-    emplacementActuel.value = ''
-
-    // Déclencher un événement pour mettre à jour la carte
-    window.dispatchEvent(new Event('emplacement-updated'))
-
-    // Forcer la mise à jour en utilisant nextTick pour s'assurer que les computed sont recalculés
-    nextTick(() => {
-      updateMapMarkers()
-    })
-  } catch (e) {
-    console.error('Erreur lors de la libération de l\'emplacement', e)
-    alert('Erreur lors de la libération de l\'emplacement')
-  }
-}
-
-// =======================
-// NOUVEAU: stats de ventes
-// =======================
-const statsNotes = ref({
-  moyenne: 0,
-  nbAvis: 0,
-  parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-  derniersAvis: []
-})
-
-// Watch pour initialiser la carte quand on sélectionne la section emplacement
-watch(selectedSection, async (newVal) => {
-  if (newVal === 'emplacement') {
-    await nextTick()
-    initMap()
-  }
-})
 
 const loadStatsNotes = () => {
   if (!prestataireNom.value) return
@@ -715,11 +732,19 @@ onMounted(() => {
 
   loadPrestataireInfo()
   loadStatsNotes()
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'prestataireAvis') {
-      loadStatsNotes()
-    }
-  })
+
+  // AJOUT: Écouter les mises à jour
+  window.addEventListener('emplacements-updated', loadPrestataireInfo)
+  window.addEventListener('demandes-updated', loadPrestataireInfo)
+})
+
+// AJOUT: Watch pour initialiser la carte quand la section change
+watch(selectedSection, (newVal) => {
+  if (newVal === 'emplacement') {
+    nextTick(() => {
+      initMap()
+    })
+  }
 })
 </script>
 
@@ -863,30 +888,47 @@ onMounted(() => {
           <div v-if="selectedSection === 'emplacement'" class="section-content">
             <div class="section-header">
               <h2>📍 Emplacement sur la carte</h2>
-              <p class="section-description">Cliquez sur un marqueur vert pour sélectionner votre emplacement sur la carte du festival.</p>
+              <p class="section-description">Demandez un emplacement sur la carte du festival. L'administrateur validera votre demande.</p>
+            </div>
+
+            <!-- AJOUT: Demande en attente -->
+            <div v-if="demandePendante" class="demande-pendante-card">
+              <div class="demande-header">
+                <div class="demande-icon">⏳</div>
+                <div class="demande-content">
+                  <h3>Demande en attente de validation</h3>
+                  <p class="demande-coords">📌 Emplacement demandé : {{ demandePendante.coordonnees }}</p>
+                  <p class="demande-date">📅 Demandé le {{ new Date(demandePendante.dateDemande).toLocaleString('fr-FR') }}</p>
+                </div>
+              </div>
+              <button class="btn btn-danger" @click="annulerDemande">
+                ❌ Annuler la demande
+              </button>
             </div>
 
             <!-- Emplacement actuel -->
             <div v-if="emplacementActuel" class="emplacement-actuel">
-              <h3>✅ Votre emplacement actuel</h3>
+              <h3>✅ Votre emplacement validé</h3>
               <div class="emplacement-info">
-                <span class="emplacement-coords">📌 {{ emplacementActuel }}</span>
+                <span class="emplacement-coords">📌 {{ emplacementActuel.coordonnees }}</span>
+                <span class="emplacement-date">📅 Attribué le {{ new Date(emplacementActuel.dateAttribution).toLocaleString('fr-FR') }}</span>
                 <button class="btn btn-danger" @click="libererEmplacement">
                   🗑️ Libérer cet emplacement
                 </button>
               </div>
             </div>
 
-            <div v-else class="emplacement-vide">
-              <p>❌ Vous n'avez pas encore choisi d'emplacement.</p>
-              <p class="empty-hint">Cliquez sur un marqueur vert ci-dessous et utilisez le bouton "Sélectionner".</p>
+            <!-- Message si pas d'emplacement -->
+            <div v-if="!emplacementActuel && !demandePendante" class="emplacement-vide">
+              <p>❌ Vous n'avez pas encore d'emplacement validé.</p>
+              <p class="empty-hint">Sélectionnez un emplacement disponible (vert) sur la carte pour faire une demande.</p>
             </div>
 
             <!-- Carte interactive -->
             <div class="carte-container">
               <div ref="mapContainer" class="carte-map" id="prestataire-map"></div>
 
-              <!-- Légende -->
+              <!-- Légende mise à jour -->
               <div class="carte-legende">
                 <div class="legende-item">
                   <div class="legende-marker disponible"></div>
@@ -894,7 +936,11 @@ onMounted(() => {
                 </div>
                 <div class="legende-item">
                   <div class="legende-marker actuel"></div>
-                  <span>Votre emplacement</span>
+                  <span>Votre emplacement validé</span>
+                </div>
+                <div class="legende-item">
+                  <div class="legende-marker pending"></div>
+                  <span>Votre demande en attente</span>
                 </div>
                 <div class="legende-item">
                   <div class="legende-marker occupe"></div>
@@ -903,10 +949,41 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- Liste des emplacements disponibles -->
+            <div class="emplacements-section">
+              <h3>Emplacements disponibles ({{ emplacementsLibres.length }})</h3>
+
+              <div v-if="emplacementsLibres.length > 0" class="emplacements-grid">
+                <div
+                  v-for="emplacement in emplacementsLibres"
+                  :key="emplacement.id"
+                  class="emplacement-card"
+                >
+                  <div class="emplacement-card-header">
+                    <span class="emplacement-icon">📍</span>
+                    <span class="emplacement-label">Emplacement #{{ emplacement.id }}</span>
+                  </div>
+                  <div class="emplacement-coords-display">{{ emplacement.coordonnees }}</div>
+                  <button
+                    class="btn btn-primary btn-block"
+                    @click="demanderEmplacement(emplacement.coordonnees)"
+                  >
+                    ➕ Demander cet emplacement
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="empty-state">
+                <p>📭 Tous les emplacements sont actuellement occupés.</p>
+                <p class="empty-hint">Veuillez réessayer plus tard ou contacter l'administration.</p>
+              </div>
+            </div>
+
             <!-- Note d'information -->
             <div class="info-box">
               <strong>ℹ️ Information :</strong>
-              <p>Cliquez sur un marqueur vert pour voir le bouton "Sélectionner". Une fois votre emplacement choisi, il apparaîtra en jaune sur la carte et sera visible sur la carte publique du festival. Pour changer d'emplacement, libérez d'abord votre emplacement actuel puis sélectionnez-en un autre.</p>
+              <p>Lorsque vous demandez un emplacement, l'administrateur recevra votre demande et pourra l'accepter ou la refuser.</p>
+              <p><strong>⚠️ Mode démo :</strong> Les modifications doivent être faites manuellement dans le fichier <code>/public/data/site.json</code></p>
             </div>
           </div>
 
@@ -1735,6 +1812,10 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   background: #FCDC1E;
 }
 
+.legende-marker.pending {
+  background: #ff9800;
+}
+
 .legende-marker.occupe {
   background: #f44336;
 }
@@ -1757,6 +1838,21 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   margin: 0;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
+}
+
+.emplacement-date {
+  display: block;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
 }
 
 /* responsive */
@@ -1902,4 +1998,61 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   margin: 0 0 16px 0;
   font-weight: 700;
 }
+
+/* AJOUT: Styles pour la demande pendante */
+.demande-pendante-card {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.08) 100%);
+  border: 2px solid #ff9800;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  animation: pulse-demande 2s infinite;
+}
+
+@keyframes pulse-demande {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(255, 152, 0, 0.5);
+  }
+}
+
+.demande-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.demande-icon {
+  font-size: 3rem;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 152, 0, 0.2);
+  border-radius: 50%;
+  border: 3px solid #ff9800;
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.demande-content h3 {
+  color: #ff9800;
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+}
+
+.demande-coords, .demande-date {
+  margin: 4px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+}
 </style>
+
