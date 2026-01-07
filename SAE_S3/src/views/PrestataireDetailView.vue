@@ -33,6 +33,22 @@
 
       <!-- Contenu principal -->
       <div class="detail-content">
+        <!-- Section Réservation Terrain de Basket (uniquement pour ce prestataire) -->
+        <section v-if="isBasketPrestataire" class="detail-section reservation-highlight-section">
+          <div class="reservation-highlight">
+            <div class="reservation-highlight-content">
+              <div class="reservation-highlight-icon">🏀</div>
+              <div class="reservation-highlight-text">
+                <h2>Réservez votre créneau</h2>
+                <p>Profitez de notre terrain de basket pendant le festival du <strong>28 au 30 août 2026</strong> ! Réservez un créneau d'une heure pour vous et vos amis (2 à 10 joueurs).</p>
+              </div>
+            </div>
+            <router-link to="/reservation-basket" class="btn-reserve-large">
+              <span>🎫</span> Réserver maintenant
+            </router-link>
+          </div>
+        </section>
+
         <!-- Description WYSIWYG -->
         <section v-if="prestataire.description" class="detail-section">
           <h2 class="section-title">Présentation</h2>
@@ -92,9 +108,7 @@
           </router-link>
         </section>
 
-        <!-- ========================= -->
-        <!-- SECTION : AVIS (lecture seule) -->
-        <!-- ========================= -->
+       
         <section class="detail-section">
           <h2 class="section-title">Avis et notes</h2>
 
@@ -363,6 +377,15 @@ onBeforeUnmount(() => {
 const publicServices = computed(() => {
   if (!prestataire.value?.services) return []
   return prestataire.value.services.filter(s => s.actif !== false)
+})
+
+// Vérifier si c'est le prestataire "Terrain de basket"
+const isBasketPrestataire = computed(() => {
+  if (!prestataire.value) return false
+  const nom = prestataire.value.nom?.toLowerCase() || ''
+  return nom.includes('terrain de basket') ||
+         nom.includes('basket') ||
+         nom === 'terrain de basket'
 })
 </script>
 
@@ -897,6 +920,98 @@ const publicServices = computed(() => {
   color: #FCDC1E;
 }
 
+/* Section de réservation mise en avant */
+.reservation-highlight-section {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.18) 0%, rgba(252, 220, 30, 0.08) 100%) !important;
+  border: 2px solid rgba(252, 220, 30, 0.45) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.reservation-highlight-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(252, 220, 30, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.reservation-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.reservation-highlight-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.reservation-highlight-icon {
+  font-size: 3.5rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.reservation-highlight-text h2 {
+  color: #FCDC1E;
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.reservation-highlight-text p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.reservation-highlight-text strong {
+  color: #FCDC1E;
+  font-weight: 800;
+}
+
+.btn-reserve-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 36px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 900;
+  font-size: 1.15rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(252, 220, 30, 0.4);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-reserve-large:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(252, 220, 30, 0.55);
+}
+
+.btn-reserve-large span {
+  font-size: 1.3rem;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .prestataire-main-info {
     flex-direction: column;
@@ -914,6 +1029,32 @@ const publicServices = computed(() => {
 
   .detail-section {
     padding: 20px;
+  }
+
+  /* Responsive Reservation Highlight */
+  .reservation-highlight {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .reservation-highlight-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .reservation-highlight-icon {
+    font-size: 3rem;
+  }
+
+  .reservation-highlight-text h2 {
+    font-size: 1.4rem;
+  }
+
+  .btn-reserve-large {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 28px;
+    font-size: 1.05rem;
   }
 }
 </style>

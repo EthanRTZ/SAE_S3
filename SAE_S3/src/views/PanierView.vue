@@ -25,7 +25,7 @@
         <div v-else class="panier-content">
           <div class="panier-summary">
             <p class="summary-text">
-              <strong>{{ panierStore.totalQuantity }}</strong> place(s) dans votre panier
+              <strong>{{ panierStore.totalQuantity }}</strong> article(s) dans votre panier
             </p>
           </div>
 
@@ -34,7 +34,10 @@
               <div class="item-details">
                 <h3 class="item-title">{{ item.displayLabel || formatItemTitle(item) }}</h3>
                 <p v-if="item.optionLabel" class="item-option">{{ item.optionLabel }}</p>
-                <p class="item-quantity">Quantité : {{ item.quantity }}</p>
+                <p v-if="item.type === 'basket'" class="item-basket-info">
+                  📅 {{ formatBasketDate(item.date) }} • ⏰ {{ item.slot }} - {{ item.endTime }} • 👥 {{ item.nbPlayers }} joueurs
+                </p>
+                <p v-else class="item-quantity">Quantité : {{ item.quantity }}</p>
               </div>
               <button
                 type="button"
@@ -111,6 +114,8 @@ const formatItemTitle = (item) => {
       return 'Place de parking'
     case 'camping':
       return 'Emplacement de camping'
+    case 'basket':
+      return '🏀 Terrain de Basket'
     default:
       return 'Article'
   }
@@ -132,6 +137,20 @@ const proceedToPayment = () => {
     return
   }
   router.push('/payment')
+}
+
+const formatBasketDate = (dateStr) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    })
+  } catch {
+    return dateStr
+  }
 }
 
 onMounted(() => {
@@ -379,5 +398,15 @@ h1 {
   .panier-item {
     flex-direction: column;
   }
+}
+
+.item-basket-info {
+  margin: 8px 0 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  background: rgba(252, 220, 30, 0.1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(252, 220, 30, 0.25);
 }
 </style>

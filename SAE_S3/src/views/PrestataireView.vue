@@ -74,8 +74,8 @@
               <li v-for="s in (p.services || []).filter(s => s.public !== false)" :key="s.nom">
                 <div class="service-item">
                   <div class="service-info">
-                <span class="service-name">{{ s.nom }}</span>
-                <span v-if="s.description" class="service-desc">— {{ s.description }}</span>
+                    <span class="service-name">{{ s.nom }}</span>
+                    <span v-if="s.description" class="service-desc">— {{ s.description }}</span>
                   </div>
                   <span class="service-price" :class="{ 'price-free': (s.prix || 0) === 0 }">
                     {{ formatServicePrix(s.prix) }}
@@ -83,6 +83,13 @@
                 </div>
               </li>
             </ul>
+          </div>
+
+          <!-- Bouton de réservation pour le prestataire Terrain de basket -->
+          <div v-if="isBasketPrestataire(p)" class="reservation-cta" @click.stop.prevent>
+            <router-link to="/reservation-basket" class="btn-reserve">
+              🏀 Réserver un créneau
+            </router-link>
           </div>
 
           <div class="contacts" @click.stop>
@@ -205,7 +212,13 @@ export default {
       } finally {
         this.loading = false;
       }
-    }
+    },
+    isBasketPrestataire(prestataire) {
+      const nom = prestataire.nom?.toLowerCase() || ''
+      return nom.includes('terrain de basket') ||
+             nom.includes('basket') ||
+             nom === 'terrain de basket'
+    },
   }
 }
 </script>
@@ -560,5 +573,34 @@ export default {
   background: #FCDC1E;
   border-color: #FCDC1E;
   box-shadow: 0 8px 16px rgba(252, 220, 30, 0.35);
+}
+
+/* Bouton de réservation */
+.reservation-cta {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.btn-reserve {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #fcdc1e 0%, #ffe676 100%);
+  color: #0a0a0a;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-reserve:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(252, 220, 30, 0.4);
 }
 </style>

@@ -37,12 +37,15 @@
                   v-model="selectedReservationIds"
                 />
                 <div class="reservation-main">
-                  <span class="reservation-title">
-                    {{ formatReservationTitle(resa) }}
-                  </span>
-                  <span class="reservation-meta">
-                    {{ formatReservationMeta(resa) }}
-                  </span>
+                  <span class="reservation-icon">{{ getReservationIcon(resa) }}</span>
+                  <div class="reservation-info">
+                    <span class="reservation-title">
+                      {{ formatReservationTitle(resa) }}
+                    </span>
+                    <span class="reservation-meta">
+                      {{ formatReservationMeta(resa) }}
+                    </span>
+                  </div>
                 </div>
               </label>
             </li>
@@ -119,6 +122,23 @@ const loadReservations = () => {
   }
 }
 
+const getReservationIcon = (resa) => {
+  switch (resa.type) {
+    case 'basket':
+      return '🏀'
+    case 'parking':
+      return '🚗'
+    case 'camping':
+      return '⛺'
+    case 'oneDay':
+    case 'twoDays':
+    case 'threeDays':
+      return '🎫'
+    default:
+      return '📋'
+  }
+}
+
 const formatReservationTitle = (resa) => {
   if (resa.displayLabel) return resa.displayLabel
   switch (resa.type) {
@@ -132,6 +152,8 @@ const formatReservationTitle = (resa) => {
       return 'Place de parking'
     case 'camping':
       return 'Emplacement de camping'
+    case 'basket':
+      return 'Terrain de Basket'
     default:
       return 'Réservation'
   }
@@ -139,23 +161,50 @@ const formatReservationTitle = (resa) => {
 
 const formatReservationMeta = (resa) => {
   const parts = []
-  if (resa.optionLabel) {
-    parts.push(resa.optionLabel)
-  }
-  if (resa.quantity) {
-    parts.push(`${resa.quantity} place${resa.quantity > 1 ? 's' : ''}`)
-  }
-  if (resa.personalInfo) {
-    const fullName = `${resa.personalInfo.firstName || ''} ${resa.personalInfo.lastName || ''}`.trim()
-    if (fullName) {
-      parts.push(fullName)
+
+  // Pour les réservations de basket
+  if (resa.type === 'basket') {
+    if (resa.date) {
+      try {
+        const date = new Date(resa.date)
+        parts.push(date.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long'
+        }))
+      } catch (e) {
+        parts.push(resa.date)
+      }
+    }
+    if (resa.slot && resa.endTime) {
+      parts.push(`${resa.slot} - ${resa.endTime}`)
+    } else if (resa.slot) {
+      parts.push(resa.slot)
+    }
+    if (resa.nbPlayers) {
+      parts.push(`${resa.nbPlayers} joueurs`)
+    }
+  } else {
+    // Pour les autres types de réservation
+    if (resa.optionLabel) {
+      parts.push(resa.optionLabel)
+    }
+    if (resa.quantity) {
+      parts.push(`${resa.quantity} place${resa.quantity > 1 ? 's' : ''}`)
+    }
+    if (resa.personalInfo) {
+      const fullName = `${resa.personalInfo.firstName || ''} ${resa.personalInfo.lastName || ''}`.trim()
+      if (fullName) {
+        parts.push(fullName)
+      }
     }
   }
+
   if (resa.createdAt) {
     try {
       const date = new Date(resa.createdAt)
       parts.push(
-        `Acheté le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
+        `Réservé le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
           'fr-FR',
           {
             hour: '2-digit',
@@ -295,7 +344,19 @@ h1 {
   margin-top: 4px;
 }
 
+.reservation-icon {
+  font-size: 1.5rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
 .reservation-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.reservation-info {
   display: flex;
   flex-direction: column;
   gap: 4px;

@@ -88,6 +88,25 @@ export const usePanierStore = defineStore('panier', () => {
 
   // Vider le panier après paiement (sans restaurer le stock)
   const clearPanierAfterPayment = () => {
+    // Sauvegarder les réservations de basket avant de vider
+    const basketItems = items.value.filter(item => item.type === 'basket')
+    if (basketItems.length > 0) {
+      try {
+        const existingRaw = localStorage.getItem('basketReservations')
+        const existing = existingRaw ? JSON.parse(existingRaw) : []
+        const newReservations = basketItems.map(item => ({
+          date: item.date,
+          slot: item.slot,
+          endTime: item.endTime,
+          nbPlayers: item.nbPlayers,
+          reservedAt: new Date().toISOString()
+        }))
+        localStorage.setItem('basketReservations', JSON.stringify([...existing, ...newReservations]))
+      } catch (e) {
+        console.error('Erreur sauvegarde réservations basket:', e)
+      }
+    }
+
     // Ne pas émettre d'événements - les places restent réservées
     items.value = []
     savePanier()
