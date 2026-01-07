@@ -668,6 +668,7 @@ export default {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
+  margin: 0;
 }
 
 .btn-primary {
