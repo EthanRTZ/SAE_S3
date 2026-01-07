@@ -1,7 +1,7 @@
 <template>
   <div class="programmation">
     <div class="container">
-      <h1 class="title">Programmation</h1>
+      <h1 class="title">{{ $t('programmation.title') }}</h1>
 
       <!-- Sélecteur de jours -->
       <div class="days-selector">
@@ -17,7 +17,7 @@
 
       <!-- Grille: colonne heures + colonnes par scène -->
       <div v-if="loading" class="loading-message">
-        Chargement de la programmation...
+        {{ $t('programmation.loading') }}
       </div>
       <div v-else class="schedule-container">
         <!-- Colonne des heures à gauche -->
@@ -81,23 +81,24 @@
       </div>
 
       <div class="notes">
-        OUVERTURE DES PORTES — {{ openingTime }} • FERMETURE — {{ closingTime }}
+        {{ $t('programmation.opening') }} — {{ openingTime }} • {{ $t('programmation.closing') }} — {{ closingTime }}
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { useI18n } from 'vue-i18n'
+
 export default {
   name: 'ProgrammationView',
+  setup() {
+    const { t } = useI18n()
+    return { t }
+  },
   data() {
     return {
       selectedDay: 0,
-      days: [
-        { label: 'Vendredi 15', date: '15/06', opening: '15:00', closing: '03:00' },
-        { label: 'Samedi 16', date: '16/06', opening: '13:00', closing: '03:00' },
-        { label: 'Dimanche 17', date: '17/06', opening: '13:00', closing: '00:00' },
-      ],
       // Données chargées depuis le JSON
       stages: [],
       schedules: [],
@@ -105,6 +106,13 @@ export default {
     }
   },
   computed: {
+    days() {
+      return [
+        { label: this.$t('programmation.days.friday'), date: '15/06', opening: '15:00', closing: '03:00' },
+        { label: this.$t('programmation.days.saturday'), date: '16/06', opening: '13:00', closing: '03:00' },
+        { label: this.$t('programmation.days.sunday'), date: '17/06', opening: '13:00', closing: '00:00' },
+      ]
+    },
     currentSchedule() {
       return this.schedules[this.selectedDay] || {};
     },

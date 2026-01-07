@@ -1,12 +1,12 @@
 <template>
   <div class="login-page">
     <div class="login-card">
-      <h2>Connexion</h2>
-      <p class="subtitle">Accédez à votre espace</p>
+      <h2>{{ $t('login.title') }}</h2>
+      <p class="subtitle">{{ $t('login.subtitle') }}</p>
       <form @submit.prevent="onSubmit">
         <!-- Champ Email avec icône -->
         <div class="input-group">
-          <label for="email">Email</label>
+          <label for="email">{{ $t('login.email') }}</label>
           <span class="input-icon" aria-hidden="true">
             <!-- mail icon -->
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -19,7 +19,7 @@
 
         <!-- Champ Password avec icône + toggle visibilité -->
         <div class="input-group">
-          <label for="password">Mot de passe</label>
+          <label for="password">{{ $t('login.password') }}</label>
           <span class="input-icon" aria-hidden="true">
             <!-- lock icon -->
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -39,7 +39,7 @@
             class="toggle-pwd"
             @click="showPwd = !showPwd"
             :aria-pressed="showPwd"
-            :title="showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            :title="showPwd ? $t('login.hidePassword') : $t('login.showPassword')"
           >
             <svg v-if="!showPwd" width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/>
@@ -55,14 +55,14 @@
 
         <div class="actions">
           <button type="submit" class="btn-primary" :disabled="loading">
-            {{ loading ? 'Connexion...' : 'Se connecter' }}
+            {{ loading ? $t('login.connecting') : $t('login.connect') }}
           </button>
-          <router-link to="/" class="btn-secondary">Retour</router-link>
+          <router-link to="/" class="btn-secondary">{{ $t('login.back') }}</router-link>
         </div>
 
         <p class="helper">
-          Pas encore de compte ?
-          <router-link to="/register" class="link-inline">Créer un compte</router-link>
+          {{ $t('login.noAccount') }}
+          <router-link to="/register" class="link-inline">{{ $t('login.createAccount') }}</router-link>
         </p>
 
         <p v-if="error" class="error">{{ error }}</p>
@@ -74,7 +74,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -128,7 +130,7 @@ onMounted(() => {
 const onSubmit = async () => {
   error.value = ''
   if (!email.value || !password.value) {
-    error.value = 'Veuillez remplir tous les champs.'
+    error.value = t('login.fillFields')
     return
   }
   loading.value = true
@@ -145,7 +147,7 @@ const onSubmit = async () => {
     )
 
     if (!user) {
-      error.value = 'Identifiants invalides.'
+      error.value = t('login.invalidCredentials')
       return
     }
 
@@ -160,7 +162,7 @@ const onSubmit = async () => {
       router.push({ path: '/' })
     }
   } catch (e) {
-    error.value = "Impossible d'accéder au fichier JSON."
+    error.value = t('login.accessError')
   } finally {
     loading.value = false
   }

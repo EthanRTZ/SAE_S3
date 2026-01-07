@@ -1,18 +1,18 @@
 <template>
   <div class="my-reservations-page">
     <div class="my-reservations-card">
-      <h1>Mes réservations</h1>
+      <h1>{{ $t('mesReservations.title') }}</h1>
       <p class="subtitle">
-        Retrouvez toutes vos réservations effectuées avec ce compte et supprimez celles que vous ne souhaitez plus conserver.
+        {{ $t('mesReservations.subtitle') }}
       </p>
 
       <p v-if="!currentUserEmail" class="info">
-        Vous devez être connecté pour voir vos réservations.
+        {{ $t('mesReservations.mustLogin') }}
       </p>
 
       <template v-else>
         <p v-if="reservationsLoading" class="info">
-          Chargement de vos réservations...
+          {{ $t('mesReservations.loading') }}
         </p>
         <p v-if="reservationsError" class="error">{{ reservationsError }}</p>
 
@@ -20,7 +20,7 @@
           v-if="!reservationsLoading && reservations.length === 0 && !reservationsError"
           class="empty-reservations"
         >
-          <p>Vous n'avez pas encore de réservation enregistrée avec ce compte.</p>
+          <p>{{ $t('mesReservations.noReservations') }}</p>
         </div>
 
         <div v-else-if="!reservationsLoading && reservations.length > 0">
@@ -58,15 +58,15 @@
             @click="onDeleteSelectedReservations"
           >
             {{ deletingReservations
-              ? 'Suppression...'
-              : 'Supprimer les réservations sélectionnées' }}
+              ? $t('mesReservations.deleting')
+              : $t('mesReservations.delete') }}
           </button>
         </div>
       </template>
 
       <div class="actions">
         <router-link to="/reservation" class="btn-secondary">
-          Retour à la billetterie
+          {{ $t('mesReservations.backToBooking') }}
         </router-link>
       </div>
     </div>
@@ -76,7 +76,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const RESERVATIONS_KEY = 'userReservations'
 
@@ -116,7 +118,7 @@ const loadReservations = () => {
     )
   } catch (e) {
     reservations.value = []
-    reservationsError.value = 'Impossible de charger vos réservations.'
+      reservationsError.value = t('mesReservations.loadError')
   } finally {
     reservationsLoading.value = false
   }
@@ -143,19 +145,19 @@ const formatReservationTitle = (resa) => {
   if (resa.displayLabel) return resa.displayLabel
   switch (resa.type) {
     case 'oneDay':
-      return 'Forfait 1 jour'
+      return t('mesReservations.package1Day')
     case 'twoDays':
-      return 'Forfait 2 jours'
+      return t('mesReservations.package2Days')
     case 'threeDays':
-      return 'Forfait 3 jours'
+      return t('mesReservations.package3Days')
     case 'parking':
-      return 'Place de parking'
+      return t('mesReservations.parking')
     case 'camping':
-      return 'Emplacement de camping'
+      return t('mesReservations.camping')
     case 'basket':
-      return 'Terrain de Basket'
+      return t('mesReservations.basket')
     default:
-      return 'Réservation'
+      return t('mesReservations.reservation')
   }
 }
 
@@ -182,7 +184,7 @@ const formatReservationMeta = (resa) => {
       parts.push(resa.slot)
     }
     if (resa.nbPlayers) {
-      parts.push(`${resa.nbPlayers} joueurs`)
+      parts.push(`${resa.nbPlayers} ${t('mesReservations.players')}`)
     }
   } else {
     // Pour les autres types de réservation
@@ -190,7 +192,7 @@ const formatReservationMeta = (resa) => {
       parts.push(resa.optionLabel)
     }
     if (resa.quantity) {
-      parts.push(`${resa.quantity} place${resa.quantity > 1 ? 's' : ''}`)
+      parts.push(`${resa.quantity} ${t('mesReservations.places')}`)
     }
     if (resa.personalInfo) {
       const fullName = `${resa.personalInfo.firstName || ''} ${resa.personalInfo.lastName || ''}`.trim()
@@ -204,7 +206,7 @@ const formatReservationMeta = (resa) => {
     try {
       const date = new Date(resa.createdAt)
       parts.push(
-        `Réservé le ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
+        `${t('mesReservations.reservedOn')} ${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString(
           'fr-FR',
           {
             hour: '2-digit',
@@ -245,8 +247,7 @@ const onDeleteSelectedReservations = () => {
     )
     selectedReservationIds.value = []
   } catch (e) {
-    reservationsError.value =
-      'Impossible de supprimer les réservations sélectionnées.'
+    reservationsError.value = t('mesReservations.deleteError')
   } finally {
     deletingReservations.value = false
   }

@@ -2,15 +2,15 @@
   <div class="carte" :class="{ embedded }">
     <div class="side-panel" :class="{ collapsed: panelCollapsed }">
       <div v-show="!panelCollapsed" class="panel-content">
-        <h1>Carte</h1>
+        <h1>{{ $t('carte.title') }}</h1>
         <div class="map-toolbar">
-          <span>Types prestataires:</span>
+          <span>{{ $t('carte.providerTypes') }}</span>
           <div class="types-filter">
             <label v-for="(val, type) in visibleTypes" :key="type" class="type-label">
               <input type="checkbox" v-model="visibleTypes[type]" /> {{ type }}
             </label>
           </div>
-          <span style="margin-top:12px;">Types zones:</span>
+          <span style="margin-top:12px;">{{ $t('carte.zoneTypes') }}</span>
           <div class="types-filter">
             <label v-for="(val, zt) in visibleZoneTypes" :key="'zone-'+zt" class="type-label">
               <input type="checkbox" v-model="visibleZoneTypes[zt]" /> {{ zt }}
@@ -18,8 +18,8 @@
           </div>
           <!-- Nouveau bloc actions groupées -->
           <div class="bulk-actions">
-            <button @click="selectAll">Tout cocher</button>
-            <button @click="deselectAll">Tout décocher</button>
+            <button @click="selectAll">{{ $t('carte.selectAll') }}</button>
+            <button @click="deselectAll">{{ $t('carte.deselectAll') }}</button>
           </div>
         </div>
       </div>
@@ -28,7 +28,7 @@
       v-if="showToggleButton"
       class="toggle-panel-btn"
       @click="togglePanel"
-      :aria-label="panelCollapsed ? 'Ouvrir filtres' : 'Fermer filtres'">
+      :aria-label="panelCollapsed ? $t('carte.openFilters') : $t('carte.closeFilters')">
       {{ panelCollapsed ? '❯' : '❮' }}
     </button>
     <div ref="mapContainer" id="map"></div>
@@ -419,7 +419,7 @@ export default {
         const html = `
           <div class="popup-emplacement">
             <h3 style="color: ${color};">${label}</h3>
-            <p>Emplacement #${emplacement.id}</p>
+            <p>Location #${emplacement.id}</p>
             <p class="coordinates">${coords}</p>
             ${emplacement.statut !== 'libre' ? `<p class="status-badge status-${emplacement.statut}">${emplacement.statut === 'pris' ? 'Attribué' : 'Demande en cours'}</p>` : ''}
           </div>
@@ -428,7 +428,7 @@ export default {
         marker.bindPopup(html);
 
         const tooltipText = emplacement.statut === 'libre'
-          ? 'Emplacement disponible'
+          ? this.$t('carte.availableLocation')
           : `${emplacement.prestataireNom} - ${label}`;
 
         marker.bindTooltip(tooltipText, {
@@ -461,9 +461,9 @@ export default {
         const html = `
           <div class="popup-activite">
             <h3>${a.nom}</h3>
-            <p><strong>Type:</strong> ${a.type}</p>
+            <p><strong>${this.$t('carte.type')}</strong> ${a.type}</p>
             ${a.description ? `<p>${a.description}</p>` : ''}
-            <a href="/prestataire/${prestataireNom}" class="popup-link">Voir les détails →</a>
+            <a href="/prestataire/${prestataireNom}" class="popup-link">${this.$t('carte.seeDetails')}</a>
           </div>
         `;
         layer._pinType = a.type;

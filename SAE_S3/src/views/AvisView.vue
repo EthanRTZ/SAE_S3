@@ -7,8 +7,8 @@
       </video>
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title">VOTRE AVIS COMPTE</h1>
-        <p class="hero-subtitle">Partagez votre expérience du Golden Coast Festival</p>
+        <h1 class="hero-title">{{ $t('avis.title') }}</h1>
+        <p class="hero-subtitle">{{ $t('avis.subtitle') }}</p>
       </div>
     </div>
 
@@ -16,22 +16,22 @@
     <section class="form-section">
       <div class="form-container">
         <div class="form-header">
-          <h2>Laisser un avis</h2>
-          <p>Vous avez participé au festival ? Partagez votre expérience avec la communauté !</p>
+          <h2>{{ $t('avis.leaveReview') }}</h2>
+          <p>{{ $t('avis.participated') }}</p>
         </div>
 
         <form @submit.prevent="submitAvis" class="avis-form">
           <!-- Sélection Prestataire -->
           <div class="form-group">
-            <label for="prestataire">Prestataire / Service</label>
+            <label for="prestataire">{{ $t('avis.provider') }}</label>
             <select
               id="prestataire"
               v-model="formData.prestataire"
               required
               class="form-select"
             >
-              <option value="">-- Sélectionnez un prestataire --</option>
-              <option value="Festival">Festival (général)</option>
+              <option value="">{{ $t('avis.selectProvider') }}</option>
+              <option value="Festival">{{ $t('avis.festival') }}</option>
               <option
                 v-for="presta in prestataires"
                 :key="presta.nom"
@@ -44,7 +44,7 @@
 
           <!-- Notation -->
           <div class="form-group">
-            <label>Votre note</label>
+            <label>{{ $t('avis.yourNote') }}</label>
             <div class="rating-input">
               <button
                 v-for="star in 5"
@@ -64,32 +64,32 @@
 
           <!-- Nom (optionnel) -->
           <div class="form-group">
-            <label for="nom">Votre nom (optionnel)</label>
+            <label for="nom">{{ $t('avis.yourName') }}</label>
             <input
               id="nom"
               v-model="formData.nom"
               type="text"
-              placeholder="Anonyme"
+              :placeholder="$t('avis.anonymous')"
               class="form-input"
             />
           </div>
 
           <!-- Commentaire -->
           <div class="form-group">
-            <label for="commentaire">Votre commentaire *</label>
+            <label for="commentaire">{{ $t('avis.yourComment') }}</label>
             <textarea
               id="commentaire"
               v-model="formData.commentaire"
               required
               rows="5"
-              placeholder="Partagez votre expérience..."
+              :placeholder="$t('avis.shareExperience')"
               class="form-textarea"
             ></textarea>
           </div>
 
           <!-- Bouton Submit -->
           <button type="submit" class="btn-submit" :disabled="submitting">
-            {{ submitting ? 'Envoi en cours...' : 'Publier mon avis' }}
+            {{ submitting ? $t('avis.sending') : $t('avis.publish') }}
           </button>
 
           <!-- Message de succès -->
@@ -160,6 +160,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 // Données du formulaire
 const formData = ref({
@@ -275,7 +278,7 @@ const submitAvis = () => {
   // Recharger tous les avis
   loadAvis();
 
-  successMessage.value = 'Merci pour votre avis !';
+  successMessage.value = t('avis.published');
 
   // Reset form
   formData.value = {

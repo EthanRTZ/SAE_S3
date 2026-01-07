@@ -3,37 +3,37 @@
     <div class="hero">
       <div class="container">
         <section class="resa-card" aria-label="Réserver un forfait">
-          <h1>Réserver un forfait</h1>
+          <h1>{{ $t('reservation.title') }}</h1>
           <div class="divider" aria-hidden="true"></div>
 
           <div v-if="isAuthenticatedAsUser" class="my-reservations-link-wrapper">
             <router-link to="/mes-reservations" class="my-reservations-link">
-              Voir mes réservations
+              {{ $t('reservation.myReservations') }}
             </router-link>
           </div>
 
           <!-- Message d'information pour les utilisateurs non connectés ou avec mauvais rôle -->
           <div v-if="!isAuthenticatedAsUser" class="auth-warning">
             <p v-if="!authUser" class="warning-text">
-              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver des billets.
-              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+              ⚠️ {{ $t('reservation.mustLogin') }}
+              <router-link to="/login" class="warning-link">{{ $t('reservation.loginHere') }}</router-link>
             </p>
             <p v-else class="warning-text">
-              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver des billets.
+              ⚠️ {{ $t('reservation.wrongRole', { role: authUser.role }) }}
             </p>
           </div>
 
           <div class="forfaits">
             <div class="forfait">
-              <p class="stock">Places restantes: {{ forfaits.oneDay.stock }}</p>
-              <label class="select-label" for="oneDaySelect">Choisis ton jour</label>
+              <p class="stock">{{ $t('reservation.placesLeft') }} {{ forfaits.oneDay.stock }}</p>
+              <label class="select-label" for="oneDaySelect">{{ $t('reservation.chooseDay') }}</label>
               <select
                 id="oneDaySelect"
                 class="day-select"
                 v-model="selections.oneDay"
                 @change="handleSelectionChange('oneDay')"
               >
-                <option disabled value="">Sélectionne un jour</option>
+                <option disabled value="">{{ $t('reservation.selectDay') }}</option>
                 <option
                   v-for="day in getDayOptions('oneDay')"
                   :key="day.label"
@@ -45,7 +45,7 @@
               </select>
               <p v-if="dayErrors.oneDay" class="day-error">{{ dayErrors.oneDay }}</p>
               <div class="quantity-field">
-                <label class="select-label" for="qty-oneDay">Nombre de places</label>
+                <label class="select-label" for="qty-oneDay">{{ $t('reservation.numberPlaces') }}</label>
                 <input
                   id="qty-oneDay"
                   class="quantity-input"
@@ -55,17 +55,17 @@
                   v-model.number="quantities.oneDay"
                   @input="handleQuantityChange('oneDay')"
                 />
-                <p class="quantity-hint">Disponible : {{ getMaxQuantity('oneDay') }}</p>
+                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('oneDay') }}</p>
               </div>
               <button
                 class="cta"
                 :disabled="!canReserveWithoutAuth('oneDay')"
                 @click="reserve('oneDay')"
               >
-                Réserver 1 jour
+                {{ $t('reservation.reserve1Day') }}
               </button>
               <div class="option-stocks">
-                <p class="option-stocks-title">Places restantes</p>
+                <p class="option-stocks-title">{{ $t('reservation.remainingPlaces') }}</p>
                 <ul>
                   <li
                     v-for="day in getDayOptions('oneDay')"
@@ -79,15 +79,15 @@
             </div>
 
             <div class="forfait">
-              <p class="stock">Places restantes: {{ forfaits.twoDays.stock }}</p>
-              <label class="select-label" for="twoDaySelect">Choisis tes jours</label>
+              <p class="stock">{{ $t('reservation.placesLeft') }} {{ forfaits.twoDays.stock }}</p>
+              <label class="select-label" for="twoDaySelect">{{ $t('reservation.chooseDays') }}</label>
               <select
                 id="twoDaySelect"
                 class="day-select"
                 v-model="selections.twoDays"
                 @change="handleSelectionChange('twoDays')"
               >
-                <option disabled value="">Sélectionne une combinaison</option>
+                <option disabled value="">{{ $t('reservation.selectCombo') }}</option>
                 <option
                   v-for="day in getDayOptions('twoDays')"
                   :key="day.label"
@@ -99,7 +99,7 @@
               </select>
               <p v-if="dayErrors.twoDays" class="day-error">{{ dayErrors.twoDays }}</p>
               <div class="quantity-field">
-                <label class="select-label" for="qty-twoDays">Nombre de places</label>
+                <label class="select-label" for="qty-twoDays">{{ $t('reservation.numberPlaces') }}</label>
                 <input
                   id="qty-twoDays"
                   class="quantity-input"
@@ -109,17 +109,17 @@
                   v-model.number="quantities.twoDays"
                   @input="handleQuantityChange('twoDays')"
                 />
-                <p class="quantity-hint">Disponible : {{ getMaxQuantity('twoDays') }}</p>
+                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('twoDays') }}</p>
               </div>
               <button
                 class="cta"
                 :disabled="!canReserveWithoutAuth('twoDays')"
                 @click="reserve('twoDays')"
               >
-                Réserver 2 jours
+                {{ $t('reservation.reserve2Days') }}
               </button>
               <div class="option-stocks">
-                <p class="option-stocks-title">Places restantes</p>
+                <p class="option-stocks-title">{{ $t('reservation.remainingPlaces') }}</p>
                 <ul>
                   <li
                     v-for="day in getDayOptions('twoDays')"
@@ -133,9 +133,9 @@
             </div>
 
             <div class="forfait">
-              <p class="stock">Places restantes: {{ forfaits.threeDays.stock }}</p>
+              <p class="stock">{{ $t('reservation.placesLeft') }} {{ forfaits.threeDays.stock }}</p>
               <div class="quantity-field">
-                <label class="select-label" for="qty-threeDays">Nombre de places</label>
+                <label class="select-label" for="qty-threeDays">{{ $t('reservation.numberPlaces') }}</label>
                 <input
                   id="qty-threeDays"
                   class="quantity-input"
@@ -145,7 +145,7 @@
                   v-model.number="quantities.threeDays"
                   @input="handleQuantityChange('threeDays')"
                 />
-                <p class="quantity-hint">Disponible : {{ getMaxQuantity('threeDays') }}</p>
+                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('threeDays') }}</p>
               </div>
               <p v-if="dayErrors.threeDays" class="day-error">{{ dayErrors.threeDays }}</p>
               <button 
@@ -153,7 +153,7 @@
                 :disabled="!canReserveWithoutAuth('threeDays')" 
                 @click="reserve('threeDays')"
               >
-                Réserver 3 jours
+                {{ $t('reservation.reserve3Days') }}
               </button>
             </div>
           </div>
@@ -162,24 +162,24 @@
 
         <!-- Section Parking -->
         <section class="resa-card" aria-label="Réserver une place de parking">
-          <h1>Place de parking</h1>
+          <h1>{{ $t('reservation.parkingTitle') }}</h1>
           <div class="divider" aria-hidden="true"></div>
 
           <div v-if="!isAuthenticatedAsUser" class="auth-warning">
             <p v-if="!authUser" class="warning-text">
-              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver une place de parking.
-              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+              ⚠️ {{ $t('reservation.mustLoginParking') }}
+              <router-link to="/login" class="warning-link">{{ $t('reservation.loginHere') }}</router-link>
             </p>
             <p v-else class="warning-text">
-              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver.
+              ⚠️ {{ $t('reservation.wrongRoleParking', { role: authUser.role }) }}
             </p>
           </div>
 
           <div class="parking-section">
             <div class="parking-info">
-              <p class="stock">Places restantes: {{ forfaits.parking.stock }}</p>
+              <p class="stock">{{ $t('reservation.placesLeft') }} {{ forfaits.parking.stock }}</p>
               <div class="quantity-field">
-                <label class="select-label" for="qty-parking">Nombre de places</label>
+                <label class="select-label" for="qty-parking">{{ $t('reservation.numberParking') }}</label>
                 <input
                   id="qty-parking"
                   class="quantity-input"
@@ -189,14 +189,14 @@
                   v-model.number="quantities.parking"
                   @input="sanitizeQuantity('parking')"
                 />
-                <p class="quantity-hint">Disponible : {{ forfaits.parking.stock }}</p>
+                <p class="quantity-hint">{{ $t('reservation.available') }} {{ forfaits.parking.stock }}</p>
               </div>
               <button
                 class="cta"
                 :disabled="!canReserveWithoutAuth('parking')"
                 @click="reserve('parking')"
               >
-                Réserver une place de parking
+                {{ $t('reservation.reserveParking') }}
               </button>
             </div>
           </div>
@@ -204,24 +204,24 @@
 
         <!-- Section Camping -->
         <section class="resa-card" aria-label="Réserver un emplacement de camping">
-          <h1>Emplacement de camping</h1>
+          <h1>{{ $t('reservation.campingTitle') }}</h1>
           <div class="divider" aria-hidden="true"></div>
 
           <div v-if="!isAuthenticatedAsUser" class="auth-warning">
             <p v-if="!authUser" class="warning-text">
-              ⚠️ Vous devez être connecté avec un compte utilisateur pour réserver un emplacement de camping.
-              <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+              ⚠️ {{ $t('reservation.mustLoginCamping') }}
+              <router-link to="/login" class="warning-link">{{ $t('reservation.loginHere') }}</router-link>
             </p>
             <p v-else class="warning-text">
-              ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent réserver.
+              ⚠️ {{ $t('reservation.wrongRoleCamping', { role: authUser.role }) }}
             </p>
           </div>
 
           <div class="camping-section">
             <div class="camping-info">
-              <p class="stock">Emplacements restants: {{ forfaits.camping.stock }}</p>
+              <p class="stock">{{ $t('reservation.placesLeft') }} {{ forfaits.camping.stock }}</p>
               <div class="quantity-field">
-                <label class="select-label" for="qty-camping">Nombre d'emplacements</label>
+                <label class="select-label" for="qty-camping">{{ $t('reservation.numberCamping') }}</label>
                 <input
                   id="qty-camping"
                   class="quantity-input"
@@ -231,14 +231,14 @@
                   v-model.number="quantities.camping"
                   @input="sanitizeQuantity('camping')"
                 />
-                <p class="quantity-hint">Disponible : {{ forfaits.camping.stock }}</p>
+                <p class="quantity-hint">{{ $t('reservation.available') }} {{ forfaits.camping.stock }}</p>
               </div>
               <button
                 class="cta"
                 :disabled="!canReserveWithoutAuth('camping')"
                 @click="reserve('camping')"
               >
-                Réserver un emplacement de camping
+                {{ $t('reservation.reserveCamping') }}
               </button>
             </div>
           </div>
@@ -249,13 +249,13 @@
   
   <div v-if="showAuthModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
     <div class="modal-card">
-      <h2 id="auth-modal-title" class="modal-title">Connexion requise</h2>
+      <h2 id="auth-modal-title" class="modal-title">{{ $t('reservation.loginRequired') }}</h2>
       <p>
         {{ authMessage }}
       </p>
       <div class="modal-actions">
-        <router-link to="/login" class="btn-login-link" @click="closeAuthModal">Aller à la connexion</router-link>
-        <button class="btn-close" @click="closeAuthModal">Fermer</button>
+        <router-link to="/login" class="btn-login-link" @click="closeAuthModal">{{ $t('reservation.goToLogin') }}</router-link>
+        <button class="btn-close" @click="closeAuthModal">{{ $t('reservation.close') }}</button>
       </div>
     </div>
   </div>
@@ -600,7 +600,7 @@ export default {
       }
 
       if (this.requiresDaySelection(type) && !this.selections[type]) {
-        this.dayErrors[type] = 'Choisis un jour avant de réserver.'
+        this.dayErrors[type] = this.$t('reservation.chooseBefore')
         return
       }
 
@@ -619,7 +619,7 @@ export default {
       if (this.requiresDaySelection(type)) {
         const selected = this.getSelectedOption(type)
         if (!selected) {
-          this.dayErrors[type] = 'Choisis un jour avant de réserver.'
+          this.dayErrors[type] = this.$t('reservation.chooseBefore')
           return
         }
         let effectiveMax = selected.stock
@@ -635,13 +635,13 @@ export default {
           effectiveMax = Math.min(effectiveMax, ...linkedDayStocks)
           const insufficient = selected.linkedDays.find((label, index) => linkedDayStocks[index] < requestedQty)
           if (insufficient) {
-            this.dayErrors.twoDays = 'Pas assez de places sur ' + insufficient + '.'
+            this.dayErrors.twoDays = this.$t('reservation.notEnough') + ' ' + insufficient + '.'
             return
           }
         }
 
         if (effectiveMax < requestedQty) {
-          this.dayErrors[type] = 'Pas assez de places pour cette option.'
+            this.dayErrors[type] = this.$t('reservation.notEnough')
           return
         }
 
@@ -671,7 +671,7 @@ export default {
         const dependencies = this.getThreeDayDependencyRefs()
         const hasCapacity = dependencies.every((ref) => ref && ref.stock >= requestedQty)
         if (!hasCapacity) {
-          this.dayErrors.threeDays = 'Pas assez de places disponibles sur les autres options.'
+          this.dayErrors.threeDays = this.$t('reservation.notEnough')
           return
         }
 
@@ -710,7 +710,7 @@ export default {
           this.decrementStock(type, requestedQty)
 
           this.quantities[type] = 1
-          alert(`${requestedQty} place(s) ajoutée(s) au panier !`)
+          alert(`${requestedQty} ${this.$t('reservation.addedToCart')}`)
         }
         return
       }

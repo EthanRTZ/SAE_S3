@@ -1,11 +1,11 @@
 <template>
   <div class="prestataire">
     <div class="container">
-      <h1 class="title">Nos Prestataires</h1>
-      <p class="subtitle">Découvrez tous nos partenaires</p>
+      <h1 class="title">{{ $t('prestataire.title') }}</h1>
+      <p class="subtitle">{{ $t('prestataire.subtitle') }}</p>
 
       <div class="filter-bar">
-        <div class="filter-label">Filtrer par type</div>
+        <div class="filter-label">{{ $t('prestataire.filterByType') }}</div>
         <div class="filter-dropdown-wrapper">
           <button
             type="button"
@@ -13,9 +13,9 @@
             :class="{ active: selectedTypes.length > 0, open: isDropdownOpen }"
             @click="toggleDropdown"
           >
-            <span v-if="selectedTypes.length === 0">Tous les types</span>
+            <span v-if="selectedTypes.length === 0">{{ $t('prestataire.allTypes') }}</span>
             <span v-else-if="selectedTypes.length === 1">{{ selectedTypes[0] }}</span>
-            <span v-else>{{ selectedTypes.length }} types sélectionnés</span>
+            <span v-else>{{ selectedTypes.length }} {{ $t('prestataire.typeSelected') }}</span>
             <span class="dropdown-arrow">▼</span>
           </button>
           <div v-if="isDropdownOpen" class="filter-dropdown-menu" @click.stop>
@@ -40,7 +40,7 @@
                 class="clear-filters-small"
                 @click="resetFilters"
               >
-                Réinitialiser
+                {{ $t('prestataire.reset') }}
               </button>
             </div>
           </div>
@@ -48,11 +48,11 @@
       </div>
 
       <div v-if="loading" class="loading-message">
-        Chargement des prestataires...
+        {{ $t('prestataire.loading') }}
       </div>
 
       <div v-else-if="!filteredPrestataires.length" class="empty-state">
-        Aucun prestataire ne correspond à ce filtre.
+        {{ $t('prestataire.noMatch') }}
       </div>
 
       <div v-else class="cards">
@@ -69,7 +69,7 @@
           <p class="description">{{ cleanHtml(p.description) }}</p>
 
           <div v-if="p.services && p.services.length" class="services">
-            <h3>Services</h3>
+            <h3>{{ $t('prestataire.services') }}</h3>
             <ul>
               <li v-for="s in (p.services || []).filter(s => s.public !== false)" :key="s.nom">
                 <div class="service-item">
@@ -88,12 +88,12 @@
           <!-- Bouton de réservation pour le prestataire Terrain de basket -->
           <div v-if="isBasketPrestataire(p)" class="reservation-cta" @click.stop.prevent>
             <router-link to="/reservation-basket" class="btn-reserve">
-              🏀 Réserver un créneau
+              🏀 {{ $t('prestataire.reserveSlot') }}
             </router-link>
           </div>
 
           <div class="contacts" @click.stop>
-            <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">Site web</a>
+            <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">{{ $t('prestataire.website') }}</a>
           </div>
         </router-link>
       </div>

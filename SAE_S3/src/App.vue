@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePanierStore } from '@/stores/panier'
+import { useI18n } from 'vue-i18n'
+
+const { locale, t } = useI18n()
 
 const logoIcon = '/media/logo-icon.png'
 
@@ -161,6 +164,12 @@ const logout = () => {
 
   window.dispatchEvent(new Event('auth-changed'))
 }
+
+// Gestion de la langue
+const changeLanguage = (lang) => {
+  locale.value = lang
+  localStorage.setItem('app-locale', lang)
+}
 </script>
 
 <template>
@@ -177,8 +186,8 @@ const logout = () => {
         <!-- Desktop Menu -->
         <div class="nav-menu">
           <!-- CHANGED: liens conditionnels selon le rôle -->
-          <router-link v-if="showAccueilLink" to="/" class="nav-link">Accueil</router-link>
-          <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link">Programmation</router-link>
+          <router-link v-if="showAccueilLink" to="/" class="nav-link">{{ $t('nav.home') }}</router-link>
+          <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link">{{ $t('nav.programmation') }}</router-link>
           <!-- Menu déroulant Prestataire pour les prestataires connectés -->
           <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-wrapper">
             <button 
@@ -187,32 +196,52 @@ const logout = () => {
               :class="{ 'dropdown-open': isPrestataireDropdownOpen }"
               @click="togglePrestataireDropdown"
             >
-              Prestataire
+              {{ $t('nav.prestataire') }}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isPrestataireDropdownOpen }">
                 <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
             <div v-if="isPrestataireDropdownOpen" class="prestataire-dropdown">
               <router-link to="/prestataire" class="dropdown-item" @click="closePrestataireDropdown">
-                📋 Liste des prestataires
+                📋 {{ $t('nav.prestataireList') }}
               </router-link>
               <router-link to="/prestataire-espace" class="dropdown-item" @click="closePrestataireDropdown">
-                ⚙️ Mon espace prestataire
+                ⚙️ {{ $t('nav.prestataireSpace') }}
               </router-link>
             </div>
           </div>
           <!-- Lien simple pour les non-prestataires -->
-          <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link">Prestataire</router-link>
+          <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link">{{ $t('nav.prestataire') }}</router-link>
           <!-- CHANGED: Carte toujours visible -->
-          <router-link v-if="showAdminLink" to="/admin" class="nav-link">Admin</router-link>
-          <router-link to="/carte" class="nav-link">Carte</router-link>
-          <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link">Réservation</router-link>
+          <router-link v-if="showAdminLink" to="/admin" class="nav-link">{{ $t('nav.admin') }}</router-link>
+          <router-link to="/carte" class="nav-link">{{ $t('nav.carte') }}</router-link>
+          <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link">{{ $t('nav.reservation') }}</router-link>
 
           <!-- Lien Panier avec badge -->
           <router-link to="/panier" class="nav-link nav-link-panier">
-            Panier
+            {{ $t('nav.panier') }}
             <span v-if="panierStore.itemCount > 0" class="panier-badge">{{ panierStore.itemCount }}</span>
           </router-link>
+
+          <!-- Sélecteur de langue -->
+          <div class="language-selector">
+            <button 
+              @click="changeLanguage('fr')" 
+              class="lang-btn"
+              :class="{ active: locale === 'fr' }"
+              title="Français"
+            >
+              FR
+            </button>
+            <button 
+              @click="changeLanguage('en')" 
+              class="lang-btn"
+              :class="{ active: locale === 'en' }"
+              title="English"
+            >
+              EN
+            </button>
+          </div>
 
           <!-- Zone connexion / utilisateur (desktop) -->
           <div v-if="!isAuthenticated" class="guest-actions">
@@ -220,13 +249,13 @@ const logout = () => {
               to="/login"
               class="login-btn"
             >
-              Connexion
+              {{ $t('nav.connexion') }}
             </router-link>
             <router-link
               to="/register"
               class="signup-btn"
             >
-              Créer un compte
+              {{ $t('nav.createAccount') }}
             </router-link>
           </div>
           <div v-else class="auth-desktop">
@@ -242,16 +271,16 @@ const logout = () => {
                   <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                   <div class="user-info">
                     <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
-                    <div class="user-role">{{ userRole === 'user' ? 'Utilisateur' : userRole === 'prestataire' ? (prestataireInfo?.type || 'Prestataire') : userRole === 'admin' ? 'Administrateur' : 'Utilisateur' }}</div>
+                    <div class="user-role">{{ userRole === 'user' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : userRole === 'admin' ? $t('nav.adminRole') : $t('nav.user') }}</div>
                   </div>
                 </div>
               </router-link>
               <router-link v-if="isUserRole" to="/mes-reservations" class="dropdown-item" @click="closeUserMenu">
-                Mes réservations
+                {{ $t('nav.myReservations') }}
               </router-link>
               <div v-if="isUserRole" class="dropdown-divider"></div>
               <button type="button" class="dropdown-item logout-item" @click="logout">
-                Déconnexion
+                {{ $t('nav.disconnect') }}
               </button>
             </div>
           </div>
@@ -268,8 +297,8 @@ const logout = () => {
         <!-- Mobile Menu -->
         <div class="nav-menu-mobile" :class="{ active: isMenuOpen }">
         <!-- CHANGED: liens conditionnels selon le rôle (mobile) -->
-        <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Accueil</router-link>
-        <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Programmation</router-link>
+        <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.home') }}</router-link>
+        <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.programmation') }}</router-link>
         <!-- Menu déroulant Prestataire pour les prestataires connectés (mobile) -->
         <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-mobile">
           <button 
@@ -278,33 +307,51 @@ const logout = () => {
             :class="{ 'dropdown-open': isPrestataireDropdownOpen }"
             @click="togglePrestataireDropdown"
           >
-            Prestataire
+            {{ $t('nav.prestataire') }}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="dropdown-icon" :class="{ rotated: isPrestataireDropdownOpen }">
               <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <div v-if="isPrestataireDropdownOpen" class="prestataire-dropdown-mobile-menu">
             <router-link to="/prestataire" class="dropdown-item" @click="() => { closePrestataireDropdown(); toggleMenu(); }">
-              📋 Liste des prestataires
+              📋 {{ $t('nav.prestataireList') }}
             </router-link>
             <router-link to="/prestataire-espace" class="dropdown-item" @click="() => { closePrestataireDropdown(); toggleMenu(); }">
-              ⚙️ Mon espace prestataire
+              ⚙️ {{ $t('nav.prestataireSpace') }}
             </router-link>
           </div>
         </div>
         <!-- Lien simple pour les non-prestataires (mobile) -->
-        <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Prestataire</router-link>
+        <router-link v-else-if="showPrestataireLink" :to="prestataireLink" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.prestataire') }}</router-link>
         <!-- CHANGED: Carte toujours visible -->
-        <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Carte</router-link>
-        <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Réservation</router-link>
+        <router-link to="/carte" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.carte') }}</router-link>
+        <router-link v-if="showReservationLinkInNav" to="/reservation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.reservation') }}</router-link>
 
         <!-- Lien Panier mobile avec badge -->
         <router-link to="/panier" class="nav-link-mobile nav-link-panier-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">
-          🛒 Panier
+          🛒 {{ $t('nav.panier') }}
           <span v-if="panierStore.itemCount > 0" class="panier-badge-mobile">{{ panierStore.itemCount }}</span>
         </router-link>
 
-        <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">Admin</router-link>
+        <!-- Sélecteur de langue mobile -->
+        <div class="language-selector-mobile">
+          <button 
+            @click="changeLanguage('fr'); toggleMenu();" 
+            class="lang-btn-mobile"
+            :class="{ active: locale === 'fr' }"
+          >
+            🇫🇷 Français
+          </button>
+          <button 
+            @click="changeLanguage('en'); toggleMenu();" 
+            class="lang-btn-mobile"
+            :class="{ active: locale === 'en' }"
+          >
+            🇬🇧 English
+          </button>
+        </div>
+
+        <router-link v-if="showAdminLink" to="/admin" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.admin') }}</router-link>
 
         <!-- Zone connexion / utilisateur (mobile) -->
         <div v-if="!isAuthenticated" class="guest-actions-mobile">
@@ -313,14 +360,14 @@ const logout = () => {
             class="login-btn-mobile"
             @click="() => { toggleMenu(); closeUserMenu(); }"
           >
-            Connexion
+            {{ $t('nav.connexion') }}
           </router-link>
           <router-link
             to="/register"
             class="signup-btn-mobile"
             @click="() => { toggleMenu(); closeUserMenu(); }"
           >
-            Créer un compte
+            {{ $t('nav.createAccount') }}
           </router-link>
         </div>
         <div v-else class="auth-mobile">
@@ -336,7 +383,7 @@ const logout = () => {
                 <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                 <div class="user-info">
                   <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
-                  <div class="user-role">{{ userRole === 'user' ? 'Utilisateur' : userRole === 'prestataire' ? (prestataireInfo?.type || 'Prestataire') : userRole === 'admin' ? 'Administrateur' : 'Utilisateur' }}</div>
+                  <div class="user-role">{{ userRole === 'user' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : userRole === 'admin' ? $t('nav.adminRole') : $t('nav.user') }}</div>
                 </div>
               </div>
             </router-link>
@@ -346,7 +393,7 @@ const logout = () => {
               class="dropdown-item"
               @click="() => { closeUserMenu(); toggleMenu(); }"
             >
-              Mes réservations
+              {{ $t('nav.myReservations') }}
             </router-link>
             <div v-if="isUserRole" class="dropdown-divider"></div>
             <button
@@ -354,7 +401,7 @@ const logout = () => {
               class="dropdown-item logout-item"
               @click="() => { logout(); toggleMenu(); }"
             >
-              Déconnexion
+              {{ $t('nav.disconnect') }}
             </button>
           </div>
         </div>
@@ -1028,6 +1075,71 @@ main {
 
 .prestataire-dropdown-mobile-menu .dropdown-item:hover {
   background: rgba(32,70,179,0.08);
+}
+
+/* Sélecteur de langue */
+.language-selector {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  color: #FCDC1E;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-btn:hover {
+  background: rgba(252, 220, 30, 0.1);
+  border-color: rgba(252, 220, 30, 0.5);
+}
+
+.lang-btn.active {
+  background: #FCDC1E;
+  color: #0b0b0b;
+  border-color: #FCDC1E;
+}
+
+.language-selector-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(252, 220, 30, 0.2);
+  border-bottom: 1px solid rgba(252, 220, 30, 0.2);
+  margin: 8px 0;
+}
+
+.lang-btn-mobile {
+  background: transparent;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+  color: #FCDC1E;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.lang-btn-mobile:hover {
+  background: rgba(252, 220, 30, 0.1);
+  border-color: rgba(252, 220, 30, 0.5);
+}
+
+.lang-btn-mobile.active {
+  background: rgba(252, 220, 30, 0.2);
+  border-color: #FCDC1E;
 }
 
 /* Styles pour le lien Panier */

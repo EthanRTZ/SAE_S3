@@ -1,13 +1,13 @@
 <template>
   <div class="prestataire-detail-page">
     <div v-if="loading" class="loading-container">
-      <p>Chargement...</p>
+      <p>{{ $t('prestataire.loading') }}</p>
     </div>
     
     <div v-else-if="!prestataire" class="error-container">
-      <h2>Prestataire introuvable</h2>
-      <p>Le prestataire demandé n'existe pas.</p>
-      <router-link to="/prestataire" class="btn-back">Retour à la liste</router-link>
+      <h2>{{ $t('prestataireDetail.notFound') }}</h2>
+      <p>{{ $t('prestataireDetail.notFoundDesc') }}</p>
+      <router-link to="/prestataire" class="btn-back">{{ $t('prestataireDetail.backToList') }}</router-link>
     </div>
 
     <div v-else class="detail-container">
@@ -17,7 +17,7 @@
         <div class="header-overlay"></div>
         <div class="header-content">
           <router-link to="/prestataire" class="btn-back-header">
-            ← Retour
+            ← {{ $t('prestataireDetail.back') }}
           </router-link>
           <div class="prestataire-main-info">
             <div v-if="prestataire.image" class="prestataire-image-wrapper">
@@ -39,25 +39,25 @@
             <div class="reservation-highlight-content">
               <div class="reservation-highlight-icon">🏀</div>
               <div class="reservation-highlight-text">
-                <h2>Réservez votre créneau</h2>
-                <p>Profitez de notre terrain de basket pendant le festival du <strong>28 au 30 août 2026</strong> ! Réservez un créneau d'une heure pour vous et vos amis (2 à 10 joueurs).</p>
+                <h2>{{ $t('prestataireDetail.reserveSlot') }}</h2>
+                <p>{{ $t('prestataireDetail.reserveDesc') }} <strong>28 au 30 août 2026</strong> ! Réservez un créneau d'une heure pour vous et vos amis (2 à 10 joueurs).</p>
               </div>
             </div>
             <router-link to="/reservation-basket" class="btn-reserve-large">
-              <span>🎫</span> Réserver maintenant
+              <span>🎫</span> {{ $t('prestataireDetail.reserveNow') }}
             </router-link>
           </div>
         </section>
 
         <!-- Description WYSIWYG -->
         <section v-if="prestataire.description" class="detail-section">
-          <h2 class="section-title">Présentation</h2>
+          <h2 class="section-title">{{ $t('prestataireDetail.presentation') }}</h2>
           <div class="description-content" v-html="prestataire.description"></div>
         </section>
 
         <!-- Services -->
         <section v-if="publicServices.length > 0" class="detail-section">
-          <h2 class="section-title">Services</h2>
+          <h2 class="section-title">{{ $t('prestataireDetail.services') }}</h2>
           <div class="services-grid">
             <div v-for="service in publicServices" :key="service.nom" class="service-card">
               <div class="service-header">
@@ -73,26 +73,26 @@
 
         <!-- Informations de contact -->
         <section class="detail-section">
-          <h2 class="section-title">Informations de contact</h2>
+          <h2 class="section-title">{{ $t('prestataireDetail.contactInfo') }}</h2>
           <div class="contact-info">
             <div v-if="prestataire.email" class="contact-item">
               <span class="contact-icon">📧</span>
               <div class="contact-details">
-                <span class="contact-label">Email</span>
+                <span class="contact-label">{{ $t('prestataireDetail.email') }}</span>
                 <a :href="`mailto:${prestataire.email}`" class="contact-value">{{ prestataire.email }}</a>
               </div>
             </div>
             <div v-if="prestataire.tel" class="contact-item">
               <span class="contact-icon">📞</span>
               <div class="contact-details">
-                <span class="contact-label">Téléphone</span>
+                <span class="contact-label">{{ $t('prestataireDetail.phone') }}</span>
                 <a :href="`tel:${prestataire.tel}`" class="contact-value">{{ prestataire.tel }}</a>
               </div>
             </div>
             <div v-if="prestataire.site" class="contact-item">
               <span class="contact-icon">🌐</span>
               <div class="contact-details">
-                <span class="contact-label">Site web</span>
+                <span class="contact-label">{{ $t('prestataireDetail.website') }}</span>
                 <a :href="prestataire.site" target="_blank" rel="noopener" class="contact-value link-external">{{ prestataire.site }}</a>
               </div>
             </div>
@@ -101,16 +101,16 @@
 
         <!-- Localisation sur la carte -->
         <section v-if="prestataire.coordone" class="detail-section">
-          <h2 class="section-title">Localisation</h2>
-          <p class="location-text">Ce prestataire est présent sur le site du festival.</p>
+          <h2 class="section-title">{{ $t('prestataireDetail.location') }}</h2>
+          <p class="location-text">{{ $t('prestataireDetail.onSite') }}</p>
           <router-link to="/carte" class="btn-map">
-            🗺️ Voir sur la carte
+            {{ $t('prestataireDetail.seeOnMap') }}
           </router-link>
         </section>
 
        
         <section class="detail-section">
-          <h2 class="section-title">Avis et notes</h2>
+          <h2 class="section-title">{{ $t('prestataireDetail.reviews') }}</h2>
 
           <!-- Stats globales -->
           <div v-if="noteStats.nbAvis > 0" class="avis-stats">
@@ -127,7 +127,7 @@
                 </span>
               </div>
               <div class="note-moyenne-meta">
-                {{ noteStats.nbAvis }} avis au total
+                {{ noteStats.nbAvis }} {{ $t('prestataireDetail.reviewsTotal') }}
               </div>
             </div>
             <div class="avis-repartition">
@@ -149,12 +149,12 @@
           </div>
 
           <div v-else class="empty-avis">
-            Aucun avis pour le moment.
+            {{ $t('prestataireDetail.noReviews') }}
           </div>
 
           <!-- Liste des avis (derniers avis) -->
           <div v-if="avisList.length" class="avis-list">
-            <h3 class="avis-list-title">Derniers avis</h3>
+            <h3 class="avis-list-title">{{ $t('prestataireDetail.lastReviews') }}</h3>
             <div
               v-for="avis in avisList.slice().reverse()"
               :key="avis.id"

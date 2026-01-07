@@ -1,15 +1,15 @@
 <template>
   <div class="profile-page">
     <div class="profile-card">
-      <h2>Mon Profil</h2>
-      <p class="subtitle">Gérez vos informations personnelles</p>
+      <h2>{{ $t('profile.title') }}</h2>
+      <p class="subtitle">{{ $t('profile.subtitle') }}</p>
 
       <!-- Section Modification Email -->
       <div class="profile-section">
-        <h3>Modifier l'adresse email</h3>
+        <h3>{{ $t('profile.modifyEmail') }}</h3>
         <form @submit.prevent="onUpdateEmail">
           <div class="input-group">
-            <label for="currentEmail">Email actuel</label>
+            <label for="currentEmail">{{ $t('profile.currentEmail') }}</label>
             <input
               id="currentEmail"
               type="email"
@@ -19,7 +19,7 @@
             />
           </div>
           <div class="input-group">
-            <label for="emailPassword">Mot de passe</label>
+            <label for="emailPassword">{{ $t('profile.password') }}</label>
             <span class="input-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="10" width="14" height="10" rx="2" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -36,7 +36,7 @@
               type="button"
               class="toggle-pwd"
               @click="showEmailPwd = !showEmailPwd"
-              :title="showEmailPwd ? 'Masquer' : 'Afficher'"
+              :title="showEmailPwd ? $t('profile.hide') : $t('profile.show')"
             >
               <svg v-if="!showEmailPwd" width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/>
@@ -50,7 +50,7 @@
             </button>
           </div>
           <div class="input-group">
-            <label for="newEmail">Nouvel email</label>
+            <label for="newEmail">{{ $t('profile.newEmail') }}</label>
             <span class="input-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" stroke="#FCDC1E" stroke-width="1.6" />
@@ -65,7 +65,7 @@
             />
           </div>
           <button type="submit" class="btn-primary" :disabled="loadingEmail">
-            {{ loadingEmail ? 'Modification...' : 'Modifier l\'email' }}
+            {{ loadingEmail ? $t('profile.modifying') : $t('profile.modify') }}
           </button>
           <p v-if="emailError" class="error">{{ emailError }}</p>
           <p v-if="emailSuccess" class="success">{{ emailSuccess }}</p>
@@ -76,10 +76,10 @@
 
       <!-- Section Modification Mot de passe -->
       <div class="profile-section">
-        <h3>Modifier le mot de passe</h3>
+        <h3>{{ $t('profile.modifyPassword') }}</h3>
         <form @submit.prevent="onUpdatePassword">
           <div class="input-group">
-            <label for="currentPassword">Mot de passe actuel</label>
+            <label for="currentPassword">{{ $t('profile.currentPassword') }}</label>
             <span class="input-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="10" width="14" height="10" rx="2" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -110,7 +110,7 @@
             </button>
           </div>
           <div class="input-group">
-            <label for="newPassword">Nouveau mot de passe</label>
+            <label for="newPassword">{{ $t('profile.newPassword') }}</label>
             <span class="input-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="10" width="14" height="10" rx="2" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -142,7 +142,7 @@
             </button>
           </div>
           <div class="input-group">
-            <label for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
+            <label for="confirmNewPassword">{{ $t('profile.confirmNewPassword') }}</label>
             <span class="input-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M5 12a7 7 0 0 1 14 0v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6Z" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -174,11 +174,11 @@
             </button>
           </div>
           <ul class="password-hints">
-            <li :class="{ ok: newPassword.length >= 6 }">6 caractères minimum</li>
-            <li :class="{ ok: /[0-9]/.test(newPassword) }">Au moins un chiffre</li>
+            <li :class="{ ok: newPassword.length >= 6 }">{{ $t('profile.passwordHint1') }}</li>
+            <li :class="{ ok: /[0-9]/.test(newPassword) }">{{ $t('profile.passwordHint2') }}</li>
           </ul>
           <button type="submit" class="btn-primary" :disabled="loadingPassword">
-            {{ loadingPassword ? 'Modification...' : 'Modifier le mot de passe' }}
+            {{ loadingPassword ? $t('profile.modifying') : $t('profile.modifyPwd') }}
           </button>
           <p v-if="passwordError" class="error">{{ passwordError }}</p>
           <p v-if="passwordSuccess" class="success">{{ passwordSuccess }}</p>
@@ -189,12 +189,12 @@
 
       <!-- Section Gestion des réservations (uniquement pour les comptes user) -->
       <div v-if="currentUserRole === 'user'" class="profile-section">
-        <h3>Mes réservations</h3>
+        <h3>{{ $t('profile.myReservations') }}</h3>
         <p class="reservations-help">
-          Consultez vos réservations effectuées depuis ce compte et supprimez celles que vous ne souhaitez plus conserver.
+          {{ $t('profile.reservationsHelp') }}
         </p>
 
-        <p v-if="reservationsLoading" class="info">Chargement de vos réservations...</p>
+        <p v-if="reservationsLoading" class="info">{{ $t('profile.loading') }}</p>
         <p v-if="reservationsError" class="error">{{ reservationsError }}</p>
 
         <div v-if="!reservationsLoading && reservations.length === 0 && !reservationsError" class="empty-reservations">
@@ -232,7 +232,7 @@
             :disabled="selectedReservationIds.length === 0 || deletingReservations"
             @click="onDeleteSelectedReservations"
           >
-            {{ deletingReservations ? 'Suppression...' : 'Supprimer les réservations sélectionnées' }}
+            {{ deletingReservations ? $t('profile.deleting') : $t('profile.delete') }}
           </button>
         </div>
       </div>
@@ -247,7 +247,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const currentUserEmail = ref('')
 const currentUserRole = ref('user')
@@ -367,7 +369,7 @@ const loadReservations = () => {
     )
   } catch (e) {
     reservations.value = []
-    reservationsError.value = 'Impossible de charger vos réservations.'
+    reservationsError.value = t('profile.loadError') || t('mesReservations.loadError')
   } finally {
     reservationsLoading.value = false
   }
@@ -722,7 +724,7 @@ const onDeleteSelectedReservations = () => {
     reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
     selectedReservationIds.value = []
   } catch (e) {
-    reservationsError.value = 'Impossible de supprimer les réservations sélectionnées.'
+    reservationsError.value = t('profile.deleteError')
   } finally {
     deletingReservations.value = false
   }

@@ -1,11 +1,11 @@
 <template>
   <div class="register-page">
     <div class="register-card">
-      <h2>Créer un compte</h2>
-      <p class="subtitle">Accédez à la billetterie en quelques secondes</p>
+      <h2>{{ $t('register.title') }}</h2>
+      <p class="subtitle">{{ $t('register.subtitle') }}</p>
       <form @submit.prevent="onSubmit">
         <div class="input-group">
-          <label for="email">Email</label>
+          <label for="email">{{ $t('register.email') }}</label>
           <span class="input-icon" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" stroke="#FCDC1E" stroke-width="1.6" />
@@ -16,7 +16,7 @@
         </div>
 
         <div class="input-group">
-          <label for="password">Mot de passe</label>
+          <label for="password">{{ $t('register.password') }}</label>
           <span class="input-icon" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="10" width="14" height="10" rx="2" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -35,7 +35,7 @@
             class="toggle-pwd"
             @click="showPwd = !showPwd"
             :aria-pressed="showPwd"
-            :title="showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            :title="showPwd ? $t('register.hidePassword') : $t('register.showPassword')"
           >
             <svg v-if="!showPwd" width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/>
@@ -50,7 +50,7 @@
         </div>
 
         <div class="input-group">
-          <label for="confirmPassword">Confirmation du mot de passe</label>
+          <label for="confirmPassword">{{ $t('register.confirmPassword') }}</label>
           <span class="input-icon" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M5 12a7 7 0 0 1 14 0v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6Z" stroke="#FCDC1E" stroke-width="1.6"/>
@@ -83,19 +83,19 @@
         </div>
 
         <ul class="password-hints">
-          <li :class="{ ok: password.length >= 6 }">6 caractères minimum</li>
-          <li :class="{ ok: /[0-9]/.test(password) }">Au moins un chiffre</li>
+          <li :class="{ ok: password.length >= 6 }">{{ $t('register.passwordHint1') }}</li>
+          <li :class="{ ok: /[0-9]/.test(password) }">{{ $t('register.passwordHint2') }}</li>
         </ul>
 
         <div class="actions">
           <button type="submit" class="btn-primary" :disabled="loading">
-            {{ loading ? 'Création...' : "S'inscrire" }}
+            {{ loading ? $t('register.creating') : $t('register.signup') }}
           </button>
-          <router-link to="/login" class="btn-secondary">Déjà un compte ?</router-link>
+          <router-link to="/login" class="btn-secondary">{{ $t('register.alreadyAccount') }}</router-link>
         </div>
 
         <p class="helper">
-          Besoin d'aide ? <a href="mailto:contact@goldencoast.fr" class="link-inline">Contactez-nous</a>
+          {{ $t('register.needHelp') }} <a href="mailto:contact@goldencoast.fr" class="link-inline">{{ $t('register.contact') }}</a>
         </p>
 
         <p v-if="error" class="error">{{ error }}</p>
@@ -108,7 +108,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -165,22 +167,22 @@ const onSubmit = async () => {
   success.value = ''
 
   if (!email.value || !password.value || !confirmPassword.value) {
-    error.value = 'Veuillez remplir tous les champs.'
+    error.value = t('register.fillFields')
     return
   }
 
   if (!validateEmail(email.value)) {
-    error.value = 'Adresse email invalide.'
+    error.value = t('register.invalidEmail')
     return
   }
 
   if (password.value.length < 6 || !/[0-9]/.test(password.value)) {
-    error.value = 'Le mot de passe doit contenir 6 caractères et un chiffre.'
+    error.value = t('register.passwordRules')
     return
   }
 
   if (password.value !== confirmPassword.value) {
-    error.value = 'Les mots de passe ne correspondent pas.'
+    error.value = t('register.passwordMismatch')
     return
   }
 
@@ -195,7 +197,7 @@ const onSubmit = async () => {
       (u) => (u.email || '').toLowerCase() === lowerEmail
     )
     if (exists) {
-      error.value = 'Un compte existe déjà avec cet email.'
+      error.value = t('register.emailExists')
       return
     }
 
@@ -208,12 +210,12 @@ const onSubmit = async () => {
     saveCustomUsers(updatedCustom)
 
     persistAuthUser(newUser)
-    success.value = 'Compte créé avec succès ! Redirection...'
+    success.value = t('register.success')
     setTimeout(() => {
       router.push('/')
     }, 1000)
   } catch (e) {
-    error.value = "Impossible de créer le compte pour le moment."
+    error.value = t('register.createError')
   } finally {
     loading.value = false
   }

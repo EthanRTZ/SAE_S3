@@ -2,30 +2,30 @@
   <div class="panier-page">
     <div class="panier-container">
       <div class="panier-card">
-        <h1>Mon Panier</h1>
+        <h1>{{ $t('panier.title') }}</h1>
         <div class="divider"></div>
 
         <div v-if="!isAuthenticatedAsUser" class="auth-warning">
           <p v-if="!authUser" class="warning-text">
-            ⚠️ Vous devez être connecté avec un compte utilisateur pour finaliser votre commande.
-            <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+            ⚠️ {{ $t('panier.mustLogin') }}
+            <router-link to="/login" class="warning-link">{{ $t('panier.loginHere') }}</router-link>
           </p>
           <p v-else class="warning-text">
-            ⚠️ Vous êtes connecté en tant que <strong>{{ authUser.role }}</strong>. Seuls les comptes utilisateurs peuvent passer commande.
+            ⚠️ {{ $t('panier.wrongRole', { role: authUser.role }) }}
           </p>
         </div>
 
         <div v-if="panierStore.itemCount === 0" class="empty-panier">
-          <p>Votre panier est vide.</p>
+          <p>{{ $t('panier.empty') }}</p>
           <router-link to="/reservation" class="btn-secondary">
-            Retour à la billetterie
+            {{ $t('panier.backToBooking') }}
           </router-link>
         </div>
 
         <div v-else class="panier-content">
           <div class="panier-summary">
             <p class="summary-text">
-              <strong>{{ panierStore.totalQuantity }}</strong> article(s) dans votre panier
+              <strong>{{ panierStore.totalQuantity }}</strong> {{ $t('panier.articlesCount') }}
             </p>
           </div>
 
@@ -35,15 +35,15 @@
                 <h3 class="item-title">{{ item.displayLabel || formatItemTitle(item) }}</h3>
                 <p v-if="item.optionLabel" class="item-option">{{ item.optionLabel }}</p>
                 <p v-if="item.type === 'basket'" class="item-basket-info">
-                  📅 {{ formatBasketDate(item.date) }} • ⏰ {{ item.slot }} - {{ item.endTime }} • 👥 {{ item.nbPlayers }} joueurs
+                  📅 {{ formatBasketDate(item.date) }} • ⏰ {{ item.slot }} - {{ item.endTime }} • 👥 {{ item.nbPlayers }} {{ $t('panier.players') }}
                 </p>
-                <p v-else class="item-quantity">Quantité : {{ item.quantity }}</p>
+                <p v-else class="item-quantity">{{ $t('panier.quantity') }} {{ item.quantity }}</p>
               </div>
               <button
                 type="button"
                 class="btn-remove"
                 @click="removeItem(item.id)"
-                aria-label="Supprimer cet article"
+                :aria-label="$t('panier.remove')"
               >
                 ✕
               </button>
@@ -56,7 +56,7 @@
               class="btn-clear"
               @click="clearPanier"
             >
-              Vider le panier
+              {{ $t('panier.clear') }}
             </button>
             <button
               type="button"
@@ -64,13 +64,13 @@
               :disabled="!isAuthenticatedAsUser"
               @click="proceedToPayment"
             >
-              Payer
+              {{ $t('panier.pay') }}
             </button>
           </div>
 
           <div class="back-link">
             <router-link to="/reservation" class="btn-secondary">
-              Continuer mes achats
+              {{ $t('panier.continue') }}
             </router-link>
           </div>
         </div>
@@ -83,7 +83,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { usePanierStore } from '@/stores/panier'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const panierStore = usePanierStore()
 const authUser = ref(null)
@@ -105,19 +107,19 @@ const loadAuthUser = () => {
 const formatItemTitle = (item) => {
   switch (item.type) {
     case 'oneDay':
-      return 'Forfait 1 jour'
+      return t('panier.package1Day')
     case 'twoDays':
-      return 'Forfait 2 jours'
+      return t('panier.package2Days')
     case 'threeDays':
-      return 'Forfait 3 jours'
+      return t('panier.package3Days')
     case 'parking':
-      return 'Place de parking'
+      return t('panier.parking')
     case 'camping':
-      return 'Emplacement de camping'
+      return t('panier.camping')
     case 'basket':
-      return '🏀 Terrain de Basket'
+      return t('panier.basket')
     default:
-      return 'Article'
+      return t('panier.item')
   }
 }
 
@@ -126,14 +128,14 @@ const removeItem = (itemId) => {
 }
 
 const clearPanier = () => {
-  if (confirm('Êtes-vous sûr de vouloir vider votre panier ?')) {
+  if (confirm(t('panier.clearConfirm'))) {
     panierStore.clearPanier()
   }
 }
 
 const proceedToPayment = () => {
   if (!isAuthenticatedAsUser.value) {
-    alert('Vous devez être connecté en tant qu\'utilisateur pour payer.')
+    alert(t('panier.mustLoginPay'))
     return
   }
   router.push('/payment')
