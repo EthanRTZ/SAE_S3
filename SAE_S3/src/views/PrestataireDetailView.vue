@@ -194,7 +194,7 @@ const noteStats = ref({
 // --------- AVIS : chargement / sauvegarde / calcul ---------
 const loadAvisFromStorage = async (prestataireNom) => {
   try {
-x    // 1. Charger les avis depuis avis.json
+    // 1. Charger les avis depuis avis.json
     let jsonAvis = []
     try {
       const resp = await fetch('/data/avis.json', { cache: 'no-store' })
@@ -309,6 +309,8 @@ const loadPrestataire = async () => {
   } catch (error) {
     console.error('Erreur lors du chargement du prestataire:', error)
     prestataire.value = null
+    avisList.value = []
+    computeNoteStats()
   } finally {
     loading.value = false
   }
@@ -334,6 +336,12 @@ const handleImageError = (e) => {
 
 onMounted(() => {
   loadPrestataire()
+  window.addEventListener('prestataire-updated', updateHandler)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'customPrestataires' || e.key === 'festivalAvis') {
+      loadPrestataire()
+    }
+  })
 })
 
 // Écouter les mises à jour
