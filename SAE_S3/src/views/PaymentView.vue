@@ -2,27 +2,27 @@
   <div class="payment-page">
     <div class="payment-container">
       <div class="payment-card">
-        <h1>Paiement</h1>
+        <h1>{{ $t('payment.title') }}</h1>
         <div class="divider"></div>
 
         <div v-if="!authUser || authUser.role !== 'user'" class="auth-warning">
           <p class="warning-text">
-            ⚠️ Vous devez être connecté en tant qu'utilisateur pour effectuer un paiement.
-            <router-link to="/login" class="warning-link">Connectez-vous ici</router-link>
+            {{ $t('payment.mustLogin') }}
+            <router-link to="/login" class="warning-link">{{ $t('payment.loginHere') }}</router-link>
           </p>
         </div>
 
         <div v-else-if="panierStore.itemCount === 0" class="empty-warning">
-          <p>Votre panier est vide. Impossible de procéder au paiement.</p>
+          <p>{{ $t('payment.emptyCart') }}</p>
           <router-link to="/reservation" class="btn-secondary">
-            Retour à la billetterie
+            {{ $t('payment.backToBooking') }}
           </router-link>
         </div>
 
         <form v-else @submit.prevent="onSubmit" class="payment-form">
           <!-- Récapitulatif de la commande -->
           <div class="order-summary">
-            <h2 class="section-title">Récapitulatif de votre commande</h2>
+            <h2 class="section-title">{{ $t('payment.orderSummary') }}</h2>
             <ul class="summary-list">
               <li v-for="item in panierStore.items" :key="item.id" class="summary-item">
                 <span class="item-name">{{ item.displayLabel || formatItemTitle(item) }}</span>
@@ -30,16 +30,16 @@
               </li>
             </ul>
             <div class="total-items">
-              <strong>Total :</strong> {{ panierStore.totalQuantity }} place(s)
+              <strong>{{ $t('payment.total') }}</strong> {{ panierStore.totalQuantity }} {{ $t('payment.places') }}
             </div>
           </div>
 
           <!-- Informations personnelles -->
           <div class="form-section">
-            <h2 class="section-title">Informations personnelles</h2>
+            <h2 class="section-title">{{ $t('payment.personalInfo') }}</h2>
 
             <div class="input-group">
-              <label for="email">Email *</label>
+              <label for="email">{{ $t('payment.email') }}</label>
               <input
                 id="email"
                 type="email"
@@ -52,7 +52,7 @@
 
             <div class="input-row">
               <div class="input-group">
-                <label for="firstName">Prénom *</label>
+                <label for="firstName">{{ $t('payment.firstName') }}</label>
                 <input
                   id="firstName"
                   type="text"
@@ -63,7 +63,7 @@
               </div>
 
               <div class="input-group">
-                <label for="lastName">Nom *</label>
+                <label for="lastName">{{ $t('payment.lastName') }}</label>
                 <input
                   id="lastName"
                   type="text"
@@ -75,7 +75,7 @@
             </div>
 
             <div class="input-group">
-              <label for="phone">Téléphone *</label>
+              <label for="phone">{{ $t('payment.phone') }}</label>
               <input
                 id="phone"
                 type="tel"
@@ -85,11 +85,11 @@
                 placeholder="0612345678"
                 maxlength="10"
               />
-              <p class="input-hint">Format: 10 chiffres sans espaces</p>
+              <p class="input-hint">{{ $t('payment.phoneFormat') }}</p>
             </div>
 
             <div class="input-group">
-              <label for="address">Adresse *</label>
+              <label for="address">{{ $t('payment.address') }}</label>
               <input
                 id="address"
                 type="text"
@@ -102,7 +102,7 @@
 
             <div class="input-row">
               <div class="input-group">
-                <label for="postalCode">Code postal *</label>
+                <label for="postalCode">{{ $t('payment.postalCode') }}</label>
                 <input
                   id="postalCode"
                   type="text"
@@ -115,7 +115,7 @@
               </div>
 
               <div class="input-group">
-                <label for="city">Ville *</label>
+                <label for="city">{{ $t('payment.city') }}</label>
                 <input
                   id="city"
                   type="text"
@@ -130,7 +130,7 @@
 
           <!-- Moyen de paiement -->
           <div class="form-section">
-            <h2 class="section-title">Moyen de paiement</h2>
+            <h2 class="section-title">{{ $t('payment.paymentMethod') }}</h2>
 
             <div class="payment-methods">
               <label class="payment-method" :class="{ active: paymentMethod === 'card' }">
@@ -141,7 +141,7 @@
                   v-model="paymentMethod"
                 />
                 <div class="method-content">
-                  <span class="method-name">Carte bancaire</span>
+                  <span class="method-name">{{ $t('payment.creditCard') }}</span>
                 </div>
               </label>
 
@@ -153,7 +153,7 @@
                   v-model="paymentMethod"
                 />
                 <div class="method-content">
-                  <span class="method-name">PayPal</span>
+                  <span class="method-name">{{ $t('payment.paypal') }}</span>
                 </div>
               </label>
             </div>
@@ -161,7 +161,7 @@
             <!-- Formulaire carte bancaire -->
             <div v-if="paymentMethod === 'card'" class="card-form">
               <div class="input-group">
-                <label for="cardNumber">Numéro de carte *</label>
+                <label for="cardNumber">{{ $t('payment.cardNumber') }}</label>
                 <input
                   id="cardNumber"
                   type="text"
@@ -173,12 +173,12 @@
                 />
                 <p v-if="cardError" class="input-error">{{ cardError }}</p>
                 <div v-if="cardType" class="card-type">
-                  Type de carte: <strong>{{ cardType }}</strong>
+                  {{ $t('payment.cardType') }} <strong>{{ cardType }}</strong>
                 </div>
               </div>
 
               <div class="input-group">
-                <label for="cardName">Nom sur la carte *</label>
+                <label for="cardName">{{ $t('payment.cardName') }}</label>
                 <input
                   id="cardName"
                   type="text"
@@ -192,7 +192,7 @@
 
               <div class="input-row">
                 <div class="input-group">
-                  <label for="cardExpiry">Date d'expiration *</label>
+                  <label for="cardExpiry">{{ $t('payment.cardExpiry') }}</label>
                   <input
                     id="cardExpiry"
                     type="text"
@@ -206,7 +206,7 @@
                 </div>
 
                 <div class="input-group">
-                  <label for="cardCvv">CVV *</label>
+                  <label for="cardCvv">{{ $t('payment.cardCvv') }}</label>
                   <input
                     id="cardCvv"
                     type="text"
@@ -216,7 +216,7 @@
                     maxlength="4"
                     @input="formatCvv"
                   />
-                  <p class="input-hint">3 ou 4 chiffres au dos</p>
+                  <p class="input-hint">{{ $t('payment.cvvHint') }}</p>
                 </div>
               </div>
             </div>
@@ -224,7 +224,7 @@
             <!-- Formulaire PayPal -->
             <div v-else-if="paymentMethod === 'paypal'" class="paypal-info">
               <p class="info-text">
-                Vous serez redirigé vers PayPal pour finaliser votre paiement en toute sécurité.
+                {{ $t('payment.paypalInfo') }}
               </p>
             </div>
           </div>
@@ -233,19 +233,19 @@
 
           <div class="form-actions">
             <router-link to="/panier" class="btn-back">
-              ← Retour au panier
+              {{ $t('payment.backToCart') }}
             </router-link>
             <button
               type="submit"
               class="btn-pay"
               :disabled="processing"
             >
-              {{ processing ? 'Traitement...' : 'Payer maintenant' }}
+              {{ processing ? $t('payment.processing') : $t('payment.payNow') }}
             </button>
           </div>
 
           <p class="security-notice">
-            🔒 Paiement sécurisé - Vos données sont cryptées
+            {{ $t('payment.securePayment') }}
           </p>
         </form>
       </div>
@@ -257,7 +257,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePanierStore } from '@/stores/panier'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const panierStore = usePanierStore()
 const authUser = ref(null)
@@ -300,17 +302,17 @@ const loadAuthUser = () => {
 const formatItemTitle = (item) => {
   switch (item.type) {
     case 'oneDay':
-      return 'Forfait 1 jour'
+      return t('panier.package1Day')
     case 'twoDays':
-      return 'Forfait 2 jours'
+      return t('panier.package2Days')
     case 'threeDays':
-      return 'Forfait 3 jours'
+      return t('panier.package3Days')
     case 'parking':
-      return 'Place de parking'
+      return t('panier.parking')
     case 'camping':
-      return 'Emplacement de camping'
+      return t('panier.camping')
     default:
-      return 'Article'
+      return t('panier.item')
   }
 }
 
@@ -390,12 +392,12 @@ const validateCard = () => {
   const cleaned = cardData.value.number.replace(/\D/g, '')
 
   if (cleaned.length < 13 || cleaned.length > 19) {
-    cardError.value = 'Le numéro de carte doit contenir entre 13 et 19 chiffres'
+    cardError.value = t('payment.invalidCardLength')
     return false
   }
 
   if (!luhnCheck(cardData.value.number)) {
-    cardError.value = 'Numéro de carte invalide'
+    cardError.value = t('payment.invalidCard')
     return false
   }
 
@@ -406,7 +408,7 @@ const validateCard = () => {
 const validateExpiry = () => {
   const parts = cardData.value.expiry.split('/')
   if (parts.length !== 2) {
-    expiryError.value = 'Format invalide (MM/AA)'
+    expiryError.value = t('payment.invalidExpiryFormat')
     return false
   }
 
@@ -414,7 +416,7 @@ const validateExpiry = () => {
   const year = parseInt('20' + parts[1])
 
   if (month < 1 || month > 12) {
-    expiryError.value = 'Mois invalide (01-12)'
+    expiryError.value = t('payment.invalidMonth')
     return false
   }
 
@@ -423,12 +425,12 @@ const validateExpiry = () => {
   const currentMonth = now.getMonth() + 1
 
   if (year < currentYear || (year === currentYear && month < currentMonth)) {
-    expiryError.value = 'Carte expirée'
+    expiryError.value = t('payment.expiredCard')
     return false
   }
 
   if (year > currentYear + 10) {
-    expiryError.value = 'Date d\'expiration invalide'
+    expiryError.value = t('payment.invalidExpiry')
     return false
   }
 
@@ -441,17 +443,17 @@ const onSubmit = async () => {
 
   // Validation des informations personnelles
   if (!formData.value.firstName || !formData.value.lastName) {
-    error.value = 'Veuillez renseigner votre nom complet'
+    error.value = t('payment.missingName')
     return
   }
 
   if (!/^[0-9]{10}$/.test(formData.value.phone)) {
-    error.value = 'Le numéro de téléphone doit contenir 10 chiffres'
+    error.value = t('payment.invalidPhone')
     return
   }
 
   if (!/^[0-9]{5}$/.test(formData.value.postalCode)) {
-    error.value = 'Le code postal doit contenir 5 chiffres'
+    error.value = t('payment.invalidPostalCode')
     return
   }
 
@@ -461,12 +463,12 @@ const onSubmit = async () => {
     if (!validateExpiry()) return
 
     if (!cardData.value.name || cardData.value.name.length < 3) {
-      error.value = 'Veuillez renseigner le nom sur la carte'
+      error.value = t('payment.invalidName')
       return
     }
 
     if (!/^[0-9]{3,4}$/.test(cardData.value.cvv)) {
-      error.value = 'Le CVV doit contenir 3 ou 4 chiffres'
+      error.value = t('payment.invalidCvv')
       return
     }
   }
@@ -525,10 +527,10 @@ const onSubmit = async () => {
       panierStore.clearPanierAfterPayment()
 
       // Rediriger vers la page des réservations
-      alert('✅ Paiement effectué avec succès ! Vos billets ont été ajoutés à vos réservations.')
+      alert(t('payment.paymentSuccess'))
       router.push('/mes-reservations')
     } catch (e) {
-      error.value = 'Une erreur est survenue lors du traitement du paiement'
+      error.value = t('payment.paymentError')
     } finally {
       processing.value = false
     }

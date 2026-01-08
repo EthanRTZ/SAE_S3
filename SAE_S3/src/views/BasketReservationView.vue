@@ -4,13 +4,13 @@
       <div class="basket-reservation-card">
         <div class="header-section">
           <router-link to="/prestataire/Terrain%20de%20basket" class="btn-back">
-            ← Retour au prestataire
+            {{ $t('basketReservation.backToProvider') }}
           </router-link>
-          <h1>🏀 Réservation Terrain de Basket</h1>
+          <h1>{{ $t('basketReservation.title') }}</h1>
           <div class="divider"></div>
           <p class="intro-text">
-            Réservez votre créneau sur notre terrain de basket pendant le festival !
-            <br><strong>Du 28 au 30 août 2026</strong> - Combe à la Serpent, Corcelles-lès-Monts
+            {{ $t('basketReservation.intro') }}
+            <br><strong>{{ $t('basketReservation.dates') }}</strong> - {{ $t('basketReservation.location') }}
           </p>
         </div>
 
@@ -18,7 +18,7 @@
         <div class="section">
           <h2 class="section-title">
             <span class="step-number">1</span>
-            Choisissez votre journée
+            {{ $t('basketReservation.step1') }}
           </h2>
           <div class="festival-dates-grid">
             <button
@@ -41,13 +41,13 @@
         <div v-if="selectedDate" class="section">
           <h2 class="section-title">
             <span class="step-number">2</span>
-            Choisissez un créneau horaire
+            {{ $t('basketReservation.step2') }}
           </h2>
-          <p class="section-subtitle">⏱️ Durée : 1 heure par créneau</p>
+          <p class="section-subtitle">{{ $t('basketReservation.duration') }}</p>
 
           <div class="time-periods">
             <div class="time-period">
-              <h3 class="period-title">🌅 Matin</h3>
+              <h3 class="period-title">{{ $t('basketReservation.morning') }}</h3>
               <div class="slots-row">
                 <button
                   v-for="slot in morningSlots"
@@ -68,7 +68,7 @@
             </div>
 
             <div class="time-period">
-              <h3 class="period-title">☀️ Après-midi</h3>
+              <h3 class="period-title">{{ $t('basketReservation.afternoon') }}</h3>
               <div class="slots-row">
                 <button
                   v-for="slot in afternoonSlots"
@@ -89,7 +89,7 @@
             </div>
 
             <div class="time-period">
-              <h3 class="period-title">🌙 Soirée</h3>
+              <h3 class="period-title">{{ $t('basketReservation.evening') }}</h3>
               <div class="slots-row">
                 <button
                   v-for="slot in eveningSlots"
@@ -115,7 +115,7 @@
         <div v-if="selectedSlot" class="section">
           <h2 class="section-title">
             <span class="step-number">3</span>
-            Nombre de joueurs
+            {{ $t('basketReservation.step3') }}
           </h2>
           <div class="players-selector">
             <button
@@ -126,7 +126,7 @@
             >−</button>
             <div class="players-display">
               <span class="players-count">{{ nbPlayers }}</span>
-              <span class="players-label">joueurs</span>
+              <span class="players-label">{{ $t('basketReservation.players') }}</span>
             </div>
             <button
               type="button"
@@ -135,42 +135,42 @@
               :disabled="nbPlayers >= 10"
             >+</button>
           </div>
-          <p class="players-info">👥 De 2 à 10 joueurs par créneau</p>
+          <p class="players-info">{{ $t('basketReservation.playersInfo') }}</p>
         </div>
 
         <!-- Récapitulatif -->
         <div v-if="selectedSlot" class="section recap-section">
           <h2 class="section-title">
             <span class="step-number">✓</span>
-            Récapitulatif
+            {{ $t('basketReservation.step4') }}
           </h2>
           <div class="recap-card">
             <div class="recap-item">
               <span class="recap-icon">📅</span>
               <div class="recap-content">
-                <span class="recap-label">Date</span>
+                <span class="recap-label">{{ $t('basketReservation.recapDate') }}</span>
                 <span class="recap-value">{{ formatSelectedDate }}</span>
               </div>
             </div>
             <div class="recap-item">
               <span class="recap-icon">⏰</span>
               <div class="recap-content">
-                <span class="recap-label">Créneau</span>
+                <span class="recap-label">{{ $t('basketReservation.recapSlot') }}</span>
                 <span class="recap-value">{{ selectedSlot }} - {{ getEndTime(selectedSlot) }}</span>
               </div>
             </div>
             <div class="recap-item">
               <span class="recap-icon">👥</span>
               <div class="recap-content">
-                <span class="recap-label">Équipe</span>
-                <span class="recap-value">{{ nbPlayers }} joueurs</span>
+                <span class="recap-label">{{ $t('basketReservation.recapTeam') }}</span>
+                <span class="recap-value">{{ nbPlayers }} {{ $t('basketReservation.players') }}</span>
               </div>
             </div>
             <div class="recap-item recap-location">
               <span class="recap-icon">📍</span>
               <div class="recap-content">
-                <span class="recap-label">Lieu</span>
-                <span class="recap-value">Terrain de basket - Golden Coast Festival</span>
+                <span class="recap-label">{{ $t('basketReservation.recapLocation') }}</span>
+                <span class="recap-value">{{ $t('basketReservation.recapLocationValue') }}</span>
               </div>
             </div>
           </div>
@@ -186,11 +186,11 @@
             @click="addToCart"
           >
             <span class="btn-icon">🛒</span>
-            Ajouter au panier
+            {{ $t('basketReservation.addToCart') }}
           </button>
 
           <router-link to="/prestataire" class="btn-secondary">
-            Voir tous les prestataires
+            {{ $t('basketReservation.viewAllProviders') }}
           </router-link>
         </div>
 
@@ -198,8 +198,8 @@
         <transition name="fade">
           <div v-if="showConfirmation" class="confirmation-message">
             <span class="confirmation-icon">✅</span>
-            <span>Réservation ajoutée au panier !</span>
-            <router-link to="/panier" class="confirmation-link">Voir le panier →</router-link>
+            <span>{{ $t('basketReservation.addedToCart') }}</span>
+            <router-link to="/panier" class="confirmation-link">{{ $t('basketReservation.viewCart') }}</router-link>
           </div>
         </transition>
       </div>
@@ -210,7 +210,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { usePanierStore } from '@/stores/panier'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const panierStore = usePanierStore()
 
 // État
@@ -229,21 +231,21 @@ const festivalDates = [
     dayName: 'Vendredi',
     dayNumber: 28,
     monthName: 'Août',
-    label: 'Jour 1'
+    label: t('basketReservation.day1')
   },
   {
     dateStr: '2026-08-29',
     dayName: 'Samedi',
     dayNumber: 29,
     monthName: 'Août',
-    label: 'Jour 2'
+    label: t('basketReservation.day2')
   },
   {
     dateStr: '2026-08-30',
     dayName: 'Dimanche',
     dayNumber: 30,
     monthName: 'Août',
-    label: 'Jour 3'
+    label: t('basketReservation.day3')
   }
 ]
 
@@ -338,8 +340,8 @@ const addToCart = () => {
     endTime: getEndTime(selectedSlot.value),
     nbPlayers: nbPlayers.value,
     quantity: 1,
-    displayLabel: `🏀 Terrain de Basket - ${formatSelectedDate.value}`,
-    optionLabel: `${selectedSlot.value} - ${getEndTime(selectedSlot.value)} (${nbPlayers.value} joueurs)`
+    displayLabel: `🏀 ${t('panier.basket')} - ${formatSelectedDate.value}`,
+    optionLabel: `${selectedSlot.value} - ${getEndTime(selectedSlot.value)} (${nbPlayers.value} ${t('basketReservation.players')})`
   }
 
   panierStore.addItem(reservation)

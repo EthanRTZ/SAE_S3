@@ -189,7 +189,9 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const prestataire = ref(null)
@@ -331,8 +333,8 @@ const loadPrestataire = async () => {
 }
 
 const formatServicePrix = (prix) => {
-  if (prix === undefined || prix === null) return 'Gratuit'
-  if (prix === 0) return 'Gratuit'
+  if (prix === undefined || prix === null) return t('home.free')
+  if (prix === 0) return t('home.free')
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(prix)
 }
 

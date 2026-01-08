@@ -257,7 +257,8 @@ const selectedStage = ref('')
 const editingSlot = ref(null)
 
 // Données de présentation du festival (éditeur WYSIWYG)
-const festivalPresentation = ref({
+// Structure par défaut pour les deux langues
+const defaultPresentationFR = {
   // Hero
   titre: 'GOLDEN COAST FESTIVAL V3',
   date: '28 - 29 - 30 août 2026',
@@ -289,7 +290,50 @@ const festivalPresentation = ref({
   // Section Map
   mapTitre: 'LOCALISATION',
   mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
+}
+
+const defaultPresentationEN = {
+  // Hero
+  titre: 'GOLDEN COAST FESTIVAL V3',
+  date: 'August 28 - 29 - 30, 2026',
+  lieu: 'CORCELLES-LES-MONTS • DIJON',
+
+  // Section About (les 3 cards)
+  aboutCard1Titre: '100% FRENCH RAP',
+  aboutCard1Texte: 'The biggest festival entirely dedicated to <strong>French rap</strong> with the biggest headliners and emerging talents.',
+  aboutCard2Titre: 'NATURAL SITE',
+  aboutCard2Texte: 'An exceptional setting at <strong>Combe à la Serpent</strong>, offering a unique experience in the heart of nature near Dijon.',
+  aboutCard3Titre: '52,000 FESTIVAL-GOERS',
+  aboutCard3Texte: 'A successful first edition that returns even stronger for <strong>three days of urban culture</strong>.',
+
+  // Section Description 1
+  desc1Titre: 'The meeting place for rap fans',
+  desc1Texte: 'Dive into the Golden Coast Festival experience, the French rap event that transforms the end of summer into an exceptional moment.<br/><br/>In a carefully scenographed setting, you discover exclusive performances, trap & boom bap sound of studio quality, and immersive stages designed to enhance each artist.',
+  desc1Chip1: 'The biggest stars of French rap',
+  desc1Chip2: 'Drinks & street food',
+
+  // Section Description 2
+  desc2Titre: 'Total immersion',
+  desc2Texte: 'Between high-intensity light shows, lifestyle spaces, sharp vintage selections, and signature street food, every detail is designed to offer a smooth, refined and memorable experience.<br/><br/>The exclusive afters, reserved for those who want to prolong the moment, add a rare and privileged touch. Golden Coast Festival is more than a meeting: it\'s the premium event where rap culture is lived intensely, in an exclusive, creative and truly unforgettable atmosphere.',
+
+  // Section CTA
+  ctaTitre: 'READY TO LIVE THE EXPERIENCE?',
+  ctaTexte: 'Book your tickets now and join us for three unforgettable days!',
+  ctaBouton: 'BOOK MY SPOT',
+
+  // Section Map
+  mapTitre: 'LOCATION',
+  mapIntro: 'Find all the festival points of interest: stages, parking lots, campsites and more.'
+}
+
+// Structure bilingue de festivalPresentation
+const festivalPresentation = ref({
+  fr: { ...defaultPresentationFR },
+  en: { ...defaultPresentationEN }
 })
+
+// Langue d'édition actuelle
+const editingLang = ref('fr')
 
 // Sous-section active pour la présentation
 const presentationSubSection = ref('hero')
@@ -595,14 +639,38 @@ const loadData = async () => {
       dernierAvisFestival // AJOUT
     }
 
-    // Charger présentation personnalisée si elle existe
+    // Charger présentation personnalisée si elle existe, sinon initialiser avec les valeurs par défaut
     const savedPresentation = localStorage.getItem('festivalPresentation')
     if (savedPresentation) {
       try {
-        festivalPresentation.value = JSON.parse(savedPresentation)
+        const parsed = JSON.parse(savedPresentation)
+        // Vérifier si c'est le nouveau format bilingue
+        if (parsed.fr && parsed.en) {
+          festivalPresentation.value = parsed
+        } else {
+          // Ancien format : migrer vers le format bilingue
+          festivalPresentation.value = {
+            fr: { ...defaultPresentationFR, ...parsed },
+            en: { ...defaultPresentationEN }
+          }
+          // Sauvegarder le nouveau format
+          localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
+        }
       } catch (e) {
-        // ignore
+        // En cas d'erreur, initialiser avec les valeurs par défaut
+        festivalPresentation.value = {
+          fr: { ...defaultPresentationFR },
+          en: { ...defaultPresentationEN }
+        }
+        localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
       }
+    } else {
+      // Aucune donnée sauvegardée : initialiser avec les valeurs par défaut
+      festivalPresentation.value = {
+        fr: { ...defaultPresentationFR },
+        en: { ...defaultPresentationEN }
+      }
+      localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
     }
 
     // Charger la programmation
@@ -799,31 +867,29 @@ const resetPresentation = () => {
   }
 
   festivalPresentation.value = {
-    titre: 'GOLDEN COAST FESTIVAL V3',
-    date: '28 - 29 - 30 août 2026',
-    lieu: 'CORCELLES-LES-MONTS • DIJON',
-    aboutCard1Titre: '100% RAP FR',
-    aboutCard1Texte: 'Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d\'affiche et les talents émergents.',
-    aboutCard2Titre: 'SITE NATUREL',
-    aboutCard2Texte: 'Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.',
-    aboutCard3Titre: '52 000 FESTIVALIERS',
-    aboutCard3Texte: 'Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.',
-    desc1Titre: 'Le rendez-vous des fans de rap',
-    desc1Texte: 'Plonge au cœur de l\'expérience Golden Coast Festival, l\'événement rap français qui transforme la fin de l\'été en un moment d\'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d\'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.',
-    desc1Chip1: 'Les plus grandes stars du rap français',
-    desc1Chip2: 'Boissons & street-food',
-    desc2Titre: 'Une immersion totale',
-    desc2Texte: 'Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l\'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c\'est plus qu\'un rendez-vous : c\'est l\'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.',
-    ctaTitre: 'PRÊT À VIVRE L\'EXPÉRIENCE ?',
-    ctaTexte: 'Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !',
-    ctaBouton: 'RÉSERVER MA PLACE',
-    mapTitre: 'LOCALISATION',
-    mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
+    fr: { ...defaultPresentationFR },
+    en: { ...defaultPresentationEN }
   }
 
   localStorage.removeItem('festivalPresentation')
   alert('Textes réinitialisés aux valeurs par défaut!')
 }
+
+// Computed pour accéder facilement aux données selon la langue d'édition
+const currentPresentation = computed({
+  get: () => {
+    // S'assurer que la structure existe
+    if (!festivalPresentation.value[editingLang.value]) {
+      festivalPresentation.value[editingLang.value] = editingLang.value === 'fr' 
+        ? { ...defaultPresentationFR }
+        : { ...defaultPresentationEN }
+    }
+    return festivalPresentation.value[editingLang.value]
+  },
+  set: (value) => {
+    festivalPresentation.value[editingLang.value] = { ...value }
+  }
+})
 
 const savePrestataireChanges = () => {
   if (!selectedPrestataire.value) return
@@ -1720,6 +1786,23 @@ onMounted(() => {
         <div v-if="currentSection === 'presentation'" class="section-content">
           <div class="section-header">
             <h1 class="section-title">Présentation du festival</h1>
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+              <label style="font-weight: 600; color: #333;">Langue d'édition :</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <button
+                  @click="editingLang = 'fr'"
+                  :class="['pres-lang-btn', { 'pres-lang-btn-active': editingLang === 'fr' }]"
+                >
+                  🇫🇷 Français
+                </button>
+                <button
+                  @click="editingLang = 'en'"
+                  :class="['pres-lang-btn', { 'pres-lang-btn-active': editingLang === 'en' }]"
+                >
+                  🇬🇧 English
+                </button>
+              </div>
+            </div>
             <button @click="resetPresentation" class="pres-btn-reset-header">
               <span class="pres-btn-icon">🔄</span>
               <span class="pres-btn-text">Réinitialiser</span>
@@ -1766,9 +1849,9 @@ onMounted(() => {
                   <div class="pres-form-group">
                     <label class="pres-form-label">Titre principal</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.titre"
+                      v-model="currentPresentation.titre"
                       :height="300"
-                      placeholder="GOLDEN COAST FESTIVAL V3"
+                      :placeholder="editingLang === 'fr' ? 'GOLDEN COAST FESTIVAL V3' : 'GOLDEN COAST FESTIVAL V3'"
                     />
                   </div>
 
@@ -1776,16 +1859,16 @@ onMounted(() => {
                     <div class="pres-form-group">
                       <label class="pres-form-label">Date</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.date"
+                        v-model="currentPresentation.date"
                         :height="400"
-                        placeholder="28 - 29 - 30 août 2026"
+                        :placeholder="editingLang === 'fr' ? '28 - 29 - 30 août 2026' : 'August 28 - 29 - 30, 2026'"
                       />
                     </div>
 
                     <div class="pres-form-group">
                       <label class="pres-form-label">Lieu</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.lieu"
+                        v-model="currentPresentation.lieu"
                         :height="400"
                         placeholder="CORCELLES-LES-MONTS • DIJON"
                       />
@@ -1813,17 +1896,17 @@ onMounted(() => {
                     <div class="pres-form-group">
                       <label class="pres-form-label">Titre</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard1Titre"
+                        v-model="currentPresentation.aboutCard1Titre"
                         :height="300"
-                        placeholder="100% RAP FR"
+                        :placeholder="editingLang === 'fr' ? '100% RAP FR' : '100% FRENCH RAP'"
                       />
                     </div>
                     <div class="pres-form-group">
                       <label class="pres-form-label">Texte</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard1Texte"
+                        v-model="currentPresentation.aboutCard1Texte"
                         :height="300"
-                        placeholder="Description de la première carte..."
+                        :placeholder="editingLang === 'fr' ? 'Description de la première carte...' : 'First card description...'"
                       />
                     </div>
                   </div>
@@ -1836,17 +1919,17 @@ onMounted(() => {
                     <div class="pres-form-group">
                       <label class="pres-form-label">Titre</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard2Titre"
+                        v-model="currentPresentation.aboutCard2Titre"
                         :height="300"
-                        placeholder="SITE NATUREL"
+                        :placeholder="editingLang === 'fr' ? 'SITE NATUREL' : 'NATURAL SITE'"
                       />
                     </div>
                     <div class="pres-form-group">
                       <label class="pres-form-label">Texte</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard2Texte"
+                        v-model="currentPresentation.aboutCard2Texte"
                         :height="300"
-                        placeholder="Description de la deuxième carte..."
+                        :placeholder="editingLang === 'fr' ? 'Description de la deuxième carte...' : 'Second card description...'"
                       />
                     </div>
                   </div>
@@ -1859,17 +1942,17 @@ onMounted(() => {
                     <div class="pres-form-group">
                       <label class="pres-form-label">Titre</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard3Titre"
+                        v-model="currentPresentation.aboutCard3Titre"
                         :height="300"
-                        placeholder="52 000 FESTIVALIERS"
+                        :placeholder="editingLang === 'fr' ? '52 000 FESTIVALIERS' : '52,000 FESTIVAL-GOERS'"
                       />
                     </div>
                     <div class="pres-form-group">
                       <label class="pres-form-label">Texte</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.aboutCard3Texte"
+                        v-model="currentPresentation.aboutCard3Texte"
                         :height="300"
-                        placeholder="Description de la troisième carte..."
+                        :placeholder="editingLang === 'fr' ? 'Description de la troisième carte...' : 'Third card description...'"
                       />
                     </div>
                   </div>
@@ -1890,18 +1973,18 @@ onMounted(() => {
                   <div class="pres-form-group">
                     <label class="pres-form-label">Titre</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.desc1Titre"
+                      v-model="currentPresentation.desc1Titre"
                       :height="300"
-                      placeholder="Le rendez-vous des fans de rap"
+                      :placeholder="editingLang === 'fr' ? 'Le rendez-vous des fans de rap' : 'The meeting place for rap fans'"
                     />
                   </div>
 
                   <div class="pres-form-group">
                     <label class="pres-form-label">Texte principal</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.desc1Texte"
+                      v-model="currentPresentation.desc1Texte"
                       :height="450"
-                      placeholder="Décrivez l'expérience du festival..."
+                      :placeholder="editingLang === 'fr' ? 'Décrivez l\'expérience du festival...' : 'Describe the festival experience...'"
                     />
                   </div>
 
@@ -1909,18 +1992,18 @@ onMounted(() => {
                     <div class="pres-form-group">
                       <label class="pres-form-label">Point fort 1</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.desc1Chip1"
+                        v-model="currentPresentation.desc1Chip1"
                         :height="300"
-                        placeholder="Premier point fort"
+                        :placeholder="editingLang === 'fr' ? 'Premier point fort' : 'First highlight'"
                       />
                     </div>
 
                     <div class="pres-form-group">
                       <label class="pres-form-label">Point fort 2</label>
                       <WysiwygEditor
-                        v-model="festivalPresentation.desc1Chip2"
+                        v-model="currentPresentation.desc1Chip2"
                         :height="300"
-                        placeholder="Deuxième point fort"
+                        :placeholder="editingLang === 'fr' ? 'Deuxième point fort' : 'Second highlight'"
                       />
                     </div>
                   </div>
@@ -1941,18 +2024,18 @@ onMounted(() => {
                   <div class="pres-form-group">
                     <label class="pres-form-label">Titre</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.desc2Titre"
+                      v-model="currentPresentation.desc2Titre"
                       :height="300"
-                      placeholder="Une immersion totale"
+                      :placeholder="editingLang === 'fr' ? 'Une immersion totale' : 'Total immersion'"
                     />
                   </div>
 
                   <div class="pres-form-group">
                     <label class="pres-form-label">Texte principal</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.desc2Texte"
+                      v-model="currentPresentation.desc2Texte"
                       :height="500"
-                      placeholder="Détaillez l'ambiance et l'expérience..."
+                      :placeholder="editingLang === 'fr' ? 'Détaillez l\'ambiance et l\'expérience...' : 'Detail the atmosphere and experience...'"
                     />
                   </div>
                 </div>
@@ -1972,27 +2055,27 @@ onMounted(() => {
                   <div class="pres-form-group">
                     <label class="pres-form-label">Titre</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.ctaTitre"
+                      v-model="currentPresentation.ctaTitre"
                       :height="300"
-                      placeholder="PRÊT À VIVRE L'EXPÉRIENCE ?"
+                      :placeholder="editingLang === 'fr' ? 'PRÊT À VIVRE L\'EXPÉRIENCE ?' : 'READY TO LIVE THE EXPERIENCE?'"
                     />
                   </div>
 
                   <div class="pres-form-group">
                     <label class="pres-form-label">Texte</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.ctaTexte"
+                      v-model="currentPresentation.ctaTexte"
                       :height="250"
-                      placeholder="Message d'invitation..."
+                      :placeholder="editingLang === 'fr' ? 'Message d\'invitation...' : 'Invitation message...'"
                     />
                   </div>
 
                   <div class="pres-form-group">
                     <label class="pres-form-label">Texte du bouton</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.ctaBouton"
+                      v-model="currentPresentation.ctaBouton"
                       :height="250"
-                      placeholder="RÉSERVER MA PLACE"
+                      :placeholder="editingLang === 'fr' ? 'RÉSERVER MA PLACE' : 'BOOK MY SPOT'"
                     />
                   </div>
                 </div>
@@ -2012,18 +2095,18 @@ onMounted(() => {
                   <div class="pres-form-group">
                     <label class="pres-form-label">Titre</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.mapTitre"
+                      v-model="currentPresentation.mapTitre"
                       :height="300"
-                      placeholder="LOCALISATION"
+                      :placeholder="editingLang === 'fr' ? 'LOCALISATION' : 'LOCATION'"
                     />
                   </div>
 
                   <div class="pres-form-group">
                     <label class="pres-form-label">Texte d'introduction</label>
                     <WysiwygEditor
-                      v-model="festivalPresentation.mapIntro"
+                      v-model="currentPresentation.mapIntro"
                       :height="250"
-                      placeholder="Retrouvez tous les points d'intérêt..."
+                      :placeholder="editingLang === 'fr' ? 'Retrouvez tous les points d\'intérêt...' : 'Find all the points of interest...'"
                     />
                   </div>
                 </div>
@@ -5093,6 +5176,78 @@ onMounted(() => {
   font-size: 1.3rem;
   font-weight: 800;
   margin: 0;
+}
+
+/* Boutons de sélection de langue */
+.pres-lang-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pres-lang-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.pres-lang-btn-active {
+  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
+  border-color: #a855f7;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.pres-lang-btn-active:hover {
+  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
+  border-color: #a855f7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+/* Boutons de sélection de langue */
+.pres-lang-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pres-lang-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.pres-lang-btn-active {
+  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
+  border-color: #a855f7;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.pres-lang-btn-active:hover {
+  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
+  border-color: #a855f7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
 }
 
 /* Boutons Présentation */

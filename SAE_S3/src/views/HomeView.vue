@@ -6,12 +6,12 @@
         <source :src="normalizePublicPath('/media/fond.mp4')" type="video/mp4">
       </video>
       <div class="hero-content">
-        <h1 class="hero-title">{{ festivalPresentation.titre }}</h1>
-        <p class="hero-date"><strong>{{ festivalPresentation.date }}</strong></p>
-        <p class="hero-location"><strong>{{ festivalPresentation.lieu }}</strong></p>
+        <h1 class="hero-title">{{ translatedPresentation.titre }}</h1>
+        <p class="hero-date"><strong>{{ translatedPresentation.date }}</strong></p>
+        <p class="hero-location"><strong>{{ translatedPresentation.lieu }}</strong></p>
         <div class="hero-buttons">
-          <router-link to="/reservation" class="btn-hero btn-primary">BILLETTERIE</router-link>
-          <router-link to="/programmation" class="btn-hero btn-secondary">Programmation</router-link>
+          <router-link to="/reservation" class="btn-hero btn-primary">{{ $t('home.buyTickets') }}</router-link>
+          <router-link to="/programmation" class="btn-hero btn-secondary">{{ $t('nav.programmation') }}</router-link>
         </div>
       </div>
     </div>
@@ -40,22 +40,22 @@
     <section class="about-section">
       <div class="about-container">
         <div class="about-content">
-          <h2 class="section-title">LE FESTIVAL</h2>
+          <h2 class="section-title">{{ $t('home.festival') }}</h2>
           <div class="about-grid">
             <div class="about-card">
               <div class="card-icon">🎤</div>
-              <h3>{{ festivalPresentation.aboutCard1Titre }}</h3>
-              <p v-html="festivalPresentation.aboutCard1Texte"></p>
+              <h3>{{ translatedPresentation.aboutCard1Titre }}</h3>
+              <p v-html="translatedPresentation.aboutCard1Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">🌳</div>
-              <h3>{{ festivalPresentation.aboutCard2Titre }}</h3>
-              <p v-html="festivalPresentation.aboutCard2Texte"></p>
+              <h3>{{ translatedPresentation.aboutCard2Titre }}</h3>
+              <p v-html="translatedPresentation.aboutCard2Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">👥</div>
-              <h3>{{ festivalPresentation.aboutCard3Titre }}</h3>
-              <p v-html="festivalPresentation.aboutCard3Texte"></p>
+              <h3>{{ translatedPresentation.aboutCard3Titre }}</h3>
+              <p v-html="translatedPresentation.aboutCard3Texte"></p>
             </div>
           </div>
         </div>
@@ -65,11 +65,11 @@
     <section class="description-section">
       <div class="description-container two-col">
         <div class="description-left">
-          <h2 class="description-title"><strong>{{ festivalPresentation.desc1Titre }}</strong></h2>
-          <p class="description-text" v-html="festivalPresentation.desc1Texte"></p>
+          <h2 class="description-title"><strong>{{ translatedPresentation.desc1Titre }}</strong></h2>
+          <p class="description-text" v-html="translatedPresentation.desc1Texte"></p>
           <div class="description-highlights">
-            <span class="highlight-chip"><strong>{{ festivalPresentation.desc1Chip1 }}</strong></span>
-            <span class="highlight-chip"><strong>{{ festivalPresentation.desc1Chip2 }}</strong></span>
+            <span class="highlight-chip"><strong>{{ translatedPresentation.desc1Chip1 }}</strong></span>
+            <span class="highlight-chip"><strong>{{ translatedPresentation.desc1Chip2 }}</strong></span>
           </div>
         </div>
         <div class="description-right">
@@ -82,8 +82,8 @@
           <img :src="normalizePublicPath('/media/accueil2.jpeg')" alt="Ambiance Golden Coast" class="description-image" />
         </div>
         <div class="description-left">
-          <h2 class="description-title"><strong>{{ festivalPresentation.desc2Titre }}</strong></h2>
-          <p class="description-text" v-html="festivalPresentation.desc2Texte"></p>
+          <h2 class="description-title"><strong>{{ translatedPresentation.desc2Titre }}</strong></h2>
+          <p class="description-text" v-html="translatedPresentation.desc2Texte"></p>
         </div>
       </div>
     </section>
@@ -92,7 +92,7 @@
     <!-- Section Artistes -->
     <section class="artists-section">
       <div class="artists-container">
-        <h2 class="section-title">LA PROGRAMMATION</h2>
+        <h2 class="section-title">{{ $t('home.schedule') }}</h2>
         <div class="carousel-wrapper">
           <div class="carousel-track">
             <!-- Première série d'artistes -->
@@ -131,8 +131,8 @@
     <!-- Section Carte -->
     <section class="map-section">
       <div class="map-container">
-        <h2 class="section-title">{{ festivalPresentation.mapTitre }}</h2>
-        <p class="map-intro">{{ festivalPresentation.mapIntro }}</p>
+        <h2 class="section-title">{{ translatedPresentation.mapTitre }}</h2>
+        <p class="map-intro">{{ translatedPresentation.mapIntro }}</p>
         <!-- pleine largeur avec cadre léger -->
         <div class="map-frame">
           <div class="map-inner">
@@ -148,16 +148,16 @@
     <!-- Section CTA -->
     <section class="cta-section">
       <div class="cta-container">
-        <h2 class="cta-title"><strong>{{ festivalPresentation.ctaTitre }}</strong></h2>
-        <p class="cta-text"><strong>{{ festivalPresentation.ctaTexte }}</strong></p>
-        <router-link to="/reservation" class="btn-cta">{{ festivalPresentation.ctaBouton }}</router-link>
+        <h2 class="cta-title"><strong>{{ translatedPresentation.ctaTitre }}</strong></h2>
+        <p class="cta-text"><strong>{{ translatedPresentation.ctaTexte }}</strong></p>
+        <router-link to="/reservation" class="btn-cta">{{ translatedPresentation.ctaBouton }}</router-link>
       </div>
     </section>
 
     <!-- Section Prestataires -->
     <section class="prestataires-section">
       <div class="prestataires-container">
-        <h2 class="section-title">NOS PARTENAIRES</h2>
+        <h2 class="section-title">{{ $t('home.partners') }}</h2>
 
         <!-- Filtres -->
         <div class="filters-wrapper">
@@ -166,7 +166,7 @@
             :class="{ active: selectedFilters.length === 0 }"
             @click="clearFilters"
           >
-            Tous
+            {{ $t('home.all') }}
           </button>
           <button
             v-for="type in availableTypes"
@@ -202,7 +202,7 @@
                     <span v-if="getPrestatairePriceRange(prestataire)" class="prix-value">
                       {{ getPrestatairePriceRange(prestataire) }}
                     </span>
-                    <span v-else class="prix-gratuit">Gratuit</span>
+                    <span v-else class="prix-gratuit">{{ $t('home.free') }}</span>
                   </div>
                 </div>
               </div>
@@ -211,7 +211,7 @@
         </div>
 
         <p v-if="filteredPrestataires.length === 0" class="no-results">
-          Aucun prestataire ne correspond à votre sélection.
+          {{ $t('home.noProviderMatch') }}
         </p>
       </div>
     </section>
@@ -225,7 +225,7 @@
             <h3>Golden Coast</h3>
           </div>
           <p class="footer-description">
-            Le plus grand festival de rap français sur la Côte dorée. Trois jours d'exception où musique, culture urbaine et convivialité se rencontrent dans un cadre naturel unique.
+            {{ $t('home.footerDescription') }}
           </p>
           <div class="footer-social">
             <a href="https://www.facebook.com/goldencoast.festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
@@ -258,40 +258,40 @@
 
         <!-- Section Liens Rapides -->
         <div class="footer-section">
-          <h4 class="footer-title">Navigation</h4>
+          <h4 class="footer-title">{{ $t('home.navigation') }}</h4>
           <ul class="footer-links">
-            <li><router-link to="/">Accueil</router-link></li>
-            <li><router-link to="/programmation">Programmation</router-link></li>
-            <li><router-link to="/prestataire">Prestataires</router-link></li>
-            <li><router-link to="/carte">Carte</router-link></li>
-            <li><router-link to="/reservation">Billetterie</router-link></li>
+            <li><router-link to="/">{{ $t('nav.home') }}</router-link></li>
+            <li><router-link to="/programmation">{{ $t('nav.programmation') }}</router-link></li>
+            <li><router-link to="/prestataire">{{ $t('nav.prestataireList') }}</router-link></li>
+            <li><router-link to="/carte">{{ $t('nav.carte') }}</router-link></li>
+            <li><router-link to="/reservation">{{ $t('nav.reservation') }}</router-link></li>
           </ul>
         </div>
 
         <!-- Section Informations -->
         <div class="footer-section">
-          <h4 class="footer-title">Informations</h4>
+          <h4 class="footer-title">{{ $t('home.information') }}</h4>
           <ul class="footer-links">
-            <li><a href="#" @click.prevent>À propos du festival</a></li>
-            <li><a href="#" @click.prevent>Conditions générales</a></li>
-            <li><a href="#" @click.prevent>Politique de confidentialité</a></li>
-            <li><a href="#" @click.prevent>FAQ</a></li>
-            <li><a href="#" @click.prevent>Nos partenaires</a></li>
+            <li><a href="#" @click.prevent>{{ $t('home.aboutFestival') }}</a></li>
+            <li><a href="#" @click.prevent>{{ $t('home.termsConditions') }}</a></li>
+            <li><a href="#" @click.prevent>{{ $t('home.privacyPolicy') }}</a></li>
+            <li><a href="#" @click.prevent>{{ $t('home.faq') }}</a></li>
+            <li><a href="#" @click.prevent>{{ $t('home.ourPartners') }}</a></li>
           </ul>
         </div>
 
         <!-- Section Avis & Contact -->
         <div class="footer-section">
-          <h4 class="footer-title">Avis & Contact</h4>
+          <h4 class="footer-title">{{ $t('home.reviewsContact') }}</h4>
           <div class="footer-avis-cta">
             <p class="avis-description">
-              Vous avez participé au festival ? Partagez votre expérience !
+              {{ $t('home.shareExperience') }}
             </p>
             <router-link to="/avis" class="btn-avis">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
-              Laisser un avis
+              {{ $t('avis.leaveReview') }}
             </router-link>
           </div>
           <ul class="footer-contact">
@@ -322,8 +322,8 @@
       <!-- Bottom Bar -->
       <div class="footer-bottom">
         <div class="footer-bottom-container">
-          <p>&copy; {{ new Date().getFullYear() }} Golden Coast Festival. Tous droits réservés.</p>
-          <p class="footer-credits">Fait avec passion pour la culture urbaine 🎤</p>
+          <p>&copy; {{ new Date().getFullYear() }} Golden Coast Festival. {{ $t('home.allRightsReserved') }}.</p>
+          <p class="footer-credits">{{ $t('home.madeWithPassion') }} 🎤</p>
         </div>
       </div>
     </footer>
@@ -331,8 +331,9 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import CarteView from './CarteView.vue';
 
 export default {
@@ -340,6 +341,7 @@ export default {
   components: { CarteView },
   setup() {
     const router = useRouter();
+    const { locale } = useI18n();
 
     const normalizePublicPath = (p) => {
       if (!p) return p;
@@ -355,42 +357,59 @@ export default {
       { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
 
-    // Textes personnalisables
-    const festivalPresentation = ref({
-      titre: 'GOLDEN COAST FESTIVAL V3',
-      date: '28 - 29 - 30 août 2026',
-      lieu: 'CORCELLES-LES-MONTS • DIJON',
-      aboutCard1Titre: '100% RAP FR',
-      aboutCard1Texte: 'Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d\'affiche et les talents émergents.',
-      aboutCard2Titre: 'SITE NATUREL',
-      aboutCard2Texte: 'Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.',
-      aboutCard3Titre: '52 000 FESTIVALIERS',
-      aboutCard3Texte: 'Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.',
-      desc1Titre: 'Le rendez-vous des fans de rap',
-      desc1Texte: 'Plonge au cœur de l\'expérience Golden Coast Festival, l\'événement rap français qui transforme la fin de l\'été en un moment d\'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d\'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.',
-      desc1Chip1: 'Les plus grandes stars du rap français',
-      desc1Chip2: 'Boissons & street-food',
-      desc2Titre: 'Une immersion totale',
-      desc2Texte: 'Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l\'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c\'est plus qu\'un rendez-vous : c\'est l\'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.',
-      ctaTitre: 'PRÊT À VIVRE L\'EXPÉRIENCE ?',
-      ctaTexte: 'Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !',
-      ctaBouton: 'RÉSERVER MA PLACE',
-      mapTitre: 'LOCALISATION',
-      mapIntro: 'Retrouvez tous les points d\'intérêt du festival : scènes, parkings, campings et plus encore.'
-    });
-
-    // Charger les textes personnalisés
-    const loadPresentationTexts = () => {
+    // Ref pour forcer la réactivité lors des changements de locale
+    const presentationRefreshKey = ref(0);
+    
+    // Computed pour obtenir la version traduite du contenu selon la langue
+    // Les données viennent uniquement de localStorage (gérées par l'admin)
+    const translatedPresentation = computed(() => {
+      // Forcer la réévaluation quand locale ou presentationRefreshKey change
+      locale.value; // Lecture pour la réactivité
+      presentationRefreshKey.value; // Lecture pour la réactivité
+      
       const savedPresentation = localStorage.getItem('festivalPresentation');
       if (savedPresentation) {
         try {
           const parsed = JSON.parse(savedPresentation);
-          festivalPresentation.value = { ...festivalPresentation.value, ...parsed };
+          
+          // Format bilingue { fr: {...}, en: {...} }
+          if (parsed.fr && parsed.en) {
+            const currentLang = locale.value || 'fr';
+            return parsed[currentLang] || parsed.fr;
+          }
+          
+          // Ancien format (rétrocompatibilité) - utiliser pour les deux langues
+          return parsed;
         } catch (e) {
           console.error('Erreur lors du chargement de la présentation:', e);
         }
       }
-    };
+      
+      // Retourner un objet vide si aucune donnée n'est sauvegardée
+      // L'admin doit initialiser les données depuis l'interface admin
+      return {
+        titre: '',
+        date: '',
+        lieu: '',
+        aboutCard1Titre: '',
+        aboutCard1Texte: '',
+        aboutCard2Titre: '',
+        aboutCard2Texte: '',
+        aboutCard3Titre: '',
+        aboutCard3Texte: '',
+        desc1Titre: '',
+        desc1Texte: '',
+        desc1Chip1: '',
+        desc1Chip2: '',
+        desc2Titre: '',
+        desc2Texte: '',
+        ctaTitre: '',
+        ctaTexte: '',
+        ctaBouton: '',
+        mapTitre: '',
+        mapIntro: ''
+      };
+    });
 
     // Données prestataires
     const prestataires = ref([]);
@@ -504,25 +523,27 @@ export default {
       return `${minPrice}€ - ${maxPrice}€`;
     };
 
+
     // Handlers pour les événements
     const prestataireUpdateHandler = () => {
       loadPrestataires();
     };
+    
     const presentationUpdateHandler = () => {
-      loadPresentationTexts();
+      presentationRefreshKey.value++;
     };
+    
     const storageChangeHandler = (e) => {
       if (e.key === 'customPrestataires' || !e.key) {
         loadPrestataires();
       }
       if (e.key === 'festivalPresentation' || !e.key) {
-        loadPresentationTexts();
+        presentationRefreshKey.value++;
       }
     };
 
     onMounted(() => {
       loadPrestataires();
-      loadPresentationTexts();
       window.addEventListener('prestataire-updated', prestataireUpdateHandler);
       window.addEventListener('festival-presentation-updated', presentationUpdateHandler);
       window.addEventListener('storage', storageChangeHandler);
@@ -534,7 +555,7 @@ export default {
       window.removeEventListener('storage', storageChangeHandler);
     });
 
-    return {
+      return {
       artists,
       prestataires,
       selectedFilters,
@@ -546,7 +567,7 @@ export default {
       normalizePublicPath,
       goToPrestataire,
       getPrestatairePriceRange,
-      festivalPresentation
+      translatedPresentation
     };
   },
 };
