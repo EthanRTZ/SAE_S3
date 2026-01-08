@@ -357,19 +357,19 @@ export default {
       { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
 
-    // Présentation du festival (depuis site.json)
+    // Présentation du festival (depuis festival.json)
     const festivalPresentation = ref({
       fr: {},
       en: {}
     });
 
-    // Charger la présentation depuis site.json
+    // Charger la présentation depuis festival.json
     const loadFestivalPresentation = async () => {
       try {
-        const response = await fetch('/data/site.json', { cache: 'no-store' });
+        const response = await fetch('/data/festival.json', { cache: 'no-store' });
         const data = await response.json();
-        if (data.festival && data.festival.presentation) {
-          festivalPresentation.value = data.festival.presentation;
+        if (data.presentation) {
+          festivalPresentation.value = data.presentation;
         }
       } catch (error) {
         console.error('Erreur lors du chargement de la présentation:', error);
@@ -377,7 +377,7 @@ export default {
     };
 
     // Computed pour obtenir la version traduite du contenu selon la langue
-    // Les données viennent de site.json (BDD)
+    // Les données viennent de festival.json (BDD)
     const translatedPresentation = computed(() => {
       const currentLang = locale.value || 'fr';
       return festivalPresentation.value[currentLang] || festivalPresentation.value.fr || {
@@ -409,17 +409,17 @@ export default {
       // La présentation est déjà chargée, juste besoin de réévaluer le computed
     });
 
-    // Description du footer (depuis site.json)
+    // Description du footer (depuis festival.json)
     const footerDescription = ref('');
 
-    // Charger la description du footer depuis site.json
+    // Charger la description du footer depuis festival.json
     const loadFooterDescription = async () => {
       try {
-        const response = await fetch('/data/site.json');
+        const response = await fetch('/data/festival.json');
         const data = await response.json();
         const currentLang = locale.value || 'fr';
-        if (data.festival && data.festival.footerDescription) {
-          footerDescription.value = data.festival.footerDescription[currentLang] || data.festival.footerDescription.fr || '';
+        if (data.footerDescription) {
+          footerDescription.value = data.footerDescription[currentLang] || data.footerDescription.fr || '';
         }
       } catch (error) {
         console.error('Erreur lors du chargement de la description du footer:', error);
@@ -450,21 +450,21 @@ export default {
         }
 
         // Charger depuis le fichier JSON
-        const response = await fetch('/data/site.json');
+        const response = await fetch('/data/prestataires.json');
         const data = await response.json();
         let prestatairesData = data.prestataires || [];
         const currentLang = locale.value || 'fr';
 
-        // Normaliser le format bilingue depuis site.json
+        // Normaliser le format bilingue depuis prestataires.json
         prestatairesData = prestatairesData.map(p => {
           const updated = { ...p };
           
-          // Gérer la description bilingue depuis site.json
+          // Gérer la description bilingue depuis prestataires.json
           if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
             updated.description = p.description[currentLang] || p.description.fr || '';
           }
           
-          // Gérer les services bilingues depuis site.json
+          // Gérer les services bilingues depuis prestataires.json
           if (p.services && Array.isArray(p.services)) {
             updated.services = p.services.map(s => {
               const service = { ...s };

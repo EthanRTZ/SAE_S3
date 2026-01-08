@@ -88,7 +88,7 @@ const loadPrestataireInfo = async () => {
     }
 
     // Charger depuis le fichier JSON
-    const resp = await fetch('/data/site.json', { cache: 'no-store' })
+    const resp = await fetch('/data/prestataires.json', { cache: 'no-store' })
     if (!resp.ok) throw new Error('fetch failed')
     const data = await resp.json()
     const prestataires = data.prestataires || []

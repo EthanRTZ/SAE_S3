@@ -224,21 +224,21 @@ const showConfirmation = ref(false)
 // Clé localStorage pour les réservations de basket
 const BASKET_RESERVATIONS_KEY = 'basketReservations'
 
-// Informations du festival (depuis site.json)
+// Informations du festival (depuis festival.json)
 const festivalDatesText = ref('')
 const festivalLocation = ref('')
 const basketLocationValue = ref('')
 const festivalDates = ref([])
 
-// Charger les informations du festival depuis site.json
+// Charger les informations du festival depuis festival.json
 const loadFestivalInfo = async () => {
   try {
-    const response = await fetch('/data/site.json', { cache: 'no-store' })
+    const response = await fetch('/data/festival.json', { cache: 'no-store' })
     const data = await response.json()
     const currentLang = locale.value || 'fr'
     
-    if (data.festival && data.festival.info) {
-      const info = data.festival.info
+    if (data.info) {
+      const info = data.info
       
       // Dates formatées
       if (info.dates) {

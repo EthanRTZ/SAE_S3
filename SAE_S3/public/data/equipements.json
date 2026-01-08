@@ -1,0 +1,12 @@
+{
+  "equipements": [
+    { "type": "Toilettes", "coordone": "47.30254,4.96433" },
+    { "type": "Toilettes", "coordone": "47.30456,4.96357" },
+    { "type": "Toilettes", "coordone": "47.30603,4.96527" },
+    { "type": "Point d'eau", "coordone": "47.30428,4.96365" },
+    { "type": "Point d'eau", "coordone": "47.30464,4.96472" },
+    { "type": "Point d'eau", "coordone": "47.30593,4.96514" },
+    { "type": "Point d'eau", "coordone": "47.30393,4.96690" },
+    { "type": "Point d'eau", "coordone": "47.30258,4.96451" }
+  ]
+}

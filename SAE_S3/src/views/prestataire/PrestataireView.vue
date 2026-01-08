@@ -69,13 +69,15 @@ const loadPrestataireInfo = async () => {
 
   try {
     // Charger les emplacements depuis le JSON
-    const [siteResp, avisResp] = await Promise.all([
-      fetch('/data/site.json', { cache: 'no-store' }),
+    const [emplacementsResp, zonesResp, avisResp] = await Promise.all([
+      fetch('/data/emplacements.json', { cache: 'no-store' }),
+      fetch('/data/zones.json', { cache: 'no-store' }),
       fetch('/data/avis.json', { cache: 'no-store' })
     ])
-    const siteData = siteResp.ok ? await siteResp.json() : { emplacements: [], prestataires: [] }
-    emplacements.value = siteData.emplacements || []
-    zones.value = siteData.zones || []
+    const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
+    const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
+    emplacements.value = emplacementsData.emplacements || []
+    zones.value = zonesData.zones || []
 
     // MODIFICATION: Charger les emplacements attribués
     try {
@@ -84,7 +86,7 @@ const loadPrestataireInfo = async () => {
 
       const coordActuel = emplacementsAttribues[prestataireNom.value]
       if (coordActuel) {
-        const emplacement = siteData.emplacements?.find(e => e.coordonnees === coordActuel)
+        const emplacement = emplacementsData.emplacements?.find(e => e.coordonnees === coordActuel)
         if (emplacement) {
           emplacementActuel.value = {
             ...emplacement,

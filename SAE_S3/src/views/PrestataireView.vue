@@ -190,30 +190,30 @@ export default {
     async loadPrestataires() {
       this.loading = true;
       try {
-        const [siteResp, avisResp] = await Promise.all([
-          fetch('/data/site.json', { cache: 'no-store' }),
+        const [prestatairesResp, avisResp] = await Promise.all([
+          fetch('/data/prestataires.json', { cache: 'no-store' }),
           fetch('/data/avis.json', { cache: 'no-store' })
         ]);
 
-        const siteData = siteResp.ok ? await siteResp.json() : { prestataires: [] };
+        const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] };
         const avisData = avisResp.ok ? await avisResp.json() : {};
 
         // Filtrer uniquement les prestataires présents dans avis.json
         const prestatairesValides = Object.keys(avisData);
-        let allPrestataires = siteData.prestataires || [];
+        let allPrestataires = prestatairesData.prestataires || [];
         allPrestataires = allPrestataires.filter(p => prestatairesValides.includes(p.nom));
 
-        // Normaliser le format bilingue depuis site.json
+        // Normaliser le format bilingue depuis prestataires.json
         const currentLang = this.$i18n?.locale || 'fr';
         allPrestataires = allPrestataires.map(p => {
           const updated = { ...p };
           
-          // Gérer la description bilingue depuis site.json
+          // Gérer la description bilingue depuis prestataires.json
           if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
             updated.description = p.description[currentLang] || p.description.fr || '';
           }
           
-          // Gérer les services bilingues depuis site.json
+          // Gérer les services bilingues depuis prestataires.json
           if (p.services && Array.isArray(p.services)) {
             updated.services = p.services.map(s => {
               const service = { ...s };

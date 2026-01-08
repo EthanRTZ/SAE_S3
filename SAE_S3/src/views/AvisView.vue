@@ -183,7 +183,7 @@ const filtrePrestataire = ref('');
 // Charger les prestataires
 const loadPrestataires = async () => {
   try {
-    const response = await fetch('/data/site.json');
+    const response = await fetch('/data/prestataires.json');
     const data = await response.json();
     prestataires.value = data.prestataires || [];
   } catch (error) {

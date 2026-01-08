@@ -431,19 +431,23 @@ const loadData = async () => {
   }
 
   try {
-    const [usersResp, prestatairesResp, avisResp] = await Promise.all([
+    const [usersResp, prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
       fetch('/data/users.json', { cache: 'no-store' }),
-      fetch('/data/site.json', { cache: 'no-store' }),
+      fetch('/data/prestataires.json', { cache: 'no-store' }),
+      fetch('/data/zones.json', { cache: 'no-store' }),
+      fetch('/data/emplacements.json', { cache: 'no-store' }),
       fetch('/data/avis.json', { cache: 'no-store' })
     ])
 
     const usersData = usersResp.ok ? await usersResp.json() : []
     const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+    const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
+    const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
     const avisData = avisResp.ok ? await avisResp.json() : {}
 
     // AJOUT: Charger les zones pour la carte
-    zones.value = prestataireData.zones || []
-    emplacementsForMap.value = prestataireData.emplacements || []
+    zones.value = zonesData.zones || []
+    emplacementsForMap.value = emplacementsData.emplacements || []
 
     // Charger les utilisateurs avec modifications locales
     const customUsersRaw = localStorage.getItem('users')
@@ -639,16 +643,16 @@ const loadData = async () => {
       dernierAvisFestival // AJOUT
     }
 
-    // Charger présentation depuis site.json (BDD)
+    // Charger présentation depuis festival.json (BDD)
     try {
-      const siteResp = await fetch('/data/site.json', { cache: 'no-store' })
-      if (siteResp.ok) {
-        const siteData = await siteResp.json()
-        if (siteData.festival && siteData.festival.presentation) {
-          // Charger depuis site.json
-          festivalPresentation.value = siteData.festival.presentation
+      const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
+      if (festivalResp.ok) {
+        const festivalData = await festivalResp.json()
+        if (festivalData.presentation) {
+          // Charger depuis festival.json
+          festivalPresentation.value = festivalData.presentation
         } else {
-          // Si pas de présentation dans site.json, utiliser les valeurs par défaut
+          // Si pas de présentation dans festival.json, utiliser les valeurs par défaut
           festivalPresentation.value = {
             fr: { ...defaultPresentationFR },
             en: { ...defaultPresentationEN }
@@ -662,7 +666,7 @@ const loadData = async () => {
         }
       }
     } catch (e) {
-      console.error('Erreur chargement présentation depuis site.json:', e)
+      console.error('Erreur chargement présentation depuis festival.json:', e)
       // En cas d'erreur, utiliser les valeurs par défaut
       festivalPresentation.value = {
         fr: { ...defaultPresentationFR },
@@ -689,7 +693,7 @@ const loadData = async () => {
 // GARDER CETTE VERSION UNIQUEMENT
 const loadEmplacements = async () => {
   try {
-    const resp = await fetch('/data/site.json', { cache: 'no-store' })
+    const resp = await fetch('/data/emplacements.json', { cache: 'no-store' })
     if (resp.ok) {
       const data = await resp.json()
       emplacements.value = data.emplacements || []
@@ -857,18 +861,15 @@ const savePresentation = async () => {
   localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
   
   // TODO: Sauvegarder dans la BDD via API
-  // Pour l'instant, on simule en mettant à jour site.json
+  // Pour l'instant, on simule en mettant à jour festival.json
   // En production, cela sera fait via une API PUT /api/festival/presentation
   try {
-    // Charger site.json actuel
-    const siteResp = await fetch('/data/site.json', { cache: 'no-store' })
-    if (siteResp.ok) {
-      const siteData = await siteResp.json()
+    // Charger festival.json actuel
+    const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
+    if (festivalResp.ok) {
+      const festivalData = await festivalResp.json()
       // Mettre à jour la présentation
-      if (!siteData.festival) {
-        siteData.festival = {}
-      }
-      siteData.festival.presentation = festivalPresentation.value
+      festivalData.presentation = festivalPresentation.value
       
       // Note: En production, on ferait un PUT vers l'API
       // await fetch('/api/festival/presentation', { method: 'PUT', body: JSON.stringify(festivalPresentation.value) })

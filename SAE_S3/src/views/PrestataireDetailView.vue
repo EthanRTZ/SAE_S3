@@ -303,7 +303,7 @@ const loadPrestataire = async () => {
     }
 
     // Charger depuis le fichier JSON
-    const response = await fetch('/data/site.json', { cache: 'no-store' })
+    const response = await fetch('/data/prestataires.json', { cache: 'no-store' })
     if (!response.ok) throw new Error('fetch failed')
     const data = await response.json()
     const prestataires = data.prestataires || []
@@ -319,13 +319,13 @@ const loadPrestataire = async () => {
     
     const currentLang = locale.value || 'fr'
     
-    // Normaliser le format bilingue depuis site.json
-    // Gérer la description bilingue depuis site.json
+    // Normaliser le format bilingue depuis prestataires.json
+    // Gérer la description bilingue depuis prestataires.json
     if (found.description && typeof found.description === 'object' && found.description.fr !== undefined) {
       found.description = found.description[currentLang] || found.description.fr || ''
     }
     
-    // Gérer les services bilingues depuis site.json
+    // Gérer les services bilingues depuis prestataires.json
     if (found.services && Array.isArray(found.services)) {
       found.services = found.services.map(s => {
         const service = { ...s }

@@ -193,11 +193,16 @@ export default {
     // MODIFICATION: Charger les emplacements avec statut
     async loadPrestataires() {
       try {
-        const res = await fetch('/data/site.json');
-        const data = await res.json();
+        const [emplacementsRes, zonesRes] = await Promise.all([
+          fetch('/data/emplacements.json'),
+          fetch('/data/zones.json')
+        ]);
+        const emplacementsData = await emplacementsRes.json();
+        const zonesData = await zonesRes.json();
 
         // Charger les emplacements avec statut
-        this.emplacements = data.emplacements || [];
+        this.emplacements = emplacementsData.emplacements || [];
+        this.zones = zonesData.zones || [];
 
         // AJOUT: Charger les personnalisations des prestataires
         let customPrestataires = {};
@@ -257,23 +262,25 @@ export default {
         }
 
         // Charger les prestataires (avec support bilingue)
+        const prestatairesRes = await fetch('/data/prestataires.json');
+        const prestatairesData = await prestatairesRes.json();
         const currentLang = this.$i18n?.locale || 'fr';
-        this.prestataires = (data.prestataires || []).map(p => {
+        this.prestataires = (prestatairesData.prestataires || []).map(p => {
           // Chercher l'emplacement attribué au prestataire
           const emplacement = this.emplacements.find(e =>
             (e.statut === 'pris' || e.statut === 'en_attente') &&
             e.prestataireNom === p.nom
           );
 
-          // Normaliser le format bilingue depuis site.json
+          // Normaliser le format bilingue depuis prestataires.json
           let prestataire = { ...p };
           
-          // Gérer la description bilingue depuis site.json
+          // Gérer la description bilingue depuis prestataires.json
           if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
             prestataire.description = p.description[currentLang] || p.description.fr || '';
           }
           
-          // Gérer les services bilingues depuis site.json
+          // Gérer les services bilingues depuis prestataires.json
           if (p.services && Array.isArray(p.services)) {
             prestataire.services = p.services.map(s => {
               const service = { ...s };
@@ -327,7 +334,7 @@ export default {
     // Ajout: chargement des zones
     async loadZones() {
       try {
-        const res = await fetch('/data/site.json');
+        const res = await fetch('/data/zones.json');
         const data = await res.json();
         // Afficher toutes les zones
         this.zones = data.zones || [];
@@ -345,7 +352,7 @@ export default {
     // Ajout: chargement des équipements (toilettes, points d'eau)
     async loadEquipements() {
       try {
-        const res = await fetch('/data/site.json');
+        const res = await fetch('/data/equipements.json');
         const data = await res.json();
         this.equipements = data.equipements || [];
         this.initEquipements();

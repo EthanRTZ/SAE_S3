@@ -34,10 +34,10 @@
     "prestataireNom": "Red Bull"
   },
   {
-    "email": "spotify@prestataire.fr",
-    "password": "spotify12",
+    "email": "deezer@prestataire.fr",
+    "password": "deezer12",
     "role": "prestataire",
-    "prestataireNom": "Spotify"
+    "prestataireNom": "Deezer"
   },
   {
     "email": "poliakov@prestataire.fr",
