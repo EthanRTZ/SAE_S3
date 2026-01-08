@@ -12,6 +12,9 @@ const presentationText = ref('')
 const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 
+// AJOUT: Texte personnalisé pour la popup de l'emplacement
+const popupText = ref('')
+
 // Données pour la gestion des emplacements
 const emplacements = ref([]) // Tous les emplacements avec leur statut
 const emplacementActuel = ref(null) // Emplacement actuel du prestataire
@@ -137,6 +140,9 @@ const loadPrestataireInfo = async () => {
     // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
     const htmlContent = prestataire?.presentationHtml || prestataire?.description || ''
     presentationText.value = htmlContent
+
+    // AJOUT: Charger le texte personnalisé de la popup
+    popupText.value = prestataire?.popupText || ''
 
     // services: enrichir avec flags si absent
     services.value = (prestataire?.services || []).map(s => ({
@@ -376,6 +382,34 @@ const initMap = async () => {
   }
 }
 
+const saveCustomPrestataire = () => {
+  if (!prestataireNom.value) return
+  try {
+    const raw = localStorage.getItem('customPrestataires')
+    let obj = raw ? JSON.parse(raw) : {}
+    obj[prestataireNom.value] = {
+      presentationHtml: presentationText.value,
+      services: services.value,
+      email: userFields.value.email,
+      tel: userFields.value.tel,
+      site: userFields.value.site,
+      popupText: popupText.value
+    }
+    localStorage.setItem('customPrestataires', JSON.stringify(obj))
+    // Déclencher un événement pour mettre à jour la carte
+    window.dispatchEvent(new Event('emplacement-updated'))
+  } catch (e) {
+    console.error('Erreur sauvegarde custom', e)
+  }
+}
+
+// AJOUT: Méthode pour sauvegarder et mettre à jour le texte de la popup
+const savePopupText = () => {
+  saveCustomPrestataire()
+  updateMapMarkers() // Mettre à jour les marqueurs sur la carte locale
+  alert('✅ Texte de la popup sauvegardé avec succès !')
+}
+
 const updateMapMarkers = () => {
   if (!mapInstance.value || !window.L) return
 
@@ -433,8 +467,14 @@ const updateMapMarkers = () => {
     `
 
     if (isCurrent) {
+      // MODIFICATION: Utiliser le texte personnalisé mis à jour
+      const customText = popupText.value || 'Informations sur votre emplacement';
       popupContent += `
         <br><br>
+        <p style="color: #333; font-size: 13px; margin: 8px 0; line-height: 1.4;">
+          ${customText}
+        </p>
+        <br>
         <button
           onclick="window.libererEmplacementFromMap()"
           style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;"
@@ -916,6 +956,24 @@ watch(selectedSection, (newVal) => {
                   🗑️ Libérer cet emplacement
                 </button>
               </div>
+
+              <!-- MODIFICATION: Formulaire pour personnaliser le texte de la popup -->
+              <div class="popup-customization">
+                <h4>✏️ Personnaliser le texte de votre popup</h4>
+                <p class="popup-hint">Ce texte apparaîtra dans la popup de votre emplacement sur la carte publique.</p>
+                <textarea
+                  v-model="popupText"
+                  class="textarea popup-textarea"
+                  placeholder="Ex: Venez découvrir nos délicieuses spécialités culinaires ! Stand ouvert de 12h à 23h."
+                  maxlength="200"
+                ></textarea>
+                <div class="char-counter">
+                  {{ popupText.length }} / 200 caractères
+                </div>
+                <button class="btn btn-primary btn-save-popup" @click="savePopupText">
+                  💾 Valider et mettre à jour
+                </button>
+              </div>
             </div>
 
             <!-- Message si pas d'emplacement -->
@@ -949,41 +1007,11 @@ watch(selectedSection, (newVal) => {
               </div>
             </div>
 
-            <!-- Liste des emplacements disponibles -->
-            <div class="emplacements-section">
-              <h3>Emplacements disponibles ({{ emplacementsLibres.length }})</h3>
-
-              <div v-if="emplacementsLibres.length > 0" class="emplacements-grid">
-                <div
-                  v-for="emplacement in emplacementsLibres"
-                  :key="emplacement.id"
-                  class="emplacement-card"
-                >
-                  <div class="emplacement-card-header">
-                    <span class="emplacement-icon">📍</span>
-                    <span class="emplacement-label">Emplacement #{{ emplacement.id }}</span>
-                  </div>
-                  <div class="emplacement-coords-display">{{ emplacement.coordonnees }}</div>
-                  <button
-                    class="btn btn-primary btn-block"
-                    @click="demanderEmplacement(emplacement.coordonnees)"
-                  >
-                    ➕ Demander cet emplacement
-                  </button>
-                </div>
-              </div>
-
-              <div v-else class="empty-state">
-                <p>📭 Tous les emplacements sont actuellement occupés.</p>
-                <p class="empty-hint">Veuillez réessayer plus tard ou contacter l'administration.</p>
-              </div>
-            </div>
 
             <!-- Note d'information -->
             <div class="info-box">
               <strong>ℹ️ Information :</strong>
               <p>Lorsque vous demandez un emplacement, l'administrateur recevra votre demande et pourra l'accepter ou la refuser.</p>
-              <p><strong>⚠️ Mode démo :</strong> Les modifications doivent être faites manuellement dans le fichier <code>/public/data/site.json</code></p>
             </div>
           </div>
 

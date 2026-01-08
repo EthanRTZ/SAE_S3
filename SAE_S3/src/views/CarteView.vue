@@ -191,6 +191,15 @@ export default {
         // Charger les emplacements avec statut
         this.emplacements = data.emplacements || [];
 
+        // AJOUT: Charger les personnalisations des prestataires
+        let customPrestataires = {};
+        try {
+          const customRaw = localStorage.getItem('customPrestataires');
+          customPrestataires = customRaw ? JSON.parse(customRaw) : {};
+        } catch (e) {
+          console.error('Erreur chargement custom prestataires', e);
+        }
+
         // Charger les emplacements attribués depuis localStorage
         try {
           const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
@@ -247,10 +256,14 @@ export default {
             e.prestataireNom === p.nom
           );
 
+          // AJOUT: Appliquer les personnalisations
+          const custom = customPrestataires[p.nom] || {};
+          let prestataire = { ...p, ...custom };
+
           if (emplacement) {
-            return { ...p, coordone: emplacement.coordonnees };
+            return { ...prestataire, coordone: emplacement.coordonnees };
           }
-          return p;
+          return prestataire;
         });
 
         // Construit l'ensemble des types
@@ -398,12 +411,12 @@ export default {
         if (emplacement.statut === 'pris') {
           color = '#FCDC1E'; // Jaune - occupé
           radius = 10;
-          label = `Occupé par ${emplacement.prestataireNom || 'Prestataire'}`;
+          label = 'Attribué';
           fillOpacity = 0.9;
         } else if (emplacement.statut === 'en_attente') {
           color = '#ff9800'; // Orange - en attente
           radius = 9;
-          label = `En attente: ${emplacement.prestataireNom || 'Prestataire'}`;
+          label = 'En attente';
           fillOpacity = 0.85;
         }
 
@@ -416,26 +429,72 @@ export default {
           fillOpacity: fillOpacity
         });
 
-        const html = `
-          <div class="popup-emplacement">
-            <h3 style="color: ${color};">${label}</h3>
-            <p>Location #${emplacement.id}</p>
-            <p class="coordinates">${coords}</p>
-            ${emplacement.statut !== 'libre' ? `<p class="status-badge status-${emplacement.statut}">${emplacement.statut === 'pris' ? 'Attribué' : 'Demande en cours'}</p>` : ''}
-          </div>
-        `;
+        let html = '';
+        if (emplacement.statut === 'libre') {
+          // Emplacement libre - afficher les coordonnées
+          html = `
+            <div class="popup-emplacement">
+              <h3 style="color: ${color};">${label}</h3>
+              <p>Emplacement #${emplacement.id}</p>
+              <p class="coordinates">${coords}</p>
+            </div>
+          `;
 
-        marker.bindPopup(html);
+          marker.bindPopup(html);
 
-        const tooltipText = emplacement.statut === 'libre'
-          ? this.$t('carte.availableLocation')
-          : `${emplacement.prestataireNom} - ${label}`;
+          marker.bindTooltip(this.$t('carte.availableLocation'), {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -10]
+          });
+        } else {
+          // Emplacement occupé ou en attente - afficher les infos du prestataire
+          const prestataire = this.prestataires.find(p => p.nom === emplacement.prestataireNom);
+          const prestataireNom = encodeURIComponent(emplacement.prestataireNom || '');
 
-        marker.bindTooltip(tooltipText, {
-          permanent: false,
-          direction: 'top',
-          offset: [0, -10]
-        });
+          if (prestataire) {
+            // MODIFICATION: Utiliser le texte personnalisé si disponible
+            const customPopupText = prestataire.popupText;
+            const description = customPopupText || this.cleanHtml(prestataire.description || '');
+            const descriptionCourte = description.substring(0, 120) + (description.length > 120 ? '...' : '');
+
+            html = `
+              <div class="popup-prestataire-emplacement">
+                <h3 class="prestataire-nom">${emplacement.prestataireNom}</h3>
+                <p class="prestataire-type"><strong>Type:</strong> ${prestataire.type}</p>
+                ${descriptionCourte ? `<p class="prestataire-desc">${descriptionCourte}</p>` : ''}
+                <p class="status-badge status-${emplacement.statut}">${label}</p>
+                <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
+                  ${this.$t('carte.seeDetails')}
+                </a>
+              </div>
+            `;
+          } else {
+            html = `
+              <div class="popup-prestataire-emplacement">
+                <h3 class="prestataire-nom">${emplacement.prestataireNom}</h3>
+                <p class="status-badge status-${emplacement.statut}">${label}</p>
+                <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
+                  ${this.$t('carte.seeDetails')}
+                </a>
+              </div>
+            `;
+          }
+
+          marker.bindPopup(html, {
+            maxWidth: 300,
+            className: 'prestataire-popup'
+          });
+
+          marker.bindTooltip(`${emplacement.prestataireNom}`, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -10]
+          });
+
+          // SUPPRIMÉ: la redirection automatique au clic
+          // La popup s'ouvrira naturellement au clic grâce à Leaflet
+        }
 
         marker._emplacementCoords = coords;
         marker._emplacementStatut = emplacement.statut;
@@ -451,6 +510,13 @@ export default {
       this.markerLayers = {};
       let idx = 0;
       this.prestataires.forEach(a => {
+        // Ne pas afficher le pin rouge si le prestataire a un emplacement attribué
+        const hasEmplacement = this.emplacements.some(e =>
+          (e.statut === 'pris' || e.statut === 'en_attente') &&
+          e.prestataireNom === a.nom
+        );
+        if (hasEmplacement) return;
+
         if (!a.coordone) return;
         const parts = a.coordone.split(',').map(s => parseFloat(s.trim()));
         if (parts.length !== 2 || parts.some(isNaN)) return;
@@ -469,14 +535,12 @@ export default {
         layer._pinType = a.type;
         layer.bindPopup(html);
         
-        // Tooltip simple au survol (style similaire aux zones)
         layer.bindTooltip(`${a.nom} (${a.type})`, {
           permanent: false,
           direction: 'top',
           offset: [0, -10]
         });
         
-        // Ajouter un gestionnaire de clic pour rediriger vers la page de détail
         layer.on('click', () => {
           this.$router.push(`/prestataire/${prestataireNom}`);
         });
@@ -697,12 +761,42 @@ export default {
     // Affiche/cache selon visibleTypes
     updateMarkersVisibility() {
       if (!this.map) return;
+
+      // Filtrer les pins rouges (prestataires sans emplacement)
       Object.values(this.markerLayers).forEach(layer => {
         const t = layer._pinType;
         const show = !!this.visibleTypes[t];
         const onMap = this.map.hasLayer(layer);
         if (show && !onMap) layer.addTo(this.map);
         if (!show && onMap) this.map.removeLayer(layer);
+      });
+
+      // AJOUT: Filtrer les ronds (emplacements occupés)
+      Object.values(this.emplacementsLibresMarkers).forEach(marker => {
+        const coords = marker._emplacementCoords;
+        const statut = marker._emplacementStatut;
+
+        // Les emplacements libres sont toujours visibles
+        if (statut === 'libre') {
+          const onMap = this.map.hasLayer(marker);
+          if (!onMap) marker.addTo(this.map);
+          return;
+        }
+
+        // Pour les emplacements occupés/en attente, vérifier le type du prestataire
+        const emplacement = this.emplacements.find(e => e.coordonnees === coords);
+        if (!emplacement || !emplacement.prestataireNom) {
+          if (this.map.hasLayer(marker)) this.map.removeLayer(marker);
+          return;
+        }
+
+        const prestataire = this.prestataires.find(p => p.nom === emplacement.prestataireNom);
+        const type = prestataire ? prestataire.type : null;
+        const show = type && !!this.visibleTypes[type];
+
+        const onMap = this.map.hasLayer(marker);
+        if (show && !onMap) marker.addTo(this.map);
+        if (!show && onMap) this.map.removeLayer(marker);
       });
     },
     // Ajout: visibilité zones
@@ -736,6 +830,14 @@ export default {
     deselectAll() {
       Object.keys(this.visibleTypes).forEach(k => { this.visibleTypes[k] = false; });
       Object.keys(this.visibleZoneTypes).forEach(k => { this.visibleZoneTypes[k] = false; });
+    },
+    // AJOUT: Méthode cleanHtml manquante
+    cleanHtml(html) {
+      if (!html) return '';
+      if (!html.includes('<')) return html;
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || '';
     },
   },
   beforeUnmount() {
@@ -1031,6 +1133,100 @@ export default {
   background: rgba(255, 152, 0, 0.2);
   border: 2px solid #ff9800;
   color: #ff9800;
+}
+
+/* Styles pour les popups des prestataires sur emplacements */
+:deep(.prestataire-popup .leaflet-popup-content-wrapper) {
+  background: rgba(4, 16, 61, 0.95);
+  border: 2px solid rgba(252, 220, 30, 0.4);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+:deep(.prestataire-popup .leaflet-popup-tip) {
+  background: rgba(4, 16, 61, 0.95);
+  border: 2px solid rgba(252, 220, 30, 0.4);
+  border-top: none;
+  border-right: none;
+}
+
+:deep(.popup-prestataire-emplacement) {
+  padding: 16px;
+  min-width: 240px;
+  max-width: 300px;
+}
+
+:deep(.popup-prestataire-emplacement .prestataire-nom) {
+  margin: 0 0 12px 0;
+  color: #FCDC1E;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+:deep(.popup-prestataire-emplacement .prestataire-type) {
+  margin: 8px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+}
+
+:deep(.popup-prestataire-emplacement .prestataire-type strong) {
+  color: #FCDC1E;
+}
+
+:deep(.popup-prestataire-emplacement .prestataire-desc) {
+  margin: 12px 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+:deep(.popup-prestataire-emplacement .status-badge) {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+:deep(.popup-prestataire-emplacement .status-pris) {
+  background: rgba(252, 220, 30, 0.2);
+  border: 2px solid #FCDC1E;
+  color: #FCDC1E;
+}
+
+:deep(.popup-prestataire-emplacement .status-en_attente) {
+  background: rgba(255, 152, 0, 0.2);
+  border: 2px solid #ff9800;
+  color: #ff9800;
+}
+
+:deep(.popup-link-btn) {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+:deep(.popup-link-btn:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(252, 220, 30, 0.5);
+  background: linear-gradient(135deg, #ffe676 0%, #FCDC1E 100%);
 }
 
 @media (max-width: 700px) {
