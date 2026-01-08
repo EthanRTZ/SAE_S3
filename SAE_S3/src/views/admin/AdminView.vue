@@ -639,38 +639,35 @@ const loadData = async () => {
       dernierAvisFestival // AJOUT
     }
 
-    // Charger présentation personnalisée si elle existe, sinon initialiser avec les valeurs par défaut
-    const savedPresentation = localStorage.getItem('festivalPresentation')
-    if (savedPresentation) {
-      try {
-        const parsed = JSON.parse(savedPresentation)
-        // Vérifier si c'est le nouveau format bilingue
-        if (parsed.fr && parsed.en) {
-          festivalPresentation.value = parsed
+    // Charger présentation depuis site.json (BDD)
+    try {
+      const siteResp = await fetch('/data/site.json', { cache: 'no-store' })
+      if (siteResp.ok) {
+        const siteData = await siteResp.json()
+        if (siteData.festival && siteData.festival.presentation) {
+          // Charger depuis site.json
+          festivalPresentation.value = siteData.festival.presentation
         } else {
-          // Ancien format : migrer vers le format bilingue
+          // Si pas de présentation dans site.json, utiliser les valeurs par défaut
           festivalPresentation.value = {
-            fr: { ...defaultPresentationFR, ...parsed },
+            fr: { ...defaultPresentationFR },
             en: { ...defaultPresentationEN }
           }
-          // Sauvegarder le nouveau format
-          localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
         }
-      } catch (e) {
-        // En cas d'erreur, initialiser avec les valeurs par défaut
+      } else {
+        // En cas d'erreur, utiliser les valeurs par défaut
         festivalPresentation.value = {
           fr: { ...defaultPresentationFR },
           en: { ...defaultPresentationEN }
         }
-        localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
       }
-    } else {
-      // Aucune donnée sauvegardée : initialiser avec les valeurs par défaut
+    } catch (e) {
+      console.error('Erreur chargement présentation depuis site.json:', e)
+      // En cas d'erreur, utiliser les valeurs par défaut
       festivalPresentation.value = {
         fr: { ...defaultPresentationFR },
         en: { ...defaultPresentationEN }
       }
-      localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
     }
 
     // Charger la programmation
@@ -855,13 +852,38 @@ const resetPrestataire = () => {
   })
 }
 
-const savePresentation = () => {
+const savePresentation = async () => {
+  // Sauvegarder dans localStorage (cache local)
   localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
+  
+  // TODO: Sauvegarder dans la BDD via API
+  // Pour l'instant, on simule en mettant à jour site.json
+  // En production, cela sera fait via une API PUT /api/festival/presentation
+  try {
+    // Charger site.json actuel
+    const siteResp = await fetch('/data/site.json', { cache: 'no-store' })
+    if (siteResp.ok) {
+      const siteData = await siteResp.json()
+      // Mettre à jour la présentation
+      if (!siteData.festival) {
+        siteData.festival = {}
+      }
+      siteData.festival.presentation = festivalPresentation.value
+      
+      // Note: En production, on ferait un PUT vers l'API
+      // await fetch('/api/festival/presentation', { method: 'PUT', body: JSON.stringify(festivalPresentation.value) })
+      // Pour l'instant, on garde juste localStorage comme cache
+      console.log('Présentation mise à jour (sera sauvegardée dans la BDD via API)')
+    }
+  } catch (e) {
+    console.error('Erreur lors de la sauvegarde de la présentation:', e)
+  }
+  
   window.dispatchEvent(new Event('festival-presentation-updated'))
   alert('Présentation sauvegardée avec succès!')
 }
 
-const resetPresentation = () => {
+const resetPresentation = async () => {
   if (!confirm('Êtes-vous sûr de vouloir réinitialiser tous les textes aux valeurs par défaut ?')) {
     return
   }
@@ -871,7 +893,13 @@ const resetPresentation = () => {
     en: { ...defaultPresentationEN }
   }
 
-  localStorage.removeItem('festivalPresentation')
+  // Sauvegarder la réinitialisation
+  localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
+  
+  // TODO: Sauvegarder dans la BDD via API
+  // await fetch('/api/festival/presentation', { method: 'PUT', body: JSON.stringify(festivalPresentation.value) })
+  
+  window.dispatchEvent(new Event('festival-presentation-updated'))
   alert('Textes réinitialisés aux valeurs par défaut!')
 }
 

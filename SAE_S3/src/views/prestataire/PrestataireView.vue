@@ -1,19 +1,22 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const authUser = ref(null)
 const prestataireInfo = ref(null)
 const loading = ref(true)
 const selectedSection = ref('presentation')
+const editingLang = ref('fr') // Langue d'édition actuelle
 const presentationText = ref('')
 const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 
-// AJOUT: Texte personnalisé pour la popup de l'emplacement
-const popupText = ref('')
+// AJOUT: Texte personnalisé pour la popup de l'emplacement (bilingue)
+const popupText = ref({ fr: '', en: '' })
 
 // Données pour la gestion des emplacements
 const emplacements = ref([]) // Tous les emplacements avec leur statut
@@ -128,7 +131,6 @@ const loadPrestataireInfo = async () => {
 
     const prestataires = siteData.prestataires || []
     let prestataire = prestataires.find(p => p.nom === prestataireNom.value) || null
-    // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
     // Appliquer les modifications locales si elles existent
     if (prestataire) {
       const local = customPrestataires && customPrestataires[prestataireNom.value] ? customPrestataires[prestataireNom.value] : {}
@@ -137,21 +139,59 @@ const loadPrestataireInfo = async () => {
     }
     prestataireInfo.value = prestataire
 
-    // Garder le HTML pour l'éditeur WYSIWYG (ne pas nettoyer)
-    const htmlContent = prestataire?.presentationHtml || prestataire?.description || ''
-    presentationText.value = htmlContent
+    // MODIFICATION: Charger les données selon la structure bilingue
+    const customData = customPrestataires && customPrestataires[prestataireNom.value] ? customPrestataires[prestataireNom.value] : {}
+    
+    // Structure bilingue pour presentationHtml
+    if (customData.presentationHtml && typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr) {
+      // Nouveau format bilingue
+      presentationText.value = customData.presentationHtml[editingLang.value] || customData.presentationHtml.fr || prestataire?.description || ''
+    } else {
+      // Ancien format (rétrocompatibilité)
+      presentationText.value = customData.presentationHtml || prestataire?.description || ''
+    }
 
-    // AJOUT: Charger le texte personnalisé de la popup
-    popupText.value = prestataire?.popupText || ''
+    // MODIFICATION: Charger le texte personnalisé de la popup (bilingue)
+    if (customData.popupText && typeof customData.popupText === 'object' && customData.popupText.fr !== undefined) {
+      popupText.value = { fr: customData.popupText.fr || '', en: customData.popupText.en || '' }
+    } else {
+      // Ancien format (rétrocompatibilité)
+      popupText.value = { fr: customData.popupText || '', en: '' }
+    }
 
-    // services: enrichir avec flags si absent
-    services.value = (prestataire?.services || []).map(s => ({
-      nom: s.nom || '',
-      description: s.description || '',
-      prix: s.prix !== undefined ? s.prix : 0,
-      enabled: s.enabled !== undefined ? s.enabled : true,
-      public: s.public !== undefined ? s.public : true,
-    }))
+    // MODIFICATION: Charger les services (bilingue)
+    if (customData.services && Array.isArray(customData.services) && customData.services.length > 0) {
+      // Vérifier si c'est le nouveau format bilingue
+      const firstService = customData.services[0]
+      if (firstService.nom && typeof firstService.nom === 'object' && firstService.nom.fr !== undefined) {
+        // Nouveau format bilingue
+        services.value = customData.services.map(s => ({
+          nom: { fr: s.nom?.fr || '', en: s.nom?.en || '' },
+          description: { fr: s.description?.fr || '', en: s.description?.en || '' },
+          prix: s.prix !== undefined ? s.prix : 0,
+          enabled: s.enabled !== undefined ? s.enabled : true,
+          public: s.public !== undefined ? s.public : true,
+        }))
+      } else {
+        // Ancien format (rétrocompatibilité) - convertir en bilingue
+        services.value = customData.services.map(s => ({
+          nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
+          description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
+          prix: s.prix !== undefined ? s.prix : 0,
+          enabled: s.enabled !== undefined ? s.enabled : true,
+          public: s.public !== undefined ? s.public : true,
+        }))
+      }
+    } else {
+      // Utiliser les services originaux du prestataire
+      services.value = (prestataire?.services || []).map(s => ({
+        nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
+        description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
+        prix: s.prix !== undefined ? s.prix : 0,
+        enabled: s.enabled !== undefined ? s.enabled : true,
+        public: s.public !== undefined ? s.public : true,
+      }))
+    }
     userFields.value = {
       email: prestataire?.email || '',
       tel: prestataire?.tel || '',
@@ -166,7 +206,13 @@ const loadPrestataireInfo = async () => {
 
 
 const addService = () => {
-  services.value.push({ nom: 'Nouvelle offre', description: '', prix: 0, enabled: true, public: true })
+  services.value.push({ 
+    nom: { fr: t('prestataireSpace.newService'), en: '' }, 
+    description: { fr: '', en: '' }, 
+    prix: 0, 
+    enabled: true, 
+    public: true 
+  })
   saveCustomPrestataire()
 }
 
@@ -192,17 +238,16 @@ const updateServiceField = () => {
 
 const savePresentation = () => {
   saveCustomPrestataire()
-  // petite confirmation visuelle (peut être remplacée par toast)
-  alert('Présentation sauvegardée.')
+  alert(t('prestataireSpace.presentationSaved'))
 }
 
 const saveUserFields = () => {
   saveCustomPrestataire()
-  alert('Informations utilisateur sauvegardées.')
+  alert(t('prestataireSpace.userInfoSaved'))
 }
 
 const formatPrix = (val) => {
-  if (val === 0) return 'Gratuit'
+  if (val === 0) return t('prestataireSpace.free')
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val)
 }
 
@@ -233,7 +278,7 @@ const demanderEmplacement = async (coords) => {
     )
 
     if (demandeExistante) {
-      if (!confirm('Vous avez déjà une demande en attente. Voulez-vous la remplacer ?')) return
+      if (!confirm(t('prestataireSpace.replaceRequest'))) return
       // Supprimer l'ancienne demande
       demandes = demandes.filter(d => d.id !== demandeExistante.id)
     }
@@ -256,10 +301,10 @@ const demanderEmplacement = async (coords) => {
     // Déclencher un événement pour l'admin
     window.dispatchEvent(new Event('demandes-updated'))
 
-    alert('✅ Demande d\'emplacement envoyée avec succès !\n\nL\'administrateur sera notifié et pourra accepter ou refuser votre demande.')
+    alert(t('prestataireSpace.requestSent') + '\n\n' + t('prestataireSpace.requestSentDesc'))
   } catch (e) {
     console.error('Erreur lors de l\'envoi de la demande', e)
-    alert('❌ Erreur lors de l\'envoi de la demande')
+    alert(t('prestataireSpace.requestError'))
   }
 }
 
@@ -267,7 +312,7 @@ const demanderEmplacement = async (coords) => {
 const annulerDemande = async () => {
   if (!prestataireNom.value || !demandePendante.value) return
 
-  if (!confirm('Êtes-vous sûr de vouloir annuler votre demande d\'emplacement ?')) return
+  if (!confirm(t('prestataireSpace.cancelConfirm'))) return
 
   try {
     const demandesRaw = localStorage.getItem('demandesEmplacement')
@@ -282,15 +327,15 @@ const annulerDemande = async () => {
     // Déclencher un événement
     window.dispatchEvent(new Event('demandes-updated'))
 
-    alert('✅ Demande annulée avec succès !')
+    alert(t('prestataireSpace.requestCancelled'))
   } catch (e) {
     console.error('Erreur lors de l\'annulation', e)
-    alert('❌ Erreur lors de l\'annulation')
+    alert(t('prestataireSpace.cancelError'))
   }
 }
 
 const libererEmplacement = async () => {
-  if (!confirm('Êtes-vous sûr de vouloir libérer votre emplacement ?')) return
+  if (!confirm(t('prestataireSpace.releaseConfirm'))) return
 
   try {
     const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
@@ -305,10 +350,10 @@ const libererEmplacement = async () => {
     // Déclencher un événement
     window.dispatchEvent(new Event('emplacements-updated'))
 
-    alert('✅ Emplacement libéré avec succès !')
+    alert(t('prestataireSpace.locationReleased'))
   } catch (e) {
     console.error('Erreur lors de la libération', e)
-    alert('❌ Erreur lors de la libération')
+    alert(t('prestataireSpace.releaseError'))
   }
 }
 
@@ -387,9 +432,30 @@ const saveCustomPrestataire = () => {
   try {
     const raw = localStorage.getItem('customPrestataires')
     let obj = raw ? JSON.parse(raw) : {}
+    
+    // Charger les données existantes pour préserver les autres langues
+    const existing = obj[prestataireNom.value] || {}
+    
+    // Structure bilingue pour presentationHtml
+    let presentationHtmlBilingue = existing.presentationHtml || {}
+    if (typeof presentationHtmlBilingue === 'string') {
+      // Convertir l'ancien format en bilingue
+      presentationHtmlBilingue = { fr: presentationHtmlBilingue, en: '' }
+    }
+    presentationHtmlBilingue[editingLang.value] = presentationText.value
+    
+    // Structure bilingue pour services
+    const servicesBilingues = services.value.map(s => ({
+      nom: s.nom,
+      description: s.description,
+      prix: s.prix,
+      enabled: s.enabled,
+      public: s.public
+    }))
+    
     obj[prestataireNom.value] = {
-      presentationHtml: presentationText.value,
-      services: services.value,
+      presentationHtml: presentationHtmlBilingue,
+      services: servicesBilingues,
       email: userFields.value.email,
       tel: userFields.value.tel,
       site: userFields.value.site,
@@ -398,6 +464,7 @@ const saveCustomPrestataire = () => {
     localStorage.setItem('customPrestataires', JSON.stringify(obj))
     // Déclencher un événement pour mettre à jour la carte
     window.dispatchEvent(new Event('emplacement-updated'))
+    window.dispatchEvent(new Event('prestataire-updated'))
   } catch (e) {
     console.error('Erreur sauvegarde custom', e)
   }
@@ -407,8 +474,23 @@ const saveCustomPrestataire = () => {
 const savePopupText = () => {
   saveCustomPrestataire()
   updateMapMarkers() // Mettre à jour les marqueurs sur la carte locale
-  alert('✅ Texte de la popup sauvegardé avec succès !')
+  alert(t('prestataireSpace.popupSaved'))
 }
+
+// Fonction pour changer la langue d'édition
+const changeEditingLang = (lang) => {
+  editingLang.value = lang
+  // Recharger les données selon la nouvelle langue
+  loadPrestataireInfo()
+}
+
+// Computed pour obtenir le texte de popup selon la langue d'édition
+const currentPopupText = computed({
+  get: () => popupText.value[editingLang.value] || '',
+  set: (val) => {
+    popupText.value[editingLang.value] = val
+  }
+})
 
 const updateMapMarkers = () => {
   if (!mapInstance.value || !window.L) return
@@ -467,8 +549,9 @@ const updateMapMarkers = () => {
     `
 
     if (isCurrent) {
-      // MODIFICATION: Utiliser le texte personnalisé mis à jour
-      const customText = popupText.value || 'Informations sur votre emplacement';
+      // MODIFICATION: Utiliser le texte personnalisé mis à jour selon la langue de l'utilisateur
+      const currentLang = locale.value || 'fr'
+      const customText = (popupText.value && typeof popupText.value === 'object' ? popupText.value[currentLang] : popupText.value) || 'Informations sur votre emplacement';
       popupContent += `
         <br><br>
         <p style="color: #333; font-size: 13px; margin: 8px 0; line-height: 1.4;">
@@ -786,26 +869,47 @@ watch(selectedSection, (newVal) => {
     })
   }
 })
+
+// Watch pour recharger les données quand on change de langue d'édition
+watch(editingLang, () => {
+  // Recharger les données selon la nouvelle langue
+  const customRaw = localStorage.getItem('customPrestataires')
+  if (customRaw && prestataireNom.value) {
+    try {
+      const customPrestataires = JSON.parse(customRaw)
+      const customData = customPrestataires[prestataireNom.value] || {}
+      
+      // Recharger presentationHtml selon la langue
+      if (customData.presentationHtml && typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr !== undefined) {
+        presentationText.value = customData.presentationHtml[editingLang.value] || customData.presentationHtml.fr || ''
+      } else if (typeof customData.presentationHtml === 'string') {
+        presentationText.value = customData.presentationHtml
+      }
+    } catch (e) {
+      console.error('Erreur rechargement données', e)
+    }
+  }
+})
 </script>
 
 <template>
   <div class="prestataire-page">
     <div v-if="loading" class="loading">
-      Chargement...
+      {{ $t('prestataireSpace.loading') }}
     </div>
 
     <div v-else-if="!isPrestataire" class="access-denied">
-      <h2>Accès restreint</h2>
-      <p>Vous devez être connecté en tant que prestataire pour accéder à cette page.</p>
-      <router-link to="/login" class="btn-primary">Se connecter</router-link>
+      <h2>{{ $t('prestataireSpace.accessDenied') }}</h2>
+      <p>{{ $t('prestataireSpace.accessDeniedDesc') }}</p>
+      <router-link to="/login" class="btn-primary">{{ $t('prestataireSpace.login') }}</router-link>
     </div>
 
     <div v-else-if="prestataireInfo" class="prestataire-content">
       <div class="prestataire-header">
         <div class="header-content">
           <div class="header-text">
-            <h1>Espace Prestataire</h1>
-            <p class="welcome">Bienvenue, <strong>{{ prestataireNom }}</strong></p>
+            <h1>{{ $t('prestataireSpace.title') }}</h1>
+            <p class="welcome">{{ $t('prestataireSpace.welcome') }} <strong>{{ prestataireNom }}</strong></p>
             <p class="prestataire-type">{{ prestataireInfo.type }}</p>
           </div>
           <div v-if="prestataireInfo.image" class="header-image">
@@ -820,27 +924,27 @@ watch(selectedSection, (newVal) => {
           <ul>
             <li :class="{ active: selectedSection === 'presentation' }" @click="selectedSection = 'presentation'">
               <span class="menu-icon">📝</span>
-              <span>Présentation</span>
+              <span>{{ $t('prestataireSpace.menuPresentation') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'services' }" @click="selectedSection = 'services'">
               <span class="menu-icon">🛠️</span>
-              <span>Services</span>
+              <span>{{ $t('prestataireSpace.menuServices') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'emplacement' }" @click="selectedSection = 'emplacement'">
               <span class="menu-icon">📍</span>
-              <span>Emplacement</span>
+              <span>{{ $t('prestataireSpace.menuLocation') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'stats' }" @click="selectedSection = 'stats'">
               <span class="menu-icon">📊</span>
-              <span>Statistiques</span>
+              <span>{{ $t('prestataireSpace.menuStats') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'config' }" @click="selectedSection = 'config'">
               <span class="menu-icon">⚙️</span>
-              <span>Configuration</span>
+              <span>{{ $t('prestataireSpace.menuConfig') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'user' }" @click="selectedSection = 'user'">
               <span class="menu-icon">👤</span>
-              <span>Informations</span>
+              <span>{{ $t('prestataireSpace.menuUser') }}</span>
             </li>
           </ul>
         </aside>
@@ -849,23 +953,43 @@ watch(selectedSection, (newVal) => {
           <!-- Présentation -->
           <div v-if="selectedSection === 'presentation'" class="section-content">
             <div class="section-header">
-              <h2>📝 Présentation</h2>
-              <p class="section-description">Rédigez la présentation de votre prestataire avec texte et images.</p>
+              <h2>{{ $t('prestataireSpace.presentationTitle') }}</h2>
+              <p class="section-description">{{ $t('prestataireSpace.presentationDesc') }}</p>
             </div>
+            
+            <!-- Sélecteur de langue d'édition -->
+            <div class="language-selector" style="margin-bottom: 20px;">
+              <label style="font-weight: 600; color: #FCDC1E; margin-right: 12px;">{{ $t('prestataireSpace.editingLanguage') }}</label>
+              <button 
+                class="btn-lang" 
+                :class="{ active: editingLang === 'fr' }"
+                @click="changeEditingLang('fr')"
+              >
+                {{ $t('prestataireSpace.french') }}
+              </button>
+              <button 
+                class="btn-lang" 
+                :class="{ active: editingLang === 'en' }"
+                @click="changeEditingLang('en')"
+              >
+                {{ $t('prestataireSpace.english') }}
+              </button>
+            </div>
+            
             <div class="editor-actions">
               <button class="btn btn-primary" type="button" @click="savePresentation">
-                💾 Sauvegarder
+                {{ $t('prestataireSpace.save') }}
               </button>
             </div>
 
             <WysiwygEditor
                 v-model="presentationText"
                 :height="500"
-                placeholder="Décrivez votre prestataire, ajoutez des images pour mettre en valeur vos services..."
+                :placeholder="$t('prestataireSpace.presentationPlaceholder')"
             />
 
             <div class="form-group" style="margin-top: 20px;">
-              <label>Aperçu</label>
+              <label>{{ $t('prestataireSpace.preview') }}</label>
               <div class="preview-box" v-html="presentationText"></div>
             </div>
           </div>
@@ -873,26 +997,56 @@ watch(selectedSection, (newVal) => {
           <!-- Services -->
           <div v-if="selectedSection === 'services'" class="section-content">
             <div class="section-header">
-              <h2>🛠️ Services</h2>
-              <p class="section-description">Gérez vos services : ajoutez, modifiez, activez ou désactivez-les.</p>
+              <h2>{{ $t('prestataireSpace.servicesTitle') }}</h2>
+              <p class="section-description">{{ $t('prestataireSpace.servicesDesc') }}</p>
             </div>
+            
+            <!-- Sélecteur de langue d'édition -->
+            <div class="language-selector" style="margin-bottom: 20px;">
+              <label style="font-weight: 600; color: #FCDC1E; margin-right: 12px;">{{ $t('prestataireSpace.editingLanguage') }}</label>
+              <button 
+                class="btn-lang" 
+                :class="{ active: editingLang === 'fr' }"
+                @click="changeEditingLang('fr')"
+              >
+                {{ $t('prestataireSpace.french') }}
+              </button>
+              <button 
+                class="btn-lang" 
+                :class="{ active: editingLang === 'en' }"
+                @click="changeEditingLang('en')"
+              >
+                {{ $t('prestataireSpace.english') }}
+              </button>
+            </div>
+            
             <div class="services-actions">
               <button class="btn btn-primary" @click="addService">
-                ➕ Ajouter un service
+                {{ $t('prestataireSpace.addService') }}
               </button>
             </div>
             <div class="services-grid" v-if="services.length">
               <div class="service-card" v-for="(s, idx) in services" :key="idx">
                 <div class="service-card-header">
-                  <input class="input input-title" v-model="s.nom" @input="updateServiceField" placeholder="Nom du service" />
-                  <button class="btn btn-danger btn-icon" @click="deleteService(idx)" title="Supprimer">
+                  <input 
+                    class="input input-title" 
+                    :value="s.nom[editingLang] || ''" 
+                    @input="s.nom[editingLang] = $event.target.value; updateServiceField()" 
+                    :placeholder="$t('prestataireSpace.serviceName')" 
+                  />
+                  <button class="btn btn-danger btn-icon" @click="deleteService(idx)" :title="$t('prestataireSpace.delete')">
                     🗑️
                   </button>
                 </div>
-                <textarea class="textarea" v-model="s.description" @input="updateServiceField" placeholder="Description du service"></textarea>
+                <textarea 
+                  class="textarea" 
+                  :value="s.description[editingLang] || ''" 
+                  @input="s.description[editingLang] = $event.target.value; updateServiceField()" 
+                  :placeholder="$t('prestataireSpace.serviceDescription')"
+                ></textarea>
                 <div class="service-price-row">
                   <label class="price-label">
-                    💰 Prix (€)
+                    {{ $t('prestataireSpace.price') }}
                     <input
                         type="number"
                         class="input input-price"
@@ -904,31 +1058,31 @@ watch(selectedSection, (newVal) => {
                     />
                   </label>
                   <span v-if="s.prix > 0" class="price-display">{{ formatPrix(s.prix) }}</span>
-                  <span v-else class="price-display free">Gratuit</span>
+                  <span v-else class="price-display free">{{ $t('prestataireSpace.free') }}</span>
                 </div>
                 <div class="service-toggles">
                   <label class="toggle-label">
                     <input type="checkbox" v-model="s.enabled" @change="toggleServiceEnabled(s)" />
-                    <span :class="{ active: s.enabled }">✅ Activé</span>
+                    <span :class="{ active: s.enabled }">{{ $t('prestataireSpace.enabled') }}</span>
                   </label>
                   <label class="toggle-label">
                     <input type="checkbox" v-model="s.public" @change="toggleServicePublic(s)" />
-                    <span :class="{ active: s.public }">🌐 Public</span>
+                    <span :class="{ active: s.public }">{{ $t('prestataireSpace.public') }}</span>
                   </label>
                 </div>
               </div>
             </div>
             <div v-if="!services.length" class="empty-state">
-              <p>📭 Aucun service défini.</p>
-              <p class="empty-hint">Cliquez sur "Ajouter un service" pour commencer.</p>
+              <p>{{ $t('prestataireSpace.noServices') }}</p>
+              <p class="empty-hint">{{ $t('prestataireSpace.noServicesHint') }}</p>
             </div>
           </div>
 
           <!-- Emplacement -->
           <div v-if="selectedSection === 'emplacement'" class="section-content">
             <div class="section-header">
-              <h2>📍 Emplacement sur la carte</h2>
-              <p class="section-description">Demandez un emplacement sur la carte du festival. L'administrateur validera votre demande.</p>
+              <h2>{{ $t('prestataireSpace.locationTitle') }}</h2>
+              <p class="section-description">{{ $t('prestataireSpace.locationDesc') }}</p>
             </div>
 
             <!-- AJOUT: Demande en attente -->
@@ -936,50 +1090,70 @@ watch(selectedSection, (newVal) => {
               <div class="demande-header">
                 <div class="demande-icon">⏳</div>
                 <div class="demande-content">
-                  <h3>Demande en attente de validation</h3>
-                  <p class="demande-coords">📌 Emplacement demandé : {{ demandePendante.coordonnees }}</p>
-                  <p class="demande-date">📅 Demandé le {{ new Date(demandePendante.dateDemande).toLocaleString('fr-FR') }}</p>
+                  <h3>{{ $t('prestataireSpace.pendingRequest') }}</h3>
+                  <p class="demande-coords">{{ $t('prestataireSpace.requestedLocation') }} {{ demandePendante.coordonnees }}</p>
+                  <p class="demande-date">{{ $t('prestataireSpace.requestedDate') }} {{ new Date(demandePendante.dateDemande).toLocaleString('fr-FR') }}</p>
                 </div>
               </div>
               <button class="btn btn-danger" @click="annulerDemande">
-                ❌ Annuler la demande
+                {{ $t('prestataireSpace.cancelRequest') }}
               </button>
             </div>
 
             <!-- Emplacement actuel -->
             <div v-if="emplacementActuel" class="emplacement-actuel">
-              <h3>✅ Votre emplacement validé</h3>
+              <h3>{{ $t('prestataireSpace.validatedLocation') }}</h3>
               <div class="emplacement-info">
                 <span class="emplacement-coords">📌 {{ emplacementActuel.coordonnees }}</span>
-                <span class="emplacement-date">📅 Attribué le {{ new Date(emplacementActuel.dateAttribution).toLocaleString('fr-FR') }}</span>
+                <span class="emplacement-date">{{ $t('prestataireSpace.attributedDate') }} {{ new Date(emplacementActuel.dateAttribution).toLocaleString('fr-FR') }}</span>
                 <button class="btn btn-danger" @click="libererEmplacement">
-                  🗑️ Libérer cet emplacement
+                  {{ $t('prestataireSpace.releaseLocation') }}
                 </button>
               </div>
 
-              <!-- MODIFICATION: Formulaire pour personnaliser le texte de la popup -->
+              <!-- MODIFICATION: Formulaire pour personnaliser le texte de la popup (bilingue) -->
               <div class="popup-customization">
-                <h4>✏️ Personnaliser le texte de votre popup</h4>
-                <p class="popup-hint">Ce texte apparaîtra dans la popup de votre emplacement sur la carte publique.</p>
+                <h4>{{ $t('prestataireSpace.customizePopup') }}</h4>
+                <p class="popup-hint">{{ $t('prestataireSpace.popupHint') }}</p>
+                
+                <!-- Sélecteur de langue pour la popup -->
+                <div class="language-selector" style="margin-bottom: 12px;">
+                  <label style="font-weight: 600; color: #FCDC1E; margin-right: 12px;">{{ $t('prestataireSpace.editingLanguage') }}</label>
+                  <button 
+                    class="btn-lang" 
+                    :class="{ active: editingLang === 'fr' }"
+                    @click="editingLang = 'fr'"
+                  >
+                    {{ $t('prestataireSpace.french') }}
+                  </button>
+                  <button 
+                    class="btn-lang" 
+                    :class="{ active: editingLang === 'en' }"
+                    @click="editingLang = 'en'"
+                  >
+                    {{ $t('prestataireSpace.english') }}
+                  </button>
+                </div>
+                
                 <textarea
-                  v-model="popupText"
+                  v-model="currentPopupText"
                   class="textarea popup-textarea"
-                  placeholder="Ex: Venez découvrir nos délicieuses spécialités culinaires ! Stand ouvert de 12h à 23h."
+                  :placeholder="$t('prestataireSpace.popupPlaceholder')"
                   maxlength="200"
                 ></textarea>
                 <div class="char-counter">
-                  {{ popupText.length }} / 200 caractères
+                  {{ currentPopupText.length }} / 200 {{ $t('prestataireSpace.characters') }}
                 </div>
                 <button class="btn btn-primary btn-save-popup" @click="savePopupText">
-                  💾 Valider et mettre à jour
+                  {{ $t('prestataireSpace.validateAndUpdate') }}
                 </button>
               </div>
             </div>
 
             <!-- Message si pas d'emplacement -->
             <div v-if="!emplacementActuel && !demandePendante" class="emplacement-vide">
-              <p>❌ Vous n'avez pas encore d'emplacement validé.</p>
-              <p class="empty-hint">Sélectionnez un emplacement disponible (vert) sur la carte pour faire une demande.</p>
+              <p>{{ $t('prestataireSpace.noLocation') }}</p>
+              <p class="empty-hint">{{ $t('prestataireSpace.noLocationHint') }}</p>
             </div>
 
             <!-- Carte interactive -->
@@ -990,19 +1164,19 @@ watch(selectedSection, (newVal) => {
               <div class="carte-legende">
                 <div class="legende-item">
                   <div class="legende-marker disponible"></div>
-                  <span>Disponible</span>
+                  <span>{{ $t('prestataireSpace.available') }}</span>
                 </div>
                 <div class="legende-item">
                   <div class="legende-marker actuel"></div>
-                  <span>Votre emplacement validé</span>
+                  <span>{{ $t('prestataireSpace.yourValidatedLocation') }}</span>
                 </div>
                 <div class="legende-item">
                   <div class="legende-marker pending"></div>
-                  <span>Votre demande en attente</span>
+                  <span>{{ $t('prestataireSpace.yourPendingRequest') }}</span>
                 </div>
                 <div class="legende-item">
                   <div class="legende-marker occupe"></div>
-                  <span>Occupé</span>
+                  <span>{{ $t('prestataireSpace.occupied') }}</span>
                 </div>
               </div>
             </div>
@@ -1010,8 +1184,8 @@ watch(selectedSection, (newVal) => {
 
             <!-- Note d'information -->
             <div class="info-box">
-              <strong>ℹ️ Information :</strong>
-              <p>Lorsque vous demandez un emplacement, l'administrateur recevra votre demande et pourra l'accepter ou la refuser.</p>
+              <strong>{{ $t('prestataireSpace.locationInfo') }}</strong>
+              <p>{{ $t('prestataireSpace.locationInfoText') }}</p>
             </div>
           </div>
 
@@ -1020,9 +1194,9 @@ watch(selectedSection, (newVal) => {
                =========================== -->
           <div v-if="selectedSection === 'stats'" class="section-content">
             <div class="section-header">
-              <h2>📊 Statistiques des avis</h2>
+              <h2>{{ $t('prestataireSpace.statsTitle') }}</h2>
               <p class="section-description">
-                Synthèse des notes et commentaires laissés par les festivaliers pour votre prestataire.
+                {{ $t('prestataireSpace.statsDesc') }}
               </p>
             </div>
 
@@ -1030,7 +1204,7 @@ watch(selectedSection, (newVal) => {
               <div class="stat-card">
                 <div class="stat-icon">⭐</div>
                 <div class="stat-content">
-                  <div class="stat-label">Note moyenne</div>
+                  <div class="stat-label">{{ $t('prestataireSpace.averageRating') }}</div>
                   <div class="stat-value">
                     {{ statsNotes.nbAvis ? statsNotes.moyenne.toFixed(1) + '/5' : '- /5' }}
                   </div>
@@ -1045,16 +1219,16 @@ watch(selectedSection, (newVal) => {
               <div class="stat-card">
                 <div class="stat-icon">📝</div>
                 <div class="stat-content">
-                  <div class="stat-label">Nombre d'avis</div>
+                  <div class="stat-label">{{ $t('prestataireSpace.numberOfReviews') }}</div>
                   <div class="stat-value">{{ statsNotes.nbAvis }}</div>
-                  <div class="stat-meta">Commentaires publiés</div>
+                  <div class="stat-meta">{{ $t('prestataireSpace.publishedComments') }}</div>
                 </div>
               </div>
             </div>
 
             <!-- Répartition des notes -->
             <div class="stats-section">
-              <h3 class="stats-section-title">Répartition des notes</h3>
+              <h3 class="stats-section-title">{{ $t('prestataireSpace.ratingDistribution') }}</h3>
               <div v-if="statsNotes.nbAvis" class="avis-repartition">
                 <div
                     v-for="i in [5,4,3,2,1]"
@@ -1072,23 +1246,23 @@ watch(selectedSection, (newVal) => {
                 </div>
               </div>
               <div v-else class="empty-state">
-                <p>📭 Aucun avis pour le moment.</p>
+                <p>{{ $t('prestataireSpace.noReviews') }}</p>
                 <p class="empty-hint">
-                  Les statistiques apparaîtront lorsque les visiteurs auront laissé des commentaires.
+                  {{ $t('prestataireSpace.noReviewsHint') }}
                 </p>
               </div>
             </div>
 
             <!-- Derniers avis -->
             <div class="stats-section" v-if="statsNotes.derniersAvis.length">
-              <h3 class="stats-section-title">Derniers avis reçus</h3>
+              <h3 class="stats-section-title">{{ $t('prestataireSpace.lastReviews') }}</h3>
               <div class="data-table-container">
                 <table class="data-table transactions-table">
                   <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Note</th>
-                    <th>Commentaire</th>
+                    <th>{{ $t('prestataireSpace.date') }}</th>
+                    <th>{{ $t('prestataireSpace.rating') }}</th>
+                    <th>{{ $t('prestataireSpace.comment') }}</th>
                   </tr>
                   </thead>
                   <tbody>
@@ -1112,28 +1286,28 @@ watch(selectedSection, (newVal) => {
           <!-- Configuration -->
           <div v-if="selectedSection === 'config'" class="section-content">
             <div class="section-header">
-              <h2>⚙️ Configuration</h2>
-              <p class="section-description">Paramètres globaux pour la configuration automatique d'emplacements ou règles de visibilité.</p>
+              <h2>{{ $t('prestataireSpace.configTitle') }}</h2>
+              <p class="section-description">{{ $t('prestataireSpace.configDesc') }}</p>
             </div>
             <div class="config-grid">
               <div class="config-item">
-                <label>Assignation automatique d'emplacement</label>
+                <label>{{ $t('prestataireSpace.autoAssignment') }}</label>
                 <select class="input">
-                  <option>Non</option>
-                  <option>Basée sur nom</option>
-                  <option>Basée sur catégorie</option>
+                  <option>{{ $t('prestataireSpace.no') }}</option>
+                  <option>{{ $t('prestataireSpace.byName') }}</option>
+                  <option>{{ $t('prestataireSpace.byCategory') }}</option>
                 </select>
               </div>
               <div class="config-item">
-                <label>Visibilité par défaut</label>
+                <label>{{ $t('prestataireSpace.defaultVisibility') }}</label>
                 <select class="input">
-                  <option>Public</option>
-                  <option>Privé (prestataire seulement)</option>
+                  <option>{{ $t('prestataireSpace.publicDefault') }}</option>
+                  <option>{{ $t('prestataireSpace.private') }}</option>
                 </select>
               </div>
               <div class="config-actions">
-                <button class="btn btn-primary" @click="() => alert('Paramètres sauvegardés (simulation)')">
-                  💾 Sauvegarder la configuration
+                <button class="btn btn-primary" @click="() => alert(t('prestataireSpace.configSaved'))">
+                  {{ $t('prestataireSpace.saveConfig') }}
                 </button>
               </div>
             </div>
@@ -1142,26 +1316,26 @@ watch(selectedSection, (newVal) => {
           <!-- Informations utilisateur -->
           <div v-if="selectedSection === 'user'" class="section-content">
             <div class="section-header">
-              <h2>👤 Informations utilisateur</h2>
-              <p class="section-description">Mettez à jour vos coordonnées et informations de contact.</p>
+              <h2>{{ $t('prestataireSpace.userInfoTitle') }}</h2>
+              <p class="section-description">{{ $t('prestataireSpace.userInfoDesc') }}</p>
             </div>
             <div class="form-grid">
               <div class="form-row">
-                <label>📧 Email</label>
+                <label>{{ $t('prestataireSpace.email') }}</label>
                 <input class="input" type="email" v-model="userFields.email" placeholder="contact@exemple.com" />
               </div>
               <div class="form-row">
-                <label>📞 Téléphone</label>
+                <label>{{ $t('prestataireSpace.phone') }}</label>
                 <input class="input" type="tel" v-model="userFields.tel" placeholder="+33 1 23 45 67 89" />
               </div>
               <div class="form-row">
-                <label>🌐 Site web</label>
+                <label>{{ $t('prestataireSpace.website') }}</label>
                 <input class="input" type="url" v-model="userFields.site" placeholder="https://exemple.com" />
               </div>
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" @click="saveUserFields">
-                💾 Sauvegarder les modifications
+                {{ $t('prestataireSpace.saveChanges') }}
               </button>
             </div>
           </div>
@@ -1170,8 +1344,8 @@ watch(selectedSection, (newVal) => {
     </div>
 
     <div v-else class="no-info">
-      <h2>Informations indisponibles</h2>
-      <p>Impossible de charger vos informations de prestataire.</p>
+      <h2>{{ $t('prestataireSpace.noInfo') }}</h2>
+      <p>{{ $t('prestataireSpace.noInfoDesc') }}</p>
     </div>
   </div>
 </template>
@@ -2081,6 +2255,77 @@ code {
   margin: 4px 0;
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
+}
+
+/* Sélecteur de langue */
+.language-selector {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(252, 220, 30, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+}
+
+.btn-lang {
+  padding: 8px 16px;
+  margin-left: 8px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.btn-lang:hover {
+  background: rgba(252, 220, 30, 0.15);
+  border-color: rgba(252, 220, 30, 0.4);
+}
+
+.btn-lang.active {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #2046b3;
+  border-color: #FCDC1E;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
+}
+
+.popup-customization {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.popup-customization h4 {
+  color: #FCDC1E;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+}
+
+.popup-hint {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.popup-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.char-counter {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+}
+
+.btn-save-popup {
+  margin-top: 12px;
 }
 </style>
 

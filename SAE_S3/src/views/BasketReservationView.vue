@@ -10,7 +10,7 @@
           <div class="divider"></div>
           <p class="intro-text">
             {{ $t('basketReservation.intro') }}
-            <br><strong>{{ $t('basketReservation.dates') }}</strong> - {{ $t('basketReservation.location') }}
+            <br><strong>{{ festivalDatesText }}</strong> - {{ festivalLocation }}
           </p>
         </div>
 
@@ -170,7 +170,7 @@
               <span class="recap-icon">📍</span>
               <div class="recap-content">
                 <span class="recap-label">{{ $t('basketReservation.recapLocation') }}</span>
-                <span class="recap-value">{{ $t('basketReservation.recapLocationValue') }}</span>
+                <span class="recap-value">{{ basketLocationValue }}</span>
               </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ import { ref, computed, watch } from 'vue'
 import { usePanierStore } from '@/stores/panier'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const panierStore = usePanierStore()
 
 // État
@@ -224,30 +224,84 @@ const showConfirmation = ref(false)
 // Clé localStorage pour les réservations de basket
 const BASKET_RESERVATIONS_KEY = 'basketReservations'
 
-// Dates du festival (28-30 août 2026)
-const festivalDates = [
-  {
-    dateStr: '2026-08-28',
-    dayName: 'Vendredi',
-    dayNumber: 28,
-    monthName: 'Août',
-    label: t('basketReservation.day1')
-  },
-  {
-    dateStr: '2026-08-29',
-    dayName: 'Samedi',
-    dayNumber: 29,
-    monthName: 'Août',
-    label: t('basketReservation.day2')
-  },
-  {
-    dateStr: '2026-08-30',
-    dayName: 'Dimanche',
-    dayNumber: 30,
-    monthName: 'Août',
-    label: t('basketReservation.day3')
+// Informations du festival (depuis site.json)
+const festivalDatesText = ref('')
+const festivalLocation = ref('')
+const basketLocationValue = ref('')
+const festivalDates = ref([])
+
+// Charger les informations du festival depuis site.json
+const loadFestivalInfo = async () => {
+  try {
+    const response = await fetch('/data/site.json', { cache: 'no-store' })
+    const data = await response.json()
+    const currentLang = locale.value || 'fr'
+    
+    if (data.festival && data.festival.info) {
+      const info = data.festival.info
+      
+      // Dates formatées
+      if (info.dates) {
+        festivalDatesText.value = info.dates[currentLang] || info.dates.fr || ''
+      }
+      
+      // Lieu
+      if (info.location) {
+        festivalLocation.value = info.location[currentLang] || info.location.fr || ''
+      }
+      
+      // Lieu du terrain de basket
+      if (info.basketLocation) {
+        basketLocationValue.value = info.basketLocation[currentLang] || info.basketLocation.fr || ''
+      }
+      
+      // Dates détaillées pour le calendrier
+      if (info.festivalDates && Array.isArray(info.festivalDates)) {
+        festivalDates.value = info.festivalDates.map(date => ({
+          dateStr: date.dateStr,
+          dayName: typeof date.dayName === 'object' ? (date.dayName[currentLang] || date.dayName.fr) : date.dayName,
+          dayNumber: date.dayNumber,
+          monthName: typeof date.monthName === 'object' ? (date.monthName[currentLang] || date.monthName.fr) : date.monthName,
+          label: t(`basketReservation.day${info.festivalDates.indexOf(date) + 1}`)
+        }))
+      }
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des informations du festival:', error)
+    // Valeurs par défaut en cas d'erreur
+    festivalDates.value = [
+      {
+        dateStr: '2026-08-28',
+        dayName: 'Vendredi',
+        dayNumber: 28,
+        monthName: 'Août',
+        label: t('basketReservation.day1')
+      },
+      {
+        dateStr: '2026-08-29',
+        dayName: 'Samedi',
+        dayNumber: 29,
+        monthName: 'Août',
+        label: t('basketReservation.day2')
+      },
+      {
+        dateStr: '2026-08-30',
+        dayName: 'Dimanche',
+        dayNumber: 30,
+        monthName: 'Août',
+        label: t('basketReservation.day3')
+      }
+    ]
   }
-]
+}
+
+// Charger au montage
+loadFestivalInfo()
+
+// Recharger quand la langue change
+watch(locale, () => {
+  loadFestivalInfo()
+})
 
 // Créneaux horaires par période
 const morningHours = ['09:00', '10:00', '11:00', '12:00']

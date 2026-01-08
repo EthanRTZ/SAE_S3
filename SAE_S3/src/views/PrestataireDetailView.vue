@@ -191,7 +191,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const prestataire = ref(null)
@@ -311,9 +311,67 @@ const loadPrestataire = async () => {
     // Trouver le prestataire
     let found = prestataires.find(p => p.nom === prestataireNom)
     
+    if (!found) {
+      prestataire.value = null
+      loading.value = false
+      return
+    }
+    
+    const currentLang = locale.value || 'fr'
+    
+    // Normaliser le format bilingue depuis site.json
+    // Gérer la description bilingue depuis site.json
+    if (found.description && typeof found.description === 'object' && found.description.fr !== undefined) {
+      found.description = found.description[currentLang] || found.description.fr || ''
+    }
+    
+    // Gérer les services bilingues depuis site.json
+    if (found.services && Array.isArray(found.services)) {
+      found.services = found.services.map(s => {
+        const service = { ...s }
+        // Si c'est le format bilingue
+        if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+          service.nom = s.nom[currentLang] || s.nom.fr || ''
+          service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+            ? (s.description[currentLang] || s.description.fr || '')
+            : (s.description || '')
+        }
+        return service
+      })
+    }
+    
     // Appliquer les modifications locales si elles existent
-    if (found && customPrestataires && customPrestataires[prestataireNom]) {
-      found = { ...found, ...customPrestataires[prestataireNom] }
+    if (customPrestataires && customPrestataires[prestataireNom]) {
+      const customData = customPrestataires[prestataireNom]
+      
+      // Gérer la présentation bilingue
+      if (customData.presentationHtml) {
+        if (typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr !== undefined) {
+          found.description = customData.presentationHtml[currentLang] || customData.presentationHtml.fr || found.description || ''
+        } else if (typeof customData.presentationHtml === 'string') {
+          found.description = customData.presentationHtml
+        }
+      }
+      
+      // Gérer les services bilingues
+      if (customData.services && Array.isArray(customData.services)) {
+        found.services = customData.services.map(s => {
+          const service = { ...s }
+          // Si c'est le format bilingue
+          if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+            service.nom = s.nom[currentLang] || s.nom.fr || ''
+            service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+              ? (s.description[currentLang] || s.description.fr || '')
+              : (s.description || '')
+          }
+          return service
+        })
+      }
+      
+      // Copier les autres champs (email, tel, site, popupText)
+      if (customData.email) found.email = customData.email
+      if (customData.tel) found.tel = customData.tel
+      if (customData.site) found.site = customData.site
     }
 
     prestataire.value = found || null
@@ -350,6 +408,11 @@ const handleImageError = (e) => {
   e.target.src = '/media/placeholder-prestataire.png'
 }
 
+// Watch pour recharger quand la langue change
+watch(() => locale.value, () => {
+  loadPrestataire()
+})
+
 onMounted(() => {
   loadPrestataire()
   window.addEventListener('prestataire-updated', updateHandler)
@@ -362,15 +425,6 @@ onMounted(() => {
 
 // Écouter les mises à jour
 const updateHandler = () => loadPrestataire()
-
-onMounted(() => {
-  window.addEventListener('prestataire-updated', updateHandler)
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'customPrestataires') {
-      loadPrestataire()
-    }
-  })
-})
 
 onBeforeUnmount(() => {
   window.removeEventListener('prestataire-updated', updateHandler)

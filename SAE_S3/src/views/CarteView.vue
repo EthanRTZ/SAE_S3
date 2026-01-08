@@ -159,6 +159,14 @@ export default {
       .catch((e) => console.error(e));
   },
   watch: {
+    '$i18n.locale'() {
+      this.loadPrestataires();
+      this.$nextTick(() => {
+        if (this.map) {
+          this.updateMarkersVisibility();
+        }
+      });
+    },
     // Mise à jour quand on coche/décoche un type
     visibleTypes: {
       deep: true,
@@ -248,7 +256,8 @@ export default {
           console.error('Erreur chargement demandes', e)
         }
 
-        // Charger les prestataires
+        // Charger les prestataires (avec support bilingue)
+        const currentLang = this.$i18n?.locale || 'fr';
         this.prestataires = (data.prestataires || []).map(p => {
           // Chercher l'emplacement attribué au prestataire
           const emplacement = this.emplacements.find(e =>
@@ -256,9 +265,45 @@ export default {
             e.prestataireNom === p.nom
           );
 
-          // AJOUT: Appliquer les personnalisations
+          // Normaliser le format bilingue depuis site.json
+          let prestataire = { ...p };
+          
+          // Gérer la description bilingue depuis site.json
+          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
+            prestataire.description = p.description[currentLang] || p.description.fr || '';
+          }
+          
+          // Gérer les services bilingues depuis site.json
+          if (p.services && Array.isArray(p.services)) {
+            prestataire.services = p.services.map(s => {
+              const service = { ...s };
+              // Si c'est le format bilingue
+              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                service.nom = s.nom[currentLang] || s.nom.fr || '';
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                  ? (s.description[currentLang] || s.description.fr || '')
+                  : (s.description || '');
+              }
+              return service;
+            });
+          }
+
+          // AJOUT: Appliquer les personnalisations (avec support bilingue)
           const custom = customPrestataires[p.nom] || {};
-          let prestataire = { ...p, ...custom };
+          
+          // Gérer popupText bilingue
+          if (custom.popupText) {
+            if (typeof custom.popupText === 'object' && custom.popupText.fr !== undefined) {
+              prestataire.popupText = custom.popupText[currentLang] || custom.popupText.fr || '';
+            } else if (typeof custom.popupText === 'string') {
+              prestataire.popupText = custom.popupText;
+            }
+          }
+          
+          // Copier les autres champs
+          if (custom.email) prestataire.email = custom.email;
+          if (custom.tel) prestataire.tel = custom.tel;
+          if (custom.site) prestataire.site = custom.site;
 
           if (emplacement) {
             return { ...prestataire, coordone: emplacement.coordonnees };

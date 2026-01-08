@@ -225,7 +225,7 @@
             <h3>Golden Coast</h3>
           </div>
           <p class="footer-description">
-            {{ $t('home.footerDescription') }}
+            {{ footerDescription }}
           </p>
           <div class="footer-social">
             <a href="https://www.facebook.com/goldencoast.festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
@@ -357,37 +357,30 @@ export default {
       { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
 
-    // Ref pour forcer la réactivité lors des changements de locale
-    const presentationRefreshKey = ref(0);
-    
-    // Computed pour obtenir la version traduite du contenu selon la langue
-    // Les données viennent uniquement de localStorage (gérées par l'admin)
-    const translatedPresentation = computed(() => {
-      // Forcer la réévaluation quand locale ou presentationRefreshKey change
-      locale.value; // Lecture pour la réactivité
-      presentationRefreshKey.value; // Lecture pour la réactivité
-      
-      const savedPresentation = localStorage.getItem('festivalPresentation');
-      if (savedPresentation) {
-        try {
-          const parsed = JSON.parse(savedPresentation);
-          
-          // Format bilingue { fr: {...}, en: {...} }
-          if (parsed.fr && parsed.en) {
-            const currentLang = locale.value || 'fr';
-            return parsed[currentLang] || parsed.fr;
-          }
-          
-          // Ancien format (rétrocompatibilité) - utiliser pour les deux langues
-          return parsed;
-        } catch (e) {
-          console.error('Erreur lors du chargement de la présentation:', e);
+    // Présentation du festival (depuis site.json)
+    const festivalPresentation = ref({
+      fr: {},
+      en: {}
+    });
+
+    // Charger la présentation depuis site.json
+    const loadFestivalPresentation = async () => {
+      try {
+        const response = await fetch('/data/site.json', { cache: 'no-store' });
+        const data = await response.json();
+        if (data.festival && data.festival.presentation) {
+          festivalPresentation.value = data.festival.presentation;
         }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la présentation:', error);
       }
-      
-      // Retourner un objet vide si aucune donnée n'est sauvegardée
-      // L'admin doit initialiser les données depuis l'interface admin
-      return {
+    };
+
+    // Computed pour obtenir la version traduite du contenu selon la langue
+    // Les données viennent de site.json (BDD)
+    const translatedPresentation = computed(() => {
+      const currentLang = locale.value || 'fr';
+      return festivalPresentation.value[currentLang] || festivalPresentation.value.fr || {
         titre: '',
         date: '',
         lieu: '',
@@ -409,6 +402,33 @@ export default {
         mapTitre: '',
         mapIntro: ''
       };
+    });
+
+    // Watch sur locale pour recharger si nécessaire
+    watch(locale, () => {
+      // La présentation est déjà chargée, juste besoin de réévaluer le computed
+    });
+
+    // Description du footer (depuis site.json)
+    const footerDescription = ref('');
+
+    // Charger la description du footer depuis site.json
+    const loadFooterDescription = async () => {
+      try {
+        const response = await fetch('/data/site.json');
+        const data = await response.json();
+        const currentLang = locale.value || 'fr';
+        if (data.festival && data.festival.footerDescription) {
+          footerDescription.value = data.festival.footerDescription[currentLang] || data.festival.footerDescription.fr || '';
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la description du footer:', error);
+      }
+    };
+
+    // Watch sur locale pour recharger la description quand la langue change
+    watch(locale, () => {
+      loadFooterDescription();
     });
 
     // Données prestataires
@@ -433,14 +453,67 @@ export default {
         const response = await fetch('/data/site.json');
         const data = await response.json();
         let prestatairesData = data.prestataires || [];
+        const currentLang = locale.value || 'fr';
 
-        // Appliquer les modifications locales si elles existent
+        // Normaliser le format bilingue depuis site.json
+        prestatairesData = prestatairesData.map(p => {
+          const updated = { ...p };
+          
+          // Gérer la description bilingue depuis site.json
+          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
+            updated.description = p.description[currentLang] || p.description.fr || '';
+          }
+          
+          // Gérer les services bilingues depuis site.json
+          if (p.services && Array.isArray(p.services)) {
+            updated.services = p.services.map(s => {
+              const service = { ...s };
+              // Si c'est le format bilingue
+              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                service.nom = s.nom[currentLang] || s.nom.fr || '';
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                  ? (s.description[currentLang] || s.description.fr || '')
+                  : (s.description || '');
+              }
+              return service;
+            });
+          }
+          
+          return updated;
+        });
+
+        // Appliquer les modifications locales si elles existent (avec support bilingue)
         if (customPrestataires) {
           prestatairesData = prestatairesData.map(p => {
-            if (customPrestataires[p.nom]) {
-              return { ...p, ...customPrestataires[p.nom] };
+            const local = customPrestataires[p.nom];
+            if (!local) return p;
+            
+            const updated = { ...p };
+            
+            // Gérer la présentation bilingue (pour l'affichage, on n'affiche pas la description dans HomeView)
+            // Mais on garde les autres champs
+            
+            // Gérer les services bilingues (si nécessaire pour l'affichage)
+            if (local.services && Array.isArray(local.services)) {
+              updated.services = local.services.map(s => {
+                const service = { ...s };
+                // Si c'est le format bilingue
+                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                  service.nom = s.nom[currentLang] || s.nom.fr || '';
+                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                    ? (s.description[currentLang] || s.description.fr || '')
+                    : (s.description || '');
+                }
+                return service;
+              });
             }
-            return p;
+            
+            // Copier les autres champs
+            if (local.email) updated.email = local.email;
+            if (local.tel) updated.tel = local.tel;
+            if (local.site) updated.site = local.site;
+            
+            return updated;
           });
         }
 
@@ -530,7 +603,7 @@ export default {
     };
     
     const presentationUpdateHandler = () => {
-      presentationRefreshKey.value++;
+      loadFestivalPresentation();
     };
     
     const storageChangeHandler = (e) => {
@@ -538,11 +611,18 @@ export default {
         loadPrestataires();
       }
       if (e.key === 'festivalPresentation' || !e.key) {
-        presentationRefreshKey.value++;
+        loadFestivalPresentation();
       }
     };
 
+    // Watch pour recharger quand la langue change
+    watch(() => locale.value, () => {
+      loadPrestataires();
+    });
+
     onMounted(() => {
+      loadFooterDescription();
+      loadFestivalPresentation();
       loadPrestataires();
       window.addEventListener('prestataire-updated', prestataireUpdateHandler);
       window.addEventListener('festival-presentation-updated', presentationUpdateHandler);

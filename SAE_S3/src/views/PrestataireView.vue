@@ -143,6 +143,11 @@ export default {
       return this.prestataires.filter(p => this.selectedTypes.includes(p.type));
     },
   },
+  watch: {
+    '$i18n.locale'() {
+      this.loadPrestataires();
+    }
+  },
   methods: {
     toggleDropdown(event) {
       event.stopPropagation();
@@ -169,8 +174,8 @@ export default {
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
     },
     formatServicePrix(prix) {
-      if (prix === undefined || prix === null) return 'Gratuit';
-      if (prix === 0) return 'Gratuit';
+      if (prix === undefined || prix === null) return this.$t('home.free');
+      if (prix === 0) return this.$t('home.free');
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(prix);
     },
     cleanHtml(html) {
@@ -198,11 +203,72 @@ export default {
         let allPrestataires = siteData.prestataires || [];
         allPrestataires = allPrestataires.filter(p => prestatairesValides.includes(p.nom));
 
-        // Appliquer les modifications locales si elles existent
+        // Normaliser le format bilingue depuis site.json
+        const currentLang = this.$i18n?.locale || 'fr';
+        allPrestataires = allPrestataires.map(p => {
+          const updated = { ...p };
+          
+          // Gérer la description bilingue depuis site.json
+          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
+            updated.description = p.description[currentLang] || p.description.fr || '';
+          }
+          
+          // Gérer les services bilingues depuis site.json
+          if (p.services && Array.isArray(p.services)) {
+            updated.services = p.services.map(s => {
+              const service = { ...s };
+              // Si c'est le format bilingue
+              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                service.nom = s.nom[currentLang] || s.nom.fr || '';
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                  ? (s.description[currentLang] || s.description.fr || '')
+                  : (s.description || '');
+              }
+              return service;
+            });
+          }
+          
+          return updated;
+        });
+
+        // Appliquer les modifications locales si elles existent (avec support bilingue)
         const custom = JSON.parse(localStorage.getItem('customPrestataires') || '{}');
         allPrestataires = allPrestataires.map(p => {
           const local = custom[p.nom];
-          return local ? { ...p, ...local } : p;
+          if (!local) return p;
+          
+          const updated = { ...p };
+          
+          // Gérer la présentation bilingue
+          if (local.presentationHtml) {
+            if (typeof local.presentationHtml === 'object' && local.presentationHtml.fr !== undefined) {
+              updated.description = local.presentationHtml[currentLang] || local.presentationHtml.fr || p.description || '';
+            } else if (typeof local.presentationHtml === 'string') {
+              updated.description = local.presentationHtml;
+            }
+          }
+          
+          // Gérer les services bilingues
+          if (local.services && Array.isArray(local.services)) {
+            updated.services = local.services.map(s => {
+              const service = { ...s };
+              // Si c'est le format bilingue
+              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                service.nom = s.nom[currentLang] || s.nom.fr || '';
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                  ? (s.description[currentLang] || s.description.fr || '')
+                  : (s.description || '');
+              }
+              return service;
+            });
+          }
+          
+          // Copier les autres champs
+          if (local.email) updated.email = local.email;
+          if (local.tel) updated.tel = local.tel;
+          if (local.site) updated.site = local.site;
+          
+          return updated;
         });
 
         this.prestataires = allPrestataires;

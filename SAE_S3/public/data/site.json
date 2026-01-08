@@ -1,4 +1,90 @@
 {
+  "festival": {
+    "footerDescription": {
+      "fr": "Le plus grand festival de rap français sur la Côte dorée. Trois jours d'exception où musique, culture urbaine et convivialité se rencontrent dans un cadre naturel unique.",
+      "en": "The biggest French rap festival on the Golden Coast. Three exceptional days where music, urban culture and conviviality meet in a unique natural setting."
+    },
+    "info": {
+      "dates": {
+        "fr": "Du 28 au 30 août 2026",
+        "en": "August 28 - 29 - 30, 2026"
+      },
+      "location": {
+        "fr": "Combe à la Serpent, Corcelles-lès-Monts",
+        "en": "Combe à la Serpent, Corcelles-lès-Monts"
+      },
+      "basketLocation": {
+        "fr": "Terrain de basket - Golden Coast Festival",
+        "en": "Basketball court - Golden Coast Festival"
+      },
+      "festivalDates": [
+        {
+          "dateStr": "2026-08-28",
+          "dayName": { "fr": "Vendredi", "en": "Friday" },
+          "dayNumber": 28,
+          "monthName": { "fr": "Août", "en": "August" }
+        },
+        {
+          "dateStr": "2026-08-29",
+          "dayName": { "fr": "Samedi", "en": "Saturday" },
+          "dayNumber": 29,
+          "monthName": { "fr": "Août", "en": "August" }
+        },
+        {
+          "dateStr": "2026-08-30",
+          "dayName": { "fr": "Dimanche", "en": "Sunday" },
+          "dayNumber": 30,
+          "monthName": { "fr": "Août", "en": "August" }
+        }
+      ]
+    },
+    "presentation": {
+      "fr": {
+        "titre": "GOLDEN COAST FESTIVAL V3",
+        "date": "28 - 29 - 30 août 2026",
+        "lieu": "CORCELLES-LES-MONTS • DIJON",
+        "aboutCard1Titre": "100% RAP FR",
+        "aboutCard1Texte": "Le plus grand festival entièrement dédié au <strong>rap français</strong> avec les plus grandes têtes d'affiche et les talents émergents.",
+        "aboutCard2Titre": "SITE NATUREL",
+        "aboutCard2Texte": "Un cadre exceptionnel à la <strong>Combe à la Serpent</strong>, offrant une expérience unique en pleine nature près de Dijon.",
+        "aboutCard3Titre": "52 000 FESTIVALIERS",
+        "aboutCard3Texte": "Une première édition couronnée de succès qui revient encore plus fort pour <strong>trois jours de culture urbaine</strong>.",
+        "desc1Titre": "Le rendez-vous des fans de rap",
+        "desc1Texte": "Plonge au cœur de l'expérience Golden Coast Festival, l'événement rap français qui transforme la fin de l'été en un moment d'exception.<br/><br/>Dans un cadre soigneusement scénographié, tu découvres des performances exclusives, un son trap & boom bap d'une qualité studio, et des scènes immersives pensées pour sublimer chaque artiste.",
+        "desc1Chip1": "Les plus grandes stars du rap français",
+        "desc1Chip2": "Boissons & street-food",
+        "desc2Titre": "Une immersion totale",
+        "desc2Texte": "Entre shows lumineux haute intensité, espaces lifestyle, sélections fripes pointues, et street-food signature, chaque détail est conçu pour offrir une expérience fluide, raffinée et mémorable.<br/><br/>Les afters confidentiels, réservés à ceux qui veulent prolonger l'instant, ajoutent une touche rare et privilégiée. Le Golden Coast Festival, c'est plus qu'un rendez-vous : c'est l'événement premium où la culture rap se vit intensément, dans une ambiance exclusive, créative et résolument inoubliable.",
+        "ctaTitre": "PRÊT À VIVRE L'EXPÉRIENCE ?",
+        "ctaTexte": "Réservez tes billets dès maintenant et rejoignez-nous pour trois jours inoubliables !",
+        "ctaBouton": "RÉSERVER MA PLACE",
+        "mapTitre": "LOCALISATION",
+        "mapIntro": "Retrouvez tous les points d'intérêt du festival : scènes, parkings, campings et plus encore."
+      },
+      "en": {
+        "titre": "GOLDEN COAST FESTIVAL V3",
+        "date": "August 28 - 29 - 30, 2026",
+        "lieu": "CORCELLES-LES-MONTS • DIJON",
+        "aboutCard1Titre": "100% FRENCH RAP",
+        "aboutCard1Texte": "The biggest festival entirely dedicated to <strong>French rap</strong> with the biggest headliners and emerging talents.",
+        "aboutCard2Titre": "NATURAL SITE",
+        "aboutCard2Texte": "An exceptional setting at <strong>Combe à la Serpent</strong>, offering a unique experience in the heart of nature near Dijon.",
+        "aboutCard3Titre": "52,000 FESTIVAL-GOERS",
+        "aboutCard3Texte": "A successful first edition that returns even stronger for <strong>three days of urban culture</strong>.",
+        "desc1Titre": "The meeting place for rap fans",
+        "desc1Texte": "Dive into the Golden Coast Festival experience, the French rap event that transforms the end of summer into an exceptional moment.<br/><br/>In a carefully scenographed setting, you discover exclusive performances, trap & boom bap sound of studio quality, and immersive stages designed to enhance each artist.",
+        "desc1Chip1": "The biggest stars of French rap",
+        "desc1Chip2": "Drinks & street food",
+        "desc2Titre": "Total immersion",
+        "desc2Texte": "Between high-intensity light shows, lifestyle spaces, sharp vintage selections, and signature street food, every detail is designed to offer a smooth, refined and memorable experience.<br/><br/>The exclusive afters, reserved for those who want to prolong the moment, add a rare and privileged touch. Golden Coast Festival is more than a meeting: it's the premium event where rap culture is lived intensely, in an exclusive, creative and truly unforgettable atmosphere.",
+        "ctaTitre": "READY TO LIVE THE EXPERIENCE?",
+        "ctaTexte": "Book your tickets now and join us for three unforgettable days!",
+        "ctaBouton": "BOOK MY SPOT",
+        "mapTitre": "LOCATION",
+        "mapIntro": "Find all the festival points of interest: stages, parking lots, campsites and more."
+      }
+    }
+  },
   "emplacementsDisponibles": [
     "47.30532,4.96457",
     "47.30519,4.96433",
@@ -30,152 +116,238 @@
     {
       "nom": "OTacos",
       "type": "Restauration",
-      "description": "Enseigne française présente parmi les stands food & beverage du festival.",
+      "description": {
+        "fr": "Enseigne française présente parmi les stands food & beverage du festival.",
+        "en": "French brand present among the festival's food & beverage stands."
+      },
       "image": "/media/prestataires/otacos.png",
       "email": "contact@otacos.com",
       "tel": "+33 1 23 45 67 89",
       "site": "https://o-tacos.com",
       "services": [
-        { "nom": "Tacos & Burgers", "description": "Restauration rapide pour festivaliers","prixMoyen": 10}
+        {
+          "nom": { "fr": "Tacos & Burgers", "en": "Tacos & Burgers" },
+          "description": { "fr": "Restauration rapide pour festivaliers", "en": "Fast food for festival-goers" },
+          "prixMoyen": 10
+        }
       ]
     },
     {
       "nom": "Free",
       "type": "Services",
-      "description": "Opérateur télécom partenaire du festival pour la couverture réseau.",
+      "description": {
+        "fr": "Opérateur télécom partenaire du festival pour la couverture réseau.",
+        "en": "Telecom operator partner of the festival for network coverage."
+      },
       "image": "/media/prestataires/free.png",
       "email": "partenariat@free.fr",
       "tel": "+33 1 98 76 54 32",
       "site": "https://free.fr",
       "services": [
-        { "nom": "Réseau 5G", "description": "Connexion mobile et Wi-Fi sur site", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Réseau 5G", "en": "5G Network" },
+          "description": { "fr": "Connexion mobile et Wi-Fi sur site", "en": "Mobile connection and on-site Wi-Fi" },
+          "prixMoyen": 0
+        }
       ]
     },
     {
       "nom": "Allianz",
       "type": "Services",
-      "description": "Partenaire prévention et sécurité du festival.",
+      "description": {
+        "fr": "Partenaire prévention et sécurité du festival.",
+        "en": "Prevention and safety partner of the festival."
+      },
       "image": "/media/prestataires/alianz.png",
       "email": "contact@allianz.fr",
       "tel": "+33 1 45 67 89 10",
       "site": "https://allianz.fr",
       "services": [
-        { "nom": "Sécurité & prévention", "description": "Sensibilisation sécurité routière et alcool", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Sécurité & prévention", "en": "Safety & prevention" },
+          "description": { "fr": "Sensibilisation sécurité routière et alcool", "en": "Road safety and alcohol awareness" },
+          "prixMoyen": 0
+        }
       ]
     },
     {
       "nom": "Poliakov",
       "type": "Boissons",
-      "description": "Sponsor officiel du bar principal du Golden Coast.",
+      "description": {
+        "fr": "Sponsor officiel du bar principal du Golden Coast.",
+        "en": "Official sponsor of the Golden Coast main bar."
+      },
       "image": "/media/prestataires/poliakov.png",
       "email": "contact@poliakov.fr",
       "tel": "+33 1 56 98 45 32",
       "site": "https://poliakov.fr",
       "services": [
-        { "nom": "Bar principal", "description": "Espace boisson et cocktails", "prixMoyen": 12 }
+        {
+          "nom": { "fr": "Bar principal", "en": "Main bar" },
+          "description": { "fr": "Espace boisson et cocktails", "en": "Drinks and cocktails area" },
+          "prixMoyen": 12
+        }
       ]
     },
     {
       "nom": "Jack Daniel's",
       "type": "Boissons",
-      "description": "Partenaire officiel du Golden Coast avec un bar éphémère.",
+      "description": {
+        "fr": "Partenaire officiel du Golden Coast avec un bar éphémère.",
+        "en": "Official partner of Golden Coast with a pop-up bar."
+      },
       "image": "/media/prestataires/jackdaniels.png",
       "email": "contact@jackdaniels.com",
       "tel": "+33 1 87 65 43 21",
       "site": "https://jackdaniels.com",
       "services": [
-        { "nom": "Dégustation whisky", "description": "Espace promotion Jack Daniel's", "prixMoyen": 15 }
+        {
+          "nom": { "fr": "Dégustation whisky", "en": "Whiskey tasting" },
+          "description": { "fr": "Espace promotion Jack Daniel's", "en": "Jack Daniel's promotional space" },
+          "prixMoyen": 15
+        }
       ]
     },
     {
       "nom": "Red Bull",
       "type": "Boissons",
-      "description": "Partenaire énergie et animation du festival.",
+      "description": {
+        "fr": "Partenaire énergie et animation du festival.",
+        "en": "Energy and entertainment partner of the festival."
+      },
       "image": "/media/prestataires/redbull.png",
       "email": "info@redbull.com",
       "tel": "+43 1 87 65 90 12",
       "site": "https://redbull.com",
       "services": [
-        { "nom": "Bar Red Bull", "description": "Boissons énergisantes et espace détente", "prixMoyen": 8 }
+        {
+          "nom": { "fr": "Bar Red Bull", "en": "Red Bull Bar" },
+          "description": { "fr": "Boissons énergisantes et espace détente", "en": "Energy drinks and relaxation area" },
+          "prixMoyen": 8
+        }
       ]
     },
     {
       "nom": "Heetch",
       "type": "Mobilité",
-      "description": "Service de VTC officiel offrant des trajets sécurisés pour les festivaliers.",
+      "description": {
+        "fr": "Service de VTC officiel offrant des trajets sécurisés pour les festivaliers.",
+        "en": "Official ride-sharing service offering secure rides for festival-goers."
+      },
       "image": "/media/prestataires/heetch.png",
       "email": "pro@heetch.com",
       "tel": "+33 1 70 95 25 25",
       "site": "https://heetch.com",
       "services": [
-        { "nom": "Zone dépose-minute", "description": "Espace chauffeurs dédié à l'entrée principale", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Zone dépose-minute", "en": "Drop-off zone" },
+          "description": { "fr": "Espace chauffeurs dédié à l'entrée principale", "en": "Dedicated driver area at the main entrance" },
+          "prixMoyen": 0
+        }
       ]
     },
     {
       "nom": "Decathlon",
       "type": "Commerces & Équipements",
-      "description": "Fournisseur officiel d'équipements et d'accessoires camping.",
+      "description": {
+        "fr": "Fournisseur officiel d'équipements et d'accessoires camping.",
+        "en": "Official supplier of camping equipment and accessories."
+      },
       "image": "/media/prestataires/decathlon.png",
       "email": "event@decathlon.com",
       "tel": "+33 3 20 33 50 00",
       "site": "https://decathlon.fr",
       "services": [
-        { "nom": "Boutique éphémère", "description": "Location et vente de matériel outdoor", "prixMoyen": 25 }
+        {
+          "nom": { "fr": "Boutique éphémère", "en": "Pop-up store" },
+          "description": { "fr": "Location et vente de matériel outdoor", "en": "Rental and sale of outdoor equipment" },
+          "prixMoyen": 25
+        }
       ]
     },
     {
       "nom": "Veolia",
       "type": "Services",
-      "description": "Gestion de l'eau potable et du recyclage sur le site.",
+      "description": {
+        "fr": "Gestion de l'eau potable et du recyclage sur le site.",
+        "en": "Management of drinking water and recycling on site."
+      },
       "image": "/media/prestataires/veolia.png",
       "email": "contact.evenement@veolia.com",
       "tel": "+33 1 71 75 00 00",
       "site": "https://www.veolia.com",
       "services": [
-        { "nom": "Fontaines à eau", "description": "Stations de remplissage bouteilles", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Fontaines à eau", "en": "Water fountains" },
+          "description": { "fr": "Stations de remplissage bouteilles", "en": "Bottle refill stations" },
+          "prixMoyen": 0
+        }
       ]
     },
     {
       "nom": "Securitas",
       "type": "Services",
-      "description": "Agence sécurité, contrôle des accès et soutien aux équipes internes.",
+      "description": {
+        "fr": "Agence sécurité, contrôle des accès et soutien aux équipes internes.",
+        "en": "Security agency, access control and support for internal teams."
+      },
       "image": "/media/prestataires/securitas.png",
       "email": "evenements@securitas.fr",
       "tel": "+33 1 49 92 12 34",
       "site": "https://www.securitas.fr",
       "services": [
-        { "nom": "Contrôle d'accès", "description": "Agents filtrage & patrouilles", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Contrôle d'accès", "en": "Access control" },
+          "description": { "fr": "Agents filtrage & patrouilles", "en": "Screening agents & patrols" },
+          "prixMoyen": 0
+        }
       ]
     },
     {
       "nom": "Deezer",
       "type": "Média & Animation",
-      "description": "Partenaire média avec playlists exclusives Golden Coast.",
+      "description": {
+        "fr": "Partenaire média avec playlists exclusives Golden Coast.",
+        "en": "Media partner with exclusive Golden Coast playlists."
+      },
       "image": "/media/prestataires/deezer.png",
       "email": "events@deezer.com",
       "tel": "+46 8 578 479 00",
       "site": "https://Deezer.com",
       "services": [
-        { "nom": "Studio podcast", "description": "Interviews artistes en direct du festival", "prixMoyen": 0 }
+        {
+          "nom": { "fr": "Studio podcast", "en": "Podcast studio" },
+          "description": { "fr": "Interviews artistes en direct du festival", "en": "Live artist interviews from the festival" },
+          "prixMoyen": 0
+        }
       ]
     },
-
     {
       "nom": "Happn",
       "type": "Média & Animation",
-      "description": "Activation matchmaking & espace chill pour les festivaliers.",
+      "description": {
+        "fr": "Activation matchmaking & espace chill pour les festivaliers.",
+        "en": "Matchmaking activation & chill space for festival-goers."
+      },
       "image": "/media/prestataires/happn.png",
       "email": "partners@happn.com",
       "tel": "+33 1 84 16 17 30",
       "site": "https://www.happn.com",
       "services": [
-        { "nom": "Lounge expérientiel", "description": "Rencontres et activités interactives", "prixMoyen": 5 }
+        {
+          "nom": { "fr": "Lounge expérientiel", "en": "Experiential lounge" },
+          "description": { "fr": "Rencontres et activités interactives", "en": "Meetups and interactive activities" },
+          "prixMoyen": 5
+        }
       ]
     },
     {
       "nom": "Jeager",
       "type": "Boissons",
-      "description": "Liqueur allemande à base de plantes.",
+      "description": {
+        "fr": "Liqueur allemande à base de plantes.",
+        "en": "German herbal liqueur."
+      },
       "image": "/media/prestataires/jager.png",
       "prixMoyen": 0,
       "email": "",
@@ -186,7 +358,10 @@
     {
       "nom": "Ricard",
       "type": "Boissons",
-      "description": "Anisette française.",
+      "description": {
+        "fr": "Anisette française.",
+        "en": "French anisette."
+      },
       "image": "/media/prestataires/ricard.png",
       "prixMoyen": 0,
       "email": "",
@@ -197,7 +372,10 @@
     {
       "nom": "JBL",
       "type": "Commerces & Équipements",
-      "description": "Marque d'enceintes et de matériel audio.",
+      "description": {
+        "fr": "Marque d'enceintes et de matériel audio.",
+        "en": "Brand of speakers and audio equipment."
+      },
       "image": "/media/prestataires/jbl.png",
       "prixMoyen": 0,
       "email": "",
@@ -208,7 +386,10 @@
     {
       "nom": "Pepsi",
       "type": "Boissons",
-      "description": "Boisson gazeuse sucrée.",
+      "description": {
+        "fr": "Boisson gazeuse sucrée.",
+        "en": "Sweet carbonated drink."
+      },
       "image": "/media/prestataires/pepsi.png",
       "prixMoyen": 0,
       "email": "",
@@ -219,7 +400,10 @@
     {
       "nom": "Lipton",
       "type": "Boissons",
-      "description": "Marque de thé et de boissons.",
+      "description": {
+        "fr": "Marque de thé et de boissons.",
+        "en": "Tea and beverage brand."
+      },
       "image": "/media/prestataires/lipton.png",
       "prixMoyen": 0,
       "email": "",
@@ -230,7 +414,10 @@
     {
       "nom": "Bagels",
       "type": "Restauration",
-      "description": "Pain en forme d'anneau, souvent garni.",
+      "description": {
+        "fr": "Pain en forme d'anneau, souvent garni.",
+        "en": "Ring-shaped bread, often filled."
+      },
       "image": "/media/prestataires/bagels.png",
       "prixMoyen": 0,
       "email": "",
@@ -241,7 +428,10 @@
     {
       "nom": "Pizza",
       "type": "Restauration",
-      "description": "Plat italien à base de pâte, sauce tomate et garnitures.",
+      "description": {
+        "fr": "Plat italien à base de pâte, sauce tomate et garnitures.",
+        "en": "Italian dish made with dough, tomato sauce and toppings."
+      },
       "image": "/media/prestataires/pizza.png",
       "prixMoyen": 0,
       "email": "",
@@ -252,7 +442,10 @@
     {
       "nom": "Ail et fines herbes",
       "type": "Restauration",
-      "description": "Fromage frais aromatisé.",
+      "description": {
+        "fr": "Fromage frais aromatisé.",
+        "en": "Flavored fresh cheese."
+      },
       "image": "/media/prestataires/afh.png",
       "prixMoyen": 0,
       "email": "",
@@ -263,7 +456,10 @@
     {
       "nom": "Nouilles",
       "type": "Restauration",
-      "description": "Pâtes alimentaires.",
+      "description": {
+        "fr": "Pâtes alimentaires.",
+        "en": "Noodles."
+      },
       "image": "/media/prestataires/nouilles.png",
       "prixMoyen": 0,
       "email": "",
@@ -274,7 +470,10 @@
     {
       "nom": "Coiffure",
       "type": "Services",
-      "description": "Salon de coiffure pour hommes et femmes.",
+      "description": {
+        "fr": "Salon de coiffure pour hommes et femmes.",
+        "en": "Hair salon for men and women."
+      },
       "image": "/media/prestataires/coiffure.png",
       "prixMoyen": 0,
       "email": "",
@@ -285,7 +484,10 @@
     {
       "nom": "Merch",
       "type": "Commerces & Équipements",
-      "description": "Vêtements et accessoires à l'effigie d'une marque ou d'un artiste.",
+      "description": {
+        "fr": "Vêtements et accessoires à l'effigie d'une marque ou d'un artiste.",
+        "en": "Clothing and accessories featuring a brand or artist."
+      },
       "image": "/media/prestataires/merch.png",
       "prixMoyen": 0,
       "email": "",
@@ -296,7 +498,10 @@
     {
       "nom": "Borne d'arcade",
       "type": "Média & Animation",
-      "description": "Jeux vidéo sur borne d'arcade.",
+      "description": {
+        "fr": "Jeux vidéo sur borne d'arcade.",
+        "en": "Video games on arcade machine."
+      },
       "image": "/media/prestataires/arcade.png",
       "prixMoyen": 0,
       "email": "",
@@ -307,7 +512,10 @@
     {
       "nom": "Terrain de basket",
       "type": "Média & Animation",
-      "description": "Terrain pour jouer au basket-ball.",
+      "description": {
+        "fr": "Terrain pour jouer au basket-ball.",
+        "en": "Basketball court."
+      },
       "image": "/media/prestataires/basket.png",
       "prixMoyen": 0,
       "email": "",
