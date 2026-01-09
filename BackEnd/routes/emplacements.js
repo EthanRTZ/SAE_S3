@@ -19,6 +19,32 @@ const router = express.Router();
  *               type: array
  *               items:
  *                 type: object
+ *                 properties:
+ *                   id_emplacement:
+ *                     type: integer
+ *                   nom_emplacement:
+ *                     type: string
+ *                   coord_x:
+ *                     type: number
+ *                   coord_y:
+ *                     type: number
+ *                   coordonnees_completes:
+ *                     type: string
+ *                   id_zone:
+ *                     type: integer
+ *                   statut:
+ *                     type: string
+ *                     enum: [libre, pris, en_attente, indisponible]
+ *                   description:
+ *                     type: string
+ *                   moyens_logistiques:
+ *                     type: string
+ *                   surface_volume:
+ *                     type: string
+ *                   nombre_prises:
+ *                     type: integer
+ *                   acces_eau:
+ *                     type: boolean
  */
 router.get('/', ctrl.getAllEmplacements);
 
@@ -29,15 +55,46 @@ router.get('/', ctrl.getAllEmplacements);
  *     tags:
  *       - Emplacements
  *     summary: Récupère un emplacement par ID
+ *     description: Retourne les détails complets d'un emplacement spécifique
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID de l'emplacement
  *     responses:
  *       200:
  *         description: Détails de l'emplacement
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id_emplacement:
+ *                   type: integer
+ *                 nom_emplacement:
+ *                   type: string
+ *                 coord_x:
+ *                   type: number
+ *                 coord_y:
+ *                   type: number
+ *                 coordonnees_completes:
+ *                   type: string
+ *                 id_zone:
+ *                   type: integer
+ *                 statut:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 moyens_logistiques:
+ *                   type: string
+ *                 surface_volume:
+ *                   type: string
+ *                 nombre_prises:
+ *                   type: integer
+ *                 acces_eau:
+ *                   type: boolean
  *       404:
  *         description: Emplacement non trouvé
  */
@@ -58,6 +115,41 @@ router.get('/:id', ctrl.getEmplacementById);
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               nom_emplacement:
+ *                 type: string
+ *                 example: "Stand VIP A1"
+ *               coord_x:
+ *                 type: number
+ *                 format: float
+ *                 example: 4.96457
+ *               coord_y:
+ *                 type: number
+ *                 format: float
+ *                 example: 47.30532
+ *               coordonnees_completes:
+ *                 type: string
+ *                 example: "47.30532,4.96457"
+ *               id_zone:
+ *                 type: integer
+ *               statut:
+ *                 type: string
+ *                 enum: [libre, pris, en_attente, indisponible]
+ *                 default: libre
+ *               description:
+ *                 type: string
+ *               moyens_logistiques:
+ *                 type: string
+ *                 example: "Électricité 220V, Wi-Fi, Éclairage LED"
+ *               surface_volume:
+ *                 type: string
+ *                 example: "45 m²"
+ *               nombre_prises:
+ *                 type: integer
+ *                 example: 4
+ *               acces_eau:
+ *                 type: boolean
+ *                 default: false
  *     responses:
  *       201:
  *         description: Emplacement créé
@@ -81,17 +173,46 @@ router.post('/', ctrl.createEmplacement);
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID de l'emplacement
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               nom_emplacement:
+ *                 type: string
+ *               coord_x:
+ *                 type: number
+ *                 format: float
+ *               coord_y:
+ *                 type: number
+ *                 format: float
+ *               coordonnees_completes:
+ *                 type: string
+ *               id_zone:
+ *                 type: integer
+ *               statut:
+ *                 type: string
+ *                 enum: [libre, pris, en_attente, indisponible]
+ *               description:
+ *                 type: string
+ *               moyens_logistiques:
+ *                 type: string
+ *               surface_volume:
+ *                 type: string
+ *               nombre_prises:
+ *                 type: integer
+ *               acces_eau:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Emplacement mis à jour
  *       404:
  *         description: Emplacement non trouvé
+ *       401:
+ *         description: Non authentifié
  */
 router.put('/:id', ctrl.updateEmplacement);
 

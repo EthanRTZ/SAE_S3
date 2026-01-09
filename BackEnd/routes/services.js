@@ -89,14 +89,44 @@ router.get('/:id', ctrl.getServiceById);
  *           schema:
  *             type: object
  *             required:
- *               - nom
+ *               - id_prestataire
+ *               - nom_service_fr
  *             properties:
- *               nom:
+ *               id_prestataire:
+ *                 type: integer
+ *                 example: 1
+ *               nom_service_fr:
  *                 type: string
  *                 example: Restauration
- *               description:
+ *               nom_service_en:
+ *                 type: string
+ *                 example: Food Service
+ *               nom_service:
+ *                 type: object
+ *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               description_fr:
  *                 type: string
  *                 example: Service de restauration sur place
+ *               description_en:
+ *                 type: string
+ *                 example: On-site food service
+ *               description:
+ *                 type: object
+ *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               prix_estime:
+ *                 type: number
+ *                 format: float
+ *                 example: 15.50
  *     responses:
  *       201:
  *         description: Service créé avec succès
@@ -128,10 +158,33 @@ router.post('/', ctrl.createService);
  *           schema:
  *             type: object
  *             properties:
- *               nom:
+ *               id_prestataire:
+ *                 type: integer
+ *               nom_service_fr:
+ *                 type: string
+ *               nom_service_en:
+ *                 type: string
+ *               nom_service:
+ *                 type: object
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               description_fr:
+ *                 type: string
+ *               description_en:
  *                 type: string
  *               description:
- *                 type: string
+ *                 type: object
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               prix_estime:
+ *                 type: number
+ *                 format: float
  *     responses:
  *       200:
  *         description: Service mis à jour

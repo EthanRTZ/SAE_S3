@@ -39,16 +39,27 @@ exports.getPrestataireById = async (req, res) => {
  */
 exports.createPrestataire = async (req, res) => {
     try {
-        const { nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url } = req.body;
+        const { nom, type_prestataire, description_fr, description_en, description, contact_email, contact_tel, site_web, photo_url } = req.body;
 
         if (!nom || !type_prestataire) {
             return res.status(400).json({ error: 'Nom and type_prestataire are required' });
         }
 
+        // Gérer description bilingue : si description est un objet {fr, en}, l'extraire
+        let descFr = description_fr;
+        let descEn = description_en;
+        if (description && typeof description === 'object') {
+            descFr = description.fr || description_fr;
+            descEn = description.en || description_en;
+        } else if (description && typeof description === 'string') {
+            descFr = description;
+        }
+
         const prestataire = await Prestataire.create({
             nom,
             type_prestataire,
-            description,
+            description_fr: descFr,
+            description_en: descEn,
             contact_email,
             contact_tel,
             site_web,
@@ -68,7 +79,7 @@ exports.createPrestataire = async (req, res) => {
 exports.updatePrestataire = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nom, type_prestataire, description, contact_email, contact_tel, site_web, photo_url } = req.body;
+        const { nom, type_prestataire, description_fr, description_en, description, contact_email, contact_tel, site_web, photo_url } = req.body;
 
         const prestataire = await Prestataire.findByPk(id);
 
@@ -76,10 +87,21 @@ exports.updatePrestataire = async (req, res) => {
             return res.status(404).json({ error: 'Prestataire not found' });
         }
 
+        // Gérer description bilingue : si description est un objet {fr, en}, l'extraire
+        let descFr = description_fr !== undefined ? description_fr : prestataire.description_fr;
+        let descEn = description_en !== undefined ? description_en : prestataire.description_en;
+        if (description !== undefined && typeof description === 'object') {
+            descFr = description.fr !== undefined ? description.fr : descFr;
+            descEn = description.en !== undefined ? description.en : descEn;
+        } else if (description !== undefined && typeof description === 'string') {
+            descFr = description;
+        }
+
         await prestataire.update({
-            nom: nom || prestataire.nom,
-            type_prestataire: type_prestataire || prestataire.type_prestataire,
-            description: description !== undefined ? description : prestataire.description,
+            nom: nom !== undefined ? nom : prestataire.nom,
+            type_prestataire: type_prestataire !== undefined ? type_prestataire : prestataire.type_prestataire,
+            description_fr: descFr,
+            description_en: descEn,
             contact_email: contact_email !== undefined ? contact_email : prestataire.contact_email,
             contact_tel: contact_tel !== undefined ? contact_tel : prestataire.contact_tel,
             site_web: site_web !== undefined ? site_web : prestataire.site_web,

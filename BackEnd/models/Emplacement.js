@@ -44,6 +44,26 @@ const Emplacement = sequelize.define('Emplacement', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  moyens_logistiques: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'moyens_logistiques'
+  },
+  surface_volume: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'surface_volume'
+  },
+  nombre_prises: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'nombre_prises'
+  },
+  acces_eau: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'acces_eau'
   }
 }, {
   tableName: 'emplacements',

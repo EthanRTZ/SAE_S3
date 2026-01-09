@@ -63,14 +63,36 @@ router.get('/:id', ctrl.getPrestataireById);
  *             type: object
  *             required:
  *               - nom
+ *               - type_prestataire
  *             properties:
  *               nom:
  *                 type: string
  *                 example: Food Truck Paradise
- *               description:
+ *               type_prestataire:
+ *                 type: string
+ *                 example: Restauration
+ *               description_fr:
  *                 type: string
  *                 example: Cuisine street food premium
- *               logo_url:
+ *               description_en:
+ *                 type: string
+ *                 example: Premium street food cuisine
+ *               description:
+ *                 type: object
+ *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               contact_email:
+ *                 type: string
+ *                 format: email
+ *               contact_tel:
+ *                 type: string
+ *               site_web:
+ *                 type: string
+ *               photo_url:
  *                 type: string
  *                 example: /media/prestataires/foodtruck.jpg
  *     responses:
@@ -103,11 +125,37 @@ router.post('/', ctrl.createPrestataire);
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *               type_prestataire:
+ *                 type: string
+ *               description_fr:
+ *                 type: string
+ *               description_en:
+ *                 type: string
+ *               description:
+ *                 type: object
+ *                 properties:
+ *                   fr:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *               contact_email:
+ *                 type: string
+ *               contact_tel:
+ *                 type: string
+ *               site_web:
+ *                 type: string
+ *               photo_url:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Prestataire mis à jour
  *       404:
  *         description: Prestataire non trouvé
+ *       401:
+ *         description: Non authentifié
  */
 router.put('/:id', ctrl.updatePrestataire);
 

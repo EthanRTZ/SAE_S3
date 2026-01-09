@@ -39,18 +39,32 @@ exports.getEmplacementById = async (req, res) => {
  */
 exports.createEmplacement = async (req, res) => {
     try {
-        const { nom_emplacement, coord_x, coord_y, zone, description } = req.body;
-
-        if (!nom_emplacement) {
-            return res.status(400).json({ error: 'nom_emplacement is required' });
-        }
+        const { 
+            nom_emplacement, 
+            coord_x, 
+            coord_y, 
+            coordonnees_completes,
+            id_zone,
+            statut,
+            description,
+            moyens_logistiques,
+            surface_volume,
+            nombre_prises,
+            acces_eau
+        } = req.body;
 
         const emplacement = await Emplacement.create({
             nom_emplacement,
             coord_x,
             coord_y,
-            zone,
-            description
+            coordonnees_completes,
+            id_zone,
+            statut: statut || 'libre',
+            description,
+            moyens_logistiques,
+            surface_volume,
+            nombre_prises,
+            acces_eau: acces_eau || false
         });
 
         res.status(201).json(emplacement);
@@ -66,7 +80,19 @@ exports.createEmplacement = async (req, res) => {
 exports.updateEmplacement = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nom_emplacement, coord_x, coord_y, zone, description } = req.body;
+        const { 
+            nom_emplacement, 
+            coord_x, 
+            coord_y, 
+            coordonnees_completes,
+            id_zone,
+            statut,
+            description,
+            moyens_logistiques,
+            surface_volume,
+            nombre_prises,
+            acces_eau
+        } = req.body;
 
         const emplacement = await Emplacement.findByPk(id);
 
@@ -75,11 +101,17 @@ exports.updateEmplacement = async (req, res) => {
         }
 
         await emplacement.update({
-            nom_emplacement: nom_emplacement || emplacement.nom_emplacement,
+            nom_emplacement: nom_emplacement !== undefined ? nom_emplacement : emplacement.nom_emplacement,
             coord_x: coord_x !== undefined ? coord_x : emplacement.coord_x,
             coord_y: coord_y !== undefined ? coord_y : emplacement.coord_y,
-            zone: zone !== undefined ? zone : emplacement.zone,
-            description: description !== undefined ? description : emplacement.description
+            coordonnees_completes: coordonnees_completes !== undefined ? coordonnees_completes : emplacement.coordonnees_completes,
+            id_zone: id_zone !== undefined ? id_zone : emplacement.id_zone,
+            statut: statut !== undefined ? statut : emplacement.statut,
+            description: description !== undefined ? description : emplacement.description,
+            moyens_logistiques: moyens_logistiques !== undefined ? moyens_logistiques : emplacement.moyens_logistiques,
+            surface_volume: surface_volume !== undefined ? surface_volume : emplacement.surface_volume,
+            nombre_prises: nombre_prises !== undefined ? nombre_prises : emplacement.nombre_prises,
+            acces_eau: acces_eau !== undefined ? acces_eau : emplacement.acces_eau
         });
 
         res.json(emplacement);
