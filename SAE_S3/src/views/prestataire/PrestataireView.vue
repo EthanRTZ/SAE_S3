@@ -10,13 +10,20 @@ const authUser = ref(null)
 const prestataireInfo = ref(null)
 const loading = ref(true)
 const selectedSection = ref('presentation')
-const editingLang = ref('fr') // Langue d'édition actuelle
+const editingLang = ref('fr')
 const presentationText = ref('')
 const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
-
-// AJOUT: Texte personnalisé pour la popup de l'emplacement (bilingue)
 const popupText = ref({ fr: '', en: '' })
+
+// AJOUT: fonction utilitaire pour normaliser les noms (utilisée dans loadReservations)
+const normalizeName = (name) => {
+  if (!name) return ''
+  return String(name).trim().toLowerCase()
+}
+
+// AJOUT: réservations génériques par prestataire
+const reservations = ref([])
 
 // Données pour la gestion des emplacements
 const emplacements = ref([]) // Tous les emplacements avec leur statut
@@ -68,22 +75,25 @@ const loadPrestataireInfo = async () => {
   }
 
   try {
-    // Charger les emplacements depuis le JSON
-    const [emplacementsResp, zonesResp, avisResp] = await Promise.all([
+    // Charger emplacements / zones / avis
+    const [emplacementsResp, zonesResp, avisResp, prestatairesResp] = await Promise.all([
       fetch('/data/emplacements.json', { cache: 'no-store' }),
       fetch('/data/zones.json', { cache: 'no-store' }),
-      fetch('/data/avis.json', { cache: 'no-store' })
+      fetch('/data/avis.json', { cache: 'no-store' }),
+      fetch('/data/prestataires.json', { cache: 'no-store' })
     ])
     const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
     const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
+    const avisData = avisResp.ok ? await avisResp.json() : {}
+    const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+
     emplacements.value = emplacementsData.emplacements || []
     zones.value = zonesData.zones || []
 
-    // MODIFICATION: Charger les emplacements attribués
+    // Charger les emplacements attribués
     try {
       const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
       const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
-
       const coordActuel = emplacementsAttribues[prestataireNom.value]
       if (coordActuel) {
         const emplacement = emplacementsData.emplacements?.find(e => e.coordonnees === coordActuel)
@@ -100,7 +110,7 @@ const loadPrestataireInfo = async () => {
       emplacementActuel.value = null
     }
 
-    // MODIFICATION: Charger la demande en attente
+    // Charger la demande en attente
     try {
       const demandesRaw = localStorage.getItem('demandesEmplacement')
       const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
@@ -111,62 +121,83 @@ const loadPrestataireInfo = async () => {
       demandePendante.value = null
     }
 
-    const avisData = avisResp.ok ? await avisResp.json() : {}
+    // SUPPRESSION: ne plus bloquer si le prestataire n’a pas d’avis
+    // const prestatairesValides = Object.keys(avisData)
+    // if (!prestatairesValides.includes(prestataireNom.value)) {
+    //   prestataireInfo.value = null
+    //   loading.value = false
+    //   return
+    // }
 
-    // Vérifier que le prestataire est dans avis.json
-    const prestatairesValides = Object.keys(avisData)
-    if (!prestatairesValides.includes(prestataireNom.value)) {
-      prestataireInfo.value = null
-      loading.value = false
-      return
-    }
-
+    // Charger les custom
     const customRaw = localStorage.getItem('customPrestataires')
     let customPrestataires = null
     if (customRaw) {
       try {
         customPrestataires = JSON.parse(customRaw)
       } catch (e) {
-        // ignore
+        customPrestataires = null
       }
     }
 
-    const prestataires = siteData.prestataires || []
-    let prestataire = prestataires.find(p => p.nom === prestataireNom.value) || null
-    // Appliquer les modifications locales si elles existent
-    if (prestataire) {
-      const local = customPrestataires && customPrestataires[prestataireNom.value] ? customPrestataires[prestataireNom.value] : {}
-      // merge shallow
-      prestataire = { ...prestataire, ...local }
-    }
-    prestataireInfo.value = prestataire
+    // Trouver le prestataire dans prestataires.json
+    const allPrestataires = prestatairesData.prestataires || []
+    const currentLang = locale.value || 'fr'
+    let prestataire = allPrestataires.find(p => p.nom === prestataireNom.value) || null
 
-    // MODIFICATION: Charger les données selon la structure bilingue
-    const customData = customPrestataires && customPrestataires[prestataireNom.value] ? customPrestataires[prestataireNom.value] : {}
-    
-    // Structure bilingue pour presentationHtml
-    if (customData.presentationHtml && typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr) {
-      // Nouveau format bilingue
-      presentationText.value = customData.presentationHtml[editingLang.value] || customData.presentationHtml.fr || prestataire?.description || ''
-    } else {
-      // Ancien format (rétrocompatibilité)
-      presentationText.value = customData.presentationHtml || prestataire?.description || ''
+    if (!prestataire) {
+      prestataireInfo.value = null
+      loading.value = false
+      return
     }
 
-    // MODIFICATION: Charger le texte personnalisé de la popup (bilingue)
+    // Normaliser description/services bilingues depuis prestataires.json
+    const base = { ...prestataire }
+
+    if (prestataire.description && typeof prestataire.description === 'object' && prestataire.description.fr !== undefined) {
+      base.description = prestataire.description[currentLang] || prestataire.description.fr || ''
+    }
+
+    if (prestataire.services && Array.isArray(prestataire.services)) {
+      base.services = prestataire.services.map(s => {
+        const svc = { ...s }
+        if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+          svc.nom = s.nom[currentLang] || s.nom.fr || ''
+          svc.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+            ? (s.description[currentLang] || s.description.fr || '')
+            : (s.description || '')
+        }
+        return svc
+      })
+    }
+
+    // Appliquer les custom éventuels
+    const customData = customPrestataires && customPrestataires[prestataireNom.value]
+      ? customPrestataires[prestataireNom.value]
+      : {}
+
+    // Présentation bilingue
+    let presentationHtmlBilingue = customData.presentationHtml || {}
+    if (typeof presentationHtmlBilingue === 'string') {
+      presentationHtmlBilingue = { fr: presentationHtmlBilingue, en: '' }
+    }
+    presentationText.value =
+      presentationHtmlBilingue[editingLang.value] ||
+      presentationHtmlBilingue.fr ||
+      base.description ||
+      ''
+
+    // Popup bilingue
     if (customData.popupText && typeof customData.popupText === 'object' && customData.popupText.fr !== undefined) {
       popupText.value = { fr: customData.popupText.fr || '', en: customData.popupText.en || '' }
     } else {
-      // Ancien format (rétrocompatibilité)
       popupText.value = { fr: customData.popupText || '', en: '' }
     }
 
-    // MODIFICATION: Charger les services (bilingue)
+    // Services bilingues (base + custom)
     if (customData.services && Array.isArray(customData.services) && customData.services.length > 0) {
-      // Vérifier si c'est le nouveau format bilingue
       const firstService = customData.services[0]
       if (firstService.nom && typeof firstService.nom === 'object' && firstService.nom.fr !== undefined) {
-        // Nouveau format bilingue
         services.value = customData.services.map(s => ({
           nom: { fr: s.nom?.fr || '', en: s.nom?.en || '' },
           description: { fr: s.description?.fr || '', en: s.description?.en || '' },
@@ -175,7 +206,6 @@ const loadPrestataireInfo = async () => {
           public: s.public !== undefined ? s.public : true,
         }))
       } else {
-        // Ancien format (rétrocompatibilité) - convertir en bilingue
         services.value = customData.services.map(s => ({
           nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
           description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
@@ -185,8 +215,7 @@ const loadPrestataireInfo = async () => {
         }))
       }
     } else {
-      // Utiliser les services originaux du prestataire
-      services.value = (prestataire?.services || []).map(s => ({
+      services.value = (base.services || []).map(s => ({
         nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
         description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
         prix: s.prix !== undefined ? s.prix : 0,
@@ -194,12 +223,16 @@ const loadPrestataireInfo = async () => {
         public: s.public !== undefined ? s.public : true,
       }))
     }
+
     userFields.value = {
-      email: prestataire?.email || '',
-      tel: prestataire?.tel || '',
-      site: prestataire?.site || ''
+      email: customData.email || base.email || '',
+      tel: customData.tel || base.tel || '',
+      site: customData.site || base.site || ''
     }
+
+    prestataireInfo.value = base
   } catch (e) {
+    console.error('Erreur chargement prestataire', e)
     prestataireInfo.value = null
   } finally {
     loading.value = false
@@ -847,6 +880,123 @@ const loadStatsNotes = () => {
   }
 }
 
+// AJOUT: Charger les réservations depuis localStorage + JSON, avec normalisation du nom
+const loadReservations = async () => {
+  if (!prestataireNom.value) {
+    reservations.value = []
+    return
+  }
+
+  const currentNameNorm = normalizeName(prestataireNom.value)
+
+  try {
+    // 1) Réservations locales (source principale)
+    let localReservations = []
+    try {
+      const raw = localStorage.getItem('reservationsPrestataires')
+      const all = raw ? JSON.parse(raw) : []
+      if (Array.isArray(all)) {
+        localReservations = all.filter(
+          r => normalizeName(r.prestataireNom) === currentNameNorm
+        )
+      }
+    } catch (e) {
+      console.error('Erreur lecture reservationsPrestataires', e)
+      localReservations = []
+    }
+
+    // 2) Base JSON initiale (démo)
+    let baseJson = []
+    try {
+      const resp = await fetch('/data/reservations.json', { cache: 'no-store' })
+      if (resp.ok) {
+        const data = await resp.json()
+        const all = Array.isArray(data.reservations) ? data.reservations : []
+        baseJson = all.filter(
+          r => normalizeName(r.prestataireNom) === currentNameNorm
+        )
+      }
+    } catch (e) {
+      console.error('Erreur chargement reservations.json', e)
+    }
+
+    // 3) Fusion par id (local > JSON)
+    const byId = new Map()
+    baseJson.forEach(r => {
+      if (!r.id) return
+      byId.set(String(r.id), r)
+    })
+    localReservations.forEach(r => {
+      if (!r.id) return
+      byId.set(String(r.id), r)
+    })
+
+    reservations.value = Array.from(byId.values())
+  } catch (e) {
+    console.error('Erreur loadReservations', e)
+    reservations.value = []
+  }
+}
+
+// MODIFICATION: Sauvegarder les statuts modifiés directement dans reservationsPrestataires
+const saveReservationsOverrides = () => {
+  try {
+    const raw = localStorage.getItem('reservationsPrestataires')
+    let all = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(all)) all = []
+
+    const byId = new Map()
+    all.forEach(r => {
+      if (!r.id) return
+      byId.set(String(r.id), r)
+    })
+
+    reservations.value.forEach(r => {
+      if (!r.id) return
+      const id = String(r.id)
+      const existing = byId.get(id) || {}
+      byId.set(id, { ...existing, ...r, prestataireNom: prestataireNom.value })
+    })
+
+    localStorage.setItem('reservationsPrestataires', JSON.stringify(Array.from(byId.values())))
+  } catch (e) {
+    console.error('Erreur saveReservationsOverrides', e)
+  }
+}
+
+const updateReservationStatus = (resa, newStatus) => {
+  resa.statut = newStatus
+  saveReservationsOverrides()
+
+  // SI on annule une réservation de terrain, on libère aussi le créneau
+  if (newStatus === 'annulee' || newStatus === 'annulée') {
+    try {
+      const raw = localStorage.getItem('basketReservations')
+      let basketResas = raw ? JSON.parse(raw) : []
+      if (!Array.isArray(basketResas)) basketResas = []
+
+      // CORRECTION: Utiliser "slot" pour comparer
+      const resaDate = resa.date || resa.createdAt
+      const resaSlot = resa.slot || ''
+
+      basketResas = basketResas.filter(r =>
+        !(r.date === resaDate && r.slot === resaSlot)
+      )
+
+      localStorage.setItem('basketReservations', JSON.stringify(basketResas))
+    } catch (e) {
+      console.error('Erreur lors de la libération du créneau basketReservations', e)
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('basket-reservations-updated'))
+    }
+  }
+}
+
+// SUPPRIMÉ: computed filtré (on montre tout sans filtre)
+// const filteredReservations = computed(() => { ... })
+
 onMounted(() => {
   loadAuthFromStorage()
 
@@ -857,41 +1007,38 @@ onMounted(() => {
 
   loadPrestataireInfo()
   loadStatsNotes()
+  loadReservations()
 
-  // AJOUT: Écouter les mises à jour
   window.addEventListener('emplacements-updated', loadPrestataireInfo)
   window.addEventListener('demandes-updated', loadPrestataireInfo)
+  // Recharger lorsqu'une réservation est créée côté détail
+  window.addEventListener('reservations-updated', loadReservations)
 })
 
-// AJOUT: Watch pour initialiser la carte quand la section change
 watch(selectedSection, (newVal) => {
   if (newVal === 'emplacement') {
     nextTick(() => {
       initMap()
     })
   }
+  if (newVal === 'reservations') {
+    loadReservations()
+  }
 })
 
 // Watch pour recharger les données quand on change de langue d'édition
 watch(editingLang, () => {
   // Recharger les données selon la nouvelle langue
-  const customRaw = localStorage.getItem('customPrestataires')
-  if (customRaw && prestataireNom.value) {
-    try {
-      const customPrestataires = JSON.parse(customRaw)
-      const customData = customPrestataires[prestataireNom.value] || {}
-      
-      // Recharger presentationHtml selon la langue
-      if (customData.presentationHtml && typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr !== undefined) {
-        presentationText.value = customData.presentationHtml[editingLang.value] || customData.presentationHtml.fr || ''
-      } else if (typeof customData.presentationHtml === 'string') {
-        presentationText.value = customData.presentationHtml
-      }
-    } catch (e) {
-      console.error('Erreur rechargement données', e)
-    }
-  }
+  loadPrestataireInfo()
 })
+
+// (optionnel) Recharger aussi quand la langue d'interface change,
+// si tu utilises `locale` ailleurs dans ce composant.
+// watch(() => locale.value, () => {
+//   loadPrestataireInfo()
+//   loadReservations()
+// })
+
 </script>
 
 <template>
@@ -939,6 +1086,11 @@ watch(editingLang, () => {
             <li :class="{ active: selectedSection === 'stats' }" @click="selectedSection = 'stats'">
               <span class="menu-icon">📊</span>
               <span>{{ $t('prestataireSpace.menuStats') }}</span>
+            </li>
+            <!-- AJOUT: Onglet Réservations (pour tous les prestataires) -->
+            <li :class="{ active: selectedSection === 'reservations' }" @click="selectedSection = 'reservations'">
+              <span class="menu-icon">📅</span>
+              <span>Réservations</span>
             </li>
             <li :class="{ active: selectedSection === 'config' }" @click="selectedSection = 'config'">
               <span class="menu-icon">⚙️</span>
@@ -1341,6 +1493,137 @@ watch(editingLang, () => {
               </button>
             </div>
           </div>
+
+          <!-- Section Réservations -->
+          <div v-if="selectedSection === 'reservations'" class="section-content">
+            <div class="section-header">
+              <h2>📅 Réservations chez vous</h2>
+              <p class="section-description">
+                Consultez les réservations effectuées pour votre stand / activité. Elles sont créées depuis la page de détail publique de votre prestataire et stockées localement dans le navigateur.
+              </p>
+            </div>
+
+            <div v-if="reservations.length" class="reservations-toolbar">
+              <div class="reservations-summary">
+                <span class="summary-pill">
+                  Total : <strong>{{ reservations.length }}</strong>
+                </span>
+                <span class="summary-pill summary-pending">
+                  En attente :
+                  <strong>
+                    {{
+                      reservations.filter(r => (r.statut || 'en_attente') === 'en_attente').length
+                    }}
+                  </strong>
+                </span>
+                <span class="summary-pill summary-validated">
+                  Validées :
+                  <strong>
+                    {{
+                      reservations.filter(r => (r.statut || '').toLowerCase().startsWith('valide')).length
+                    }}
+                  </strong>
+                </span>
+                <span class="summary-pill summary-cancelled">
+                  Annulées :
+                  <strong>
+                    {{
+                      reservations.filter(r => (r.statut || '').toLowerCase().startsWith('annule')).length
+                    }}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            <div v-if="reservations.length" class="data-table-container reservations-table-container">
+              <table class="data-table transactions-table">
+                <thead>
+                  <tr>
+                    <th>Créneau</th>
+                    <th>Nom / Équipe</th>
+                    <th>Contact</th>
+                    <th>Participants</th>
+                    <th>Statut</th>
+                    <th style="width: 190px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="resa in reservations"
+                    :key="resa.id"
+                  >
+                    <td class="transaction-date">
+                      <div class="resa-slot">
+                        <span class="resa-date">
+                          {{ new Date(resa.date || resa.createdAt).toLocaleDateString('fr-FR') }}
+                        </span>
+                        <span class="resa-time">
+                          {{ resa.slot || '-' }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="transaction-client">
+                      <div class="resa-name">
+                        {{ resa.nom || resa.name || '—' }}
+                      </div>
+                    </td>
+                    <td class="transaction-client">
+                      <div class="resa-contact">
+                        <span class="resa-email">{{ resa.email || '—' }}</span>
+                      </div>
+                    </td>
+                    <td class="table-value">
+                      {{ resa.nbJoueurs || resa.players || '-' }}
+                    </td>
+                    <td class="table-value">
+                      <span
+                        class="status-badge"
+                        :class="{
+                          'status-pending': resa.statut === 'en_attente' || !resa.statut,
+                          'status-validated': resa.statut === 'validee' || resa.statut === 'validée',
+                          'status-cancelled': resa.statut === 'annulee' || resa.statut === 'annulée'
+                        }"
+                      >
+                        {{
+                          resa.statut === 'validee' || resa.statut === 'validée'
+                            ? 'Validée'
+                            : resa.statut === 'annulee' || resa.statut === 'annulée'
+                              ? 'Annulée'
+                              : 'En attente'
+                        }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="resa-actions">
+                        <button
+                          class="btn btn-small"
+                          type="button"
+                          @click="updateReservationStatus(resa, 'validee')"
+                        >
+                          Valider
+                        </button>
+                        <button
+                          class="btn btn-small btn-danger"
+                          type="button"
+                          @click="updateReservationStatus(resa, 'annulee')"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div v-else class="empty-state">
+              <p>Aucune réservation pour l'instant.</p>
+              <p class="empty-hint">
+                Les réservations créées depuis la page de détail publique de votre prestataire apparaîtront ici.
+              </p>
+            </div>
+          </div>
+
         </section>
       </div>
     </div>
@@ -1823,7 +2106,7 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 
 .data-table tbody td {
   padding: 14px 20px;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .transaction-date {
@@ -2048,7 +2331,6 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   display: block;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.85rem;
-  margin: 8px 0;
 }
 
 code {
@@ -2059,7 +2341,156 @@ code {
   font-size: 0.9em;
 }
 
-/* responsive */
+/* AJOUT: styles pour la section Réservations */
+.reservations-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(252, 220, 30, 0.2);
+}
+
+.reservations-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.summary-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.summary-pill strong {
+  font-weight: 800;
+  color: #FCDC1E;
+}
+
+.summary-pending {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.08);
+}
+
+.summary-validated {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.summary-cancelled {
+  border-color: rgba(244, 67, 54, 0.5);
+  background: rgba(244, 67, 54, 0.08);
+}
+
+.reservations-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-right: 4px;
+}
+
+.filter-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  border-color: rgba(252, 220, 30, 0.6);
+  background: rgba(252, 220, 30, 0.12);
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #2046b3;
+  border-color: #FCDC1E;
+  box-shadow: 0 3px 10px rgba(252, 220, 30, 0.4);
+}
+
+.reservations-table-container {
+  margin-top: 16px;
+}
+
+.resa-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resa-date {
+  font-weight: 700;
+  color: #FCDC1E;
+}
+
+.resa-time {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.resa-name {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.resa-email {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.status-validated {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.status-cancelled {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+.resa-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 900px) {
   .admin-layout {
     grid-template-columns: 1fr;

@@ -138,6 +138,36 @@
           <p class="players-info">{{ $t('basketReservation.playersInfo') }}</p>
         </div>
 
+        <!-- AJOUT: Infos équipe / contact -->
+        <div v-if="selectedSlot" class="section">
+          <h2 class="section-title">
+            <span class="step-number">4</span>
+            Nom / Équipe & contact
+          </h2>
+          <div class="team-contact-form">
+            <div class="form-row">
+              <label for="team-name">Nom / Équipe</label>
+              <input
+                id="team-name"
+                type="text"
+                class="input"
+                v-model="teamName"
+                placeholder="Équipe des amis, Nom du groupe..."
+              />
+            </div>
+            <div class="form-row">
+              <label for="contact-email">Email de contact</label>
+              <input
+                id="contact-email"
+                type="email"
+                class="input"
+                v-model="contactEmail"
+                placeholder="votre.email@example.com"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Récapitulatif -->
         <div v-if="selectedSlot" class="section recap-section">
           <h2 class="section-title">
@@ -173,6 +203,20 @@
                 <span class="recap-value">{{ basketLocationValue }}</span>
               </div>
             </div>
+            <div class="recap-item">
+              <span class="recap-icon">🏷️</span>
+              <div class="recap-content">
+                <span class="recap-label">Nom / Équipe</span>
+                <span class="recap-value">{{ teamName || '—' }}</span>
+              </div>
+            </div>
+            <div class="recap-item">
+              <span class="recap-icon">📧</span>
+              <div class="recap-content">
+                <span class="recap-label">Email de contact</span>
+                <span class="recap-value">{{ contactEmail || '—' }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -185,8 +229,9 @@
             :disabled="!canAddToCart"
             @click="addToCart"
           >
-            <span class="btn-icon">🛒</span>
-            {{ $t('basketReservation.addToCart') }}
+            <span class="btn-icon">🏀</span>
+            <!-- MODIF: utiliser le texte calculé au lieu de $t(...) || '...' -->
+            {{ confirmReservationText }}
           </button>
 
           <router-link to="/prestataire" class="btn-secondary">
@@ -198,8 +243,7 @@
         <transition name="fade">
           <div v-if="showConfirmation" class="confirmation-message">
             <span class="confirmation-icon">✅</span>
-            <span>{{ $t('basketReservation.addedToCart') }}</span>
-            <router-link to="/panier" class="confirmation-link">{{ $t('basketReservation.viewCart') }}</router-link>
+            <span>{{ reservationConfirmedText }}</span>
           </div>
         </transition>
       </div>
@@ -208,18 +252,20 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { usePanierStore } from '@/stores/panier'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
-const panierStore = usePanierStore()
 
 // État
 const selectedDate = ref('')
 const selectedSlot = ref('')
 const nbPlayers = ref(4)
 const showConfirmation = ref(false)
+
+// AJOUT: Nom / Équipe et email de contact
+const teamName = ref('')
+const contactEmail = ref('')
 
 // Clé localStorage pour les réservations de basket
 const BASKET_RESERVATIONS_KEY = 'basketReservations'
@@ -228,6 +274,7 @@ const BASKET_RESERVATIONS_KEY = 'basketReservations'
 const festivalDatesText = ref('')
 const festivalLocation = ref('')
 const basketLocationValue = ref('')
+// CORRECTION: Initialiser comme tableau vide
 const festivalDates = ref([])
 
 // Charger les informations du festival depuis festival.json
@@ -318,15 +365,80 @@ const getExistingReservations = () => {
   }
 }
 
-// Vérifier si un créneau est disponible
+// AJOUT: Charger les réservations validées des prestataires
+const getPrestataireReservations = () => {
+  try {
+    const raw = localStorage.getItem('reservationsPrestataires')
+    const all = raw ? JSON.parse(raw) : []
+    // Ne garder que celles qui ne sont PAS annulées
+    return Array.isArray(all) ? all.filter(r => r.statut !== 'annulee' && r.statut !== 'annulée') : []
+  } catch {
+    return []
+  }
+}
+
+// AJOUT: State pour forcer le recalcul des créneaux
+const refreshTrigger = ref(0)
+
+// MODIFICATION: Vérifier si un créneau est disponible (comparaison directe avec "slot")
 const isSlotAvailable = (date, time) => {
-  const reservations = getExistingReservations()
-  const panierItems = panierStore.items.filter(item => item.type === 'basket')
+  refreshTrigger.value // déclenche le recalcul quand cette valeur change
 
-  const isReserved = reservations.some(r => r.date === date && r.slot === time)
-  const isInCart = panierItems.some(item => item.date === date && item.slot === time)
+  console.log('===================')
+  console.log('🔍 Vérification disponibilité')
+  console.log('Date demandée:', date)
+  console.log('Time demandé:', time)
 
-  return !isReserved && !isInCart
+  // 1) Vérifier dans basketReservations (réservations locales)
+  const basketResas = getExistingReservations()
+  console.log('📦 Réservations basket:', basketResas)
+
+  const isInBasket = basketResas.some(r => {
+    // Comparaison directe des chaînes
+    const dateMatch = String(r.date).trim() === String(date).trim()
+    const slotMatch = String(r.slot).trim() === String(time).trim()
+    console.log(`  - Basket: date="${r.date}" === "${date}" ? ${dateMatch}, slot="${r.slot}" === "${time}" ? ${slotMatch}`)
+    return dateMatch && slotMatch
+  })
+
+  if (isInBasket) {
+    console.log('❌ BLOQUÉ par basketReservations')
+    console.log('===================')
+    return false
+  }
+
+  // 2) Vérifier dans reservationsPrestataires (réservations validées/en attente)
+  const prestataireResas = getPrestataireReservations()
+  console.log('🏪 Réservations prestataires:', prestataireResas)
+
+  const isReservedByPrestataire = prestataireResas.some(r => {
+    console.log(`  📋 Analyse réservation:`, r)
+
+    if (!r.date || !r.slot) {
+      console.log('    ⚠️ Pas de date ou slot')
+      return false
+    }
+
+    // Comparaison directe des chaînes (trim pour éviter les espaces)
+    const dateMatch = String(r.date).trim() === String(date).trim()
+    const slotMatch = String(r.slot).trim() === String(time).trim()
+
+    console.log(`    📅 Date: "${r.date}" === "${date}" ? ${dateMatch}`)
+    console.log(`    ⏰ Slot: "${r.slot}" === "${time}" ? ${slotMatch}`)
+
+    if (dateMatch && slotMatch) {
+      console.log('    ✅ MATCH TROUVÉ!')
+      return true
+    }
+
+    return false
+  })
+
+  const result = !isReservedByPrestataire
+  console.log(`\n🎯 Résultat final: ${result ? '✅ DISPONIBLE' : '❌ NON DISPONIBLE'}`)
+  console.log('===================\n')
+
+  return result
 }
 
 // Créneaux avec disponibilité par période
@@ -342,19 +454,22 @@ const morningSlots = computed(() => getSlotsWithAvailability(morningHours))
 const afternoonSlots = computed(() => getSlotsWithAvailability(afternoonHours))
 const eveningSlots = computed(() => getSlotsWithAvailability(eveningHours))
 
-// Format de la date sélectionnée
+// CORRECTION: Format de la date sélectionnée avec vérification
 const formatSelectedDate = computed(() => {
-  if (!selectedDate.value) return ''
-  const found = festivalDates.find(d => d.dateStr === selectedDate.value)
+  if (!selectedDate.value || !Array.isArray(festivalDates.value)) return ''
+  const found = festivalDates.value.find(d => d.dateStr === selectedDate.value)
   if (found) {
     return `${found.dayName} ${found.dayNumber} ${found.monthName} 2026`
   }
   return ''
 })
 
-// Peut ajouter au panier
+// Peut confirmer la réservation (créneau + joueurs + email valide minimum)
 const canAddToCart = computed(() => {
-  return selectedDate.value && selectedSlot.value && nbPlayers.value >= 2
+  if (!selectedDate.value || !selectedSlot.value || nbPlayers.value < 2) return false
+  // Email facultatif mais si rempli, on vérifie un minimum de forme
+  if (!contactEmail.value) return true
+  return /\S+@\S+\.\S+/.test(contactEmail.value)
 })
 
 // Sélection
@@ -383,33 +498,115 @@ const getEndTime = (startTime) => {
   return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
-// Ajouter au panier
+// Ajouter une réservation GRATUITE (sans panier)
 const addToCart = () => {
   if (!canAddToCart.value) return
 
-  const reservation = {
-    type: 'basket',
-    date: selectedDate.value,
-    slot: selectedSlot.value,
-    endTime: getEndTime(selectedSlot.value),
+  console.log('=== Début de la réservation ===')
+  console.log('Date:', selectedDate.value)
+  console.log('Créneau:', selectedSlot.value)
+  console.log('Nom:', teamName.value)
+  console.log('Email:', contactEmail.value)
+
+  // 1) Marquer le créneau comme réservé localement
+  const reservations = getExistingReservations()
+  const newBasketResa = {
+    date: selectedDate.value, // Format "2026-08-28"
+    slot: selectedSlot.value, // Format "14:00"
     nbPlayers: nbPlayers.value,
-    quantity: 1,
-    displayLabel: `🏀 ${t('panier.basket')} - ${formatSelectedDate.value}`,
-    optionLabel: `${selectedSlot.value} - ${getEndTime(selectedSlot.value)} (${nbPlayers.value} ${t('basketReservation.players')})`
+    nom: teamName.value || '',
+    email: contactEmail.value || ''
+  }
+  reservations.push(newBasketResa)
+  localStorage.setItem(BASKET_RESERVATIONS_KEY, JSON.stringify(reservations))
+  console.log('Réservation basket sauvegardée:', newBasketResa)
+
+  // 2) Créer la réservation côté prestataire
+  if (typeof window !== 'undefined') {
+    if (typeof window.createPrestataireReservation === 'function') {
+      const prestataireResa = {
+        id: `basket-${Date.now()}`,
+        prestataireNom: 'Terrain de basket',
+        date: selectedDate.value, // Format "2026-08-28"
+        slot: selectedSlot.value, // Format "14:00" (UNIFIÉ)
+        nbJoueurs: nbPlayers.value,
+        nom: teamName.value || '',
+        email: contactEmail.value || ''
+      }
+      console.log('Appel de createPrestataireReservation avec:', prestataireResa)
+      window.createPrestataireReservation(prestataireResa)
+      console.log('Réservation prestataire créée')
+
+      setTimeout(() => {
+        refreshTrigger.value++
+      }, 100)
+    } else {
+      console.error('window.createPrestataireReservation n\'est pas définie!')
+    }
   }
 
-  panierStore.addItem(reservation)
-
+  // 3) Afficher une confirmation
   showConfirmation.value = true
   setTimeout(() => {
     showConfirmation.value = false
   }, 5000)
 
+  // 4) Réinitialiser le créneau sélectionné
   selectedSlot.value = ''
 }
 
-// Écouter les changements du panier
-watch(() => panierStore.items, () => {}, { deep: true })
+// AJOUT: texte du bouton de réservation avec fallback si la clé i18n n'existe pas
+const confirmReservationText = computed(() => {
+  const key = 'basketReservation.confirmReservation'
+  const translated = t(key)
+  if (!translated || translated === key) {
+    return 'Confirmer la réservation'
+  }
+  return translated
+})
+
+// AJOUT: texte de confirmation avec fallback si la clé i18n n'existe pas
+const reservationConfirmedText = computed(() => {
+  const key = 'basketReservation.reservationConfirmed'
+  const translated = t(key)
+  // Si la traduction renvoie encore la clé brute, on met un texte par défaut
+  if (!translated || translated === key) {
+    return 'Votre réservation de terrain a bien été enregistrée.'
+  }
+  return translated
+})
+
+// Recharger les créneaux dispo si le stockage basketReservations change ailleurs
+const handleBasketUpdate = () => {
+  // MODIFICATION: incrémenter refreshTrigger pour forcer le recalcul de tous les computed
+  refreshTrigger.value++
+
+  // forcer une mise à jour en réassignant selectedDate (déclenche recompute des slots)
+  if (selectedDate.value) {
+    const current = selectedDate.value
+    selectedDate.value = ''
+    setTimeout(() => {
+      selectedDate.value = current
+    }, 10)
+  }
+}
+
+onMounted(() => {
+  loadFestivalInfo()
+  // Recharger les créneaux dispo si le stockage basketReservations change ailleurs
+  if (typeof window !== 'undefined') {
+    window.addEventListener('basket-reservations-updated', handleBasketUpdate)
+    // AJOUT: écouter aussi les mises à jour des réservations prestataires
+    window.addEventListener('reservations-updated', handleBasketUpdate)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('basket-reservations-updated', handleBasketUpdate)
+    window.removeEventListener('reservations-updated', handleBasketUpdate)
+  }
+})
 </script>
 
 <style scoped>
@@ -686,6 +883,29 @@ h1 {
   .festival-date-number { font-size: 2rem; }
   .players-count { font-size: 2.5rem; }
   .qty-btn { width: 44px; height: 44px; font-size: 1.5rem; }
+}
+
+.team-contact-form {
+  display: grid;
+  gap: 16px;
+}
+
+.team-contact-form .form-row label {
+  display: block;
+  margin-bottom: 6px;
+  color: #FCDC1E;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.team-contact-form .input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  font-size: 0.95rem;
 }
 </style>
 

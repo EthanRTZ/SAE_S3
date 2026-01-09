@@ -1,0 +1,14 @@
+{
+  "reservations": [
+    {
+      "id": "basket-1",
+      "prestataireNom": "Terrain de basket",
+      "date": "2026-08-28",
+      "slot": "14:00",
+      "nom": "Équipe A",
+      "email": "equipe-a@example.com",
+      "nbJoueurs": 5,
+      "statut": "en_attente"
+    }
+  ]
+}

@@ -80,5 +80,83 @@
     "password": "allianz12",
     "role": "prestataire",
     "prestataireNom": "Allianz"
+  },
+  {
+    "email": "jeager@prestataire.fr",
+    "password": "jeager12",
+    "role": "prestataire",
+    "prestataireNom": "Jeager"
+  },
+  {
+    "email": "ricard@prestataire.fr",
+    "password": "ricard12",
+    "role": "prestataire",
+    "prestataireNom": "Ricard"
+  },
+  {
+    "email": "jbl@prestataire.fr",
+    "password": "jbl12",
+    "role": "prestataire",
+    "prestataireNom": "JBL"
+  },
+  {
+    "email": "pepsi@prestataire.fr",
+    "password": "pepsi12",
+    "role": "prestataire",
+    "prestataireNom": "Pepsi"
+  },
+  {
+    "email": "lipton@prestataire.fr",
+    "password": "lipton12",
+    "role": "prestataire",
+    "prestataireNom": "Lipton"
+  },
+  {
+    "email": "bagels@prestataire.fr",
+    "password": "bagels12",
+    "role": "prestataire",
+    "prestataireNom": "Bagels"
+  },
+  {
+    "email": "pizza@prestataire.fr",
+    "password": "pizza12",
+    "role": "prestataire",
+    "prestataireNom": "Pizza"
+  },
+  {
+    "email": "ailetfinesherbes@prestataire.fr",
+    "password": "ailetfinesherbes12",
+    "role": "prestataire",
+    "prestataireNom": "Ail et fines herbes"
+  },
+  {
+    "email": "nouilles@prestataire.fr",
+    "password": "nouilles12",
+    "role": "prestataire",
+    "prestataireNom": "Nouilles"
+  },
+  {
+    "email": "coiffure@prestataire.fr",
+    "password": "coiffure12",
+    "role": "prestataire",
+    "prestataireNom": "Coiffure"
+  },
+  {
+    "email": "merch@prestataire.fr",
+    "password": "merch12",
+    "role": "prestataire",
+    "prestataireNom": "Merch"
+  },
+  {
+    "email": "bornedarcade@prestataire.fr",
+    "password": "bornedarcade12",
+    "role": "prestataire",
+    "prestataireNom": "Borne d'arcade"
+  },
+  {
+    "email": "terraindebasket@prestataire.fr",
+    "password": "terraindebasket12",
+    "role": "prestataire",
+    "prestataireNom": "Terrain de basket"
   }
 ]

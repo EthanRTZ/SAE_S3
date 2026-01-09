@@ -187,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -224,11 +224,9 @@ const loadAvisFromStorage = async (prestataireNom) => {
             source: 'json'
           }))
         }
-      } else {
-        console.error('❌ Erreur fetch avis.json:', resp.status, resp.statusText)
       }
     } catch (e) {
-      console.error('❌ Erreur chargement avis.json', e)
+      console.error('Erreur chargement avis.json', e)
     }
 
     // 2. Charger les avis depuis localStorage (ajoutés via AvisView)
@@ -292,7 +290,6 @@ const loadPrestataire = async () => {
   loading.value = true
   try {
     const prestataireNom = decodeURIComponent(route.params.nom)
-    console.log('🔍 Chargement prestataire:', prestataireNom)
     
     // Charger les modifications locales
     const customRaw = localStorage.getItem('customPrestataires')
@@ -307,26 +304,18 @@ const loadPrestataire = async () => {
 
     // Charger depuis le fichier JSON
     const response = await fetch('/data/prestataires.json', { cache: 'no-store' })
-    if (!response.ok) {
-      console.error('❌ Erreur fetch prestataires.json:', response.status, response.statusText)
-      throw new Error('fetch failed')
-    }
+    if (!response.ok) throw new Error('fetch failed')
     const data = await response.json()
     const prestataires = data.prestataires || []
-    console.log('📦 Prestataires chargés:', prestataires.length)
     
     // Trouver le prestataire
     let found = prestataires.find(p => p.nom === prestataireNom)
     
     if (!found) {
-      console.warn('⚠️ Prestataire non trouvé:', prestataireNom)
-      console.log('📋 Prestataires disponibles:', prestataires.map(p => p.nom))
       prestataire.value = null
       loading.value = false
       return
     }
-    
-    console.log('✅ Prestataire trouvé:', found.nom)
     
     const currentLang = locale.value || 'fr'
     
@@ -383,19 +372,6 @@ const loadPrestataire = async () => {
       if (customData.email) found.email = customData.email
       if (customData.tel) found.tel = customData.tel
       if (customData.site) found.site = customData.site
-    }
-
-    // Charger les coordonnées depuis les emplacements attribués
-    try {
-      const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-      const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
-      const coordonnees = emplacementsAttribues[prestataireNom]
-      if (coordonnees) {
-        found.coordone = coordonnees
-        console.log('📍 Coordonnées trouvées:', coordonnees)
-      }
-    } catch (e) {
-      console.error('Erreur chargement coordonnées', e)
     }
 
     prestataire.value = found || null

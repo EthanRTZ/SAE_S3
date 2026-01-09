@@ -190,44 +190,31 @@ export default {
     async loadPrestataires() {
       this.loading = true;
       try {
-        const [prestatairesResp, avisResp] = await Promise.all([
-          fetch('/data/prestataires.json', { cache: 'no-store' }),
-          fetch('/data/avis.json', { cache: 'no-store' })
-        ]);
-
+        const prestatairesResp = await fetch('/data/prestataires.json', { cache: 'no-store' });
         const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] };
-        const avisData = avisResp.ok ? await avisResp.json() : {};
-
-        // Filtrer uniquement les prestataires présents dans avis.json
-        const prestatairesValides = Object.keys(avisData);
         let allPrestataires = prestatairesData.prestataires || [];
-        allPrestataires = allPrestataires.filter(p => prestatairesValides.includes(p.nom));
 
         // Normaliser le format bilingue depuis prestataires.json
         const currentLang = this.$i18n?.locale || 'fr';
         allPrestataires = allPrestataires.map(p => {
           const updated = { ...p };
-          
-          // Gérer la description bilingue depuis prestataires.json
+          // Gérer la description bilingue
           if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
             updated.description = p.description[currentLang] || p.description.fr || '';
           }
-          
-          // Gérer les services bilingues depuis prestataires.json
+          // Gérer les services bilingues
           if (p.services && Array.isArray(p.services)) {
             updated.services = p.services.map(s => {
               const service = { ...s };
-              // Si c'est le format bilingue
               if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
                 service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
                   ? (s.description[currentLang] || s.description.fr || '')
                   : (s.description || '');
               }
               return service;
             });
           }
-          
           return updated;
         });
 
@@ -236,10 +223,10 @@ export default {
         allPrestataires = allPrestataires.map(p => {
           const local = custom[p.nom];
           if (!local) return p;
-          
+
           const updated = { ...p };
-          
-          // Gérer la présentation bilingue
+
+          // Présentation / description personnalisée
           if (local.presentationHtml) {
             if (typeof local.presentationHtml === 'object' && local.presentationHtml.fr !== undefined) {
               updated.description = local.presentationHtml[currentLang] || local.presentationHtml.fr || p.description || '';
@@ -247,27 +234,25 @@ export default {
               updated.description = local.presentationHtml;
             }
           }
-          
-          // Gérer les services bilingues
+
+          // Services personnalisés
           if (local.services && Array.isArray(local.services)) {
             updated.services = local.services.map(s => {
               const service = { ...s };
-              // Si c'est le format bilingue
               if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
                 service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
                   ? (s.description[currentLang] || s.description.fr || '')
                   : (s.description || '');
               }
               return service;
             });
           }
-          
-          // Copier les autres champs
+
           if (local.email) updated.email = local.email;
           if (local.tel) updated.tel = local.tel;
           if (local.site) updated.site = local.site;
-          
+
           return updated;
         });
 
@@ -279,6 +264,7 @@ export default {
         this.loading = false;
       }
     },
+
     isBasketPrestataire(prestataire) {
       const nom = prestataire.nom?.toLowerCase() || ''
       return nom.includes('terrain de basket') ||
