@@ -24,7 +24,13 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Entrez votre token JWT (reçu lors du login)',
+          description: 'Entrez votre token JWT (reçu lors du login) dans le header Authorization',
+        },
+        sessionQuery: {
+          type: 'apiKey',
+          in: 'query',
+          name: 'session',
+          description: 'Token de session passé en paramètre d\'URL (?session=xxx) - Alternative au header',
         },
       },
       schemas: {

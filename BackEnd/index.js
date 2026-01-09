@@ -5,6 +5,9 @@ const cors = require('cors');
 const { sequelize } = require('./models');
 const setupSwagger = require('./swagger');
 
+// Import du middleware de sécurisation simple (S3)
+const simpleAuth = require('./middleware/simpleAuth');
+
 // Import des routes
 const routesAuth = require('./routes/auth');
 const routesUtilisateurs = require('./routes/utilisateurs');
@@ -25,17 +28,20 @@ app.use(express.json());
 // Configuration de Swagger
 setupSwagger(app);
 
-// Routes de l'API
-app.use('/api/auth', routesAuth);
-app.use('/api/utilisateurs', routesUtilisateurs);
-app.use('/api/roles', routesRoles);
-app.use('/api/artistes', routesArtistes);
-app.use('/api/prestataires', routesPrest);
-app.use('/api/services', routesServ);
-app.use('/api/emplacements', routesEmplacements);
-app.use('/api/stats', routesStats);
+// Routes publiques (pas de sécurisation)
+app.use('/api/auth', routesAuth); // Auth : register et login sont publics
+app.get('/api/health', (req, res) => res.json({ ok: true })); // Health check public
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+// Routes protégées (middleware de sécurisation appliqué)
+// Pour le S3 : vérification simple de la présence du token
+// Pour le S4 : ce middleware sera remplacé par une vérification JWT complète
+app.use('/api/utilisateurs', simpleAuth, routesUtilisateurs);
+app.use('/api/roles', simpleAuth, routesRoles);
+app.use('/api/artistes', simpleAuth, routesArtistes);
+app.use('/api/prestataires', simpleAuth, routesPrest);
+app.use('/api/services', simpleAuth, routesServ);
+app.use('/api/emplacements', simpleAuth, routesEmplacements);
+app.use('/api/stats', simpleAuth, routesStats);
 
 app.use((err, req, res, next) => {
   console.error(err);
