@@ -2,16 +2,169 @@ const express = require('express');
 const ctrl = require('../controllers/servicesController');
 const router = express.Router();
 
-// Route NON-TRIVIALE (doit être AVANT /:id)
+/**
+ * @openapi
+ * /services/with-prestataires:
+ *   get:
+ *     tags:
+ *       - Services
+ *     summary: Liste tous les services avec leurs prestataires
+ *     description: Récupère tous les services incluant les informations des prestataires associés
+ *     responses:
+ *       200:
+ *         description: Liste des services avec prestataires
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ */
 router.get('/with-prestataires', ctrl.getAllServicesWithPrestataires);
 
-// Routes CRUD de base (TRIVIAL)
+/**
+ * @openapi
+ * /services:
+ *   get:
+ *     tags:
+ *       - Services
+ *     summary: Liste tous les services
+ *     description: Récupère la liste complète des services disponibles
+ *     responses:
+ *       200:
+ *         description: Liste des services
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   nom:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ */
 router.get('/', ctrl.getAllServices);
+
+/**
+ * @openapi
+ * /services/{id}:
+ *   get:
+ *     tags:
+ *       - Services
+ *     summary: Récupère un service par ID
+ *     description: Retourne les détails d'un service spécifique
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID du service
+ *     responses:
+ *       200:
+ *         description: Détails du service
+ *       404:
+ *         description: Service non trouvé
+ */
 router.get('/:id', ctrl.getServiceById);
+
+/**
+ * @openapi
+ * /services:
+ *   post:
+ *     tags:
+ *       - Services
+ *     summary: Crée un nouveau service
+ *     description: Ajoute un nouveau service au système
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nom
+ *             properties:
+ *               nom:
+ *                 type: string
+ *                 example: Restauration
+ *               description:
+ *                 type: string
+ *                 example: Service de restauration sur place
+ *     responses:
+ *       201:
+ *         description: Service créé avec succès
+ *       401:
+ *         description: Non authentifié
+ */
 router.post('/', ctrl.createService);
+
+/**
+ * @openapi
+ * /services/{id}:
+ *   put:
+ *     tags:
+ *       - Services
+ *     summary: Met à jour un service
+ *     description: Modifie les informations d'un service existant
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Service mis à jour
+ *       404:
+ *         description: Service non trouvé
+ */
 router.put('/:id', ctrl.updateService);
+
+/**
+ * @openapi
+ * /services/{id}:
+ *   delete:
+ *     tags:
+ *       - Services
+ *     summary: Supprime un service
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Service supprimé
+ *       404:
+ *         description: Service non trouvé
+ */
 router.delete('/:id', ctrl.deleteService);
 
 
 module.exports = router;
+
+
 

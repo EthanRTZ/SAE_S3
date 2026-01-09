@@ -3,6 +3,7 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const { sequelize } = require('./models');
+const setupSwagger = require('./swagger');
 
 // Import des routes
 const routesAuth = require('./routes/auth');
@@ -20,6 +21,9 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
+
+// Configuration de Swagger
+setupSwagger(app);
 
 // Routes de l'API
 app.use('/api/auth', routesAuth);
