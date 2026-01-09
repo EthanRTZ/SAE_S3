@@ -1,0 +1,414 @@
+{
+  "prestataires": [
+    {
+      "nom": "OTacos",
+      "type": "Restauration",
+      "description": {
+        "fr": "Enseigne française présente parmi les stands food & beverage du festival.",
+        "en": "French brand present among the festival's food & beverage stands."
+      },
+      "image": "/media/prestataires/otacos.png",
+      "email": "contact@otacos.com",
+      "tel": "+33 1 23 45 67 89",
+      "site": "https://o-tacos.com",
+      "services": [
+        {
+          "nom": { "fr": "Tacos & Burgers", "en": "Tacos & Burgers" },
+          "description": { "fr": "Restauration rapide pour festivaliers", "en": "Fast food for festival-goers" },
+          "prixMoyen": 10
+        }
+      ]
+    },
+    {
+      "nom": "Free",
+      "type": "Services",
+      "description": {
+        "fr": "Opérateur télécom partenaire du festival pour la couverture réseau.",
+        "en": "Telecom operator partner of the festival for network coverage."
+      },
+      "image": "/media/prestataires/free.png",
+      "email": "partenariat@free.fr",
+      "tel": "+33 1 98 76 54 32",
+      "site": "https://free.fr",
+      "services": [
+        {
+          "nom": { "fr": "Réseau 5G", "en": "5G Network" },
+          "description": { "fr": "Connexion mobile et Wi-Fi sur site", "en": "Mobile connection and on-site Wi-Fi" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Allianz",
+      "type": "Services",
+      "description": {
+        "fr": "Partenaire prévention et sécurité du festival.",
+        "en": "Prevention and safety partner of the festival."
+      },
+      "image": "/media/prestataires/alianz.png",
+      "email": "contact@allianz.fr",
+      "tel": "+33 1 45 67 89 10",
+      "site": "https://allianz.fr",
+      "services": [
+        {
+          "nom": { "fr": "Sécurité & prévention", "en": "Safety & prevention" },
+          "description": { "fr": "Sensibilisation sécurité routière et alcool", "en": "Road safety and alcohol awareness" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Poliakov",
+      "type": "Boissons",
+      "description": {
+        "fr": "Sponsor officiel du bar principal du Golden Coast.",
+        "en": "Official sponsor of the Golden Coast main bar."
+      },
+      "image": "/media/prestataires/poliakov.png",
+      "email": "contact@poliakov.fr",
+      "tel": "+33 1 56 98 45 32",
+      "site": "https://poliakov.fr",
+      "services": [
+        {
+          "nom": { "fr": "Bar principal", "en": "Main bar" },
+          "description": { "fr": "Espace boisson et cocktails", "en": "Drinks and cocktails area" },
+          "prixMoyen": 12
+        }
+      ]
+    },
+    {
+      "nom": "Jack Daniel's",
+      "type": "Boissons",
+      "description": {
+        "fr": "Partenaire officiel du Golden Coast avec un bar éphémère.",
+        "en": "Official partner of Golden Coast with a pop-up bar."
+      },
+      "image": "/media/prestataires/jackdaniels.png",
+      "email": "contact@jackdaniels.com",
+      "tel": "+33 1 87 65 43 21",
+      "site": "https://jackdaniels.com",
+      "services": [
+        {
+          "nom": { "fr": "Dégustation whisky", "en": "Whiskey tasting" },
+          "description": { "fr": "Espace promotion Jack Daniel's", "en": "Jack Daniel's promotional space" },
+          "prixMoyen": 15
+        }
+      ]
+    },
+    {
+      "nom": "Red Bull",
+      "type": "Boissons",
+      "description": {
+        "fr": "Partenaire énergie et animation du festival.",
+        "en": "Energy and entertainment partner of the festival."
+      },
+      "image": "/media/prestataires/redbull.png",
+      "email": "info@redbull.com",
+      "tel": "+43 1 87 65 90 12",
+      "site": "https://redbull.com",
+      "services": [
+        {
+          "nom": { "fr": "Bar Red Bull", "en": "Red Bull Bar" },
+          "description": { "fr": "Boissons énergisantes et espace détente", "en": "Energy drinks and relaxation area" },
+          "prixMoyen": 8
+        }
+      ]
+    },
+    {
+      "nom": "Heetch",
+      "type": "Mobilité",
+      "description": {
+        "fr": "Service de VTC officiel offrant des trajets sécurisés pour les festivaliers.",
+        "en": "Official ride-sharing service offering secure rides for festival-goers."
+      },
+      "image": "/media/prestataires/heetch.png",
+      "email": "pro@heetch.com",
+      "tel": "+33 1 70 95 25 25",
+      "site": "https://heetch.com",
+      "services": [
+        {
+          "nom": { "fr": "Zone dépose-minute", "en": "Drop-off zone" },
+          "description": { "fr": "Espace chauffeurs dédié à l'entrée principale", "en": "Dedicated driver area at the main entrance" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Decathlon",
+      "type": "Commerces & Équipements",
+      "description": {
+        "fr": "Fournisseur officiel d'équipements et d'accessoires camping.",
+        "en": "Official supplier of camping equipment and accessories."
+      },
+      "image": "/media/prestataires/decathlon.png",
+      "email": "event@decathlon.com",
+      "tel": "+33 3 20 33 50 00",
+      "site": "https://decathlon.fr",
+      "services": [
+        {
+          "nom": { "fr": "Boutique éphémère", "en": "Pop-up store" },
+          "description": { "fr": "Location et vente de matériel outdoor", "en": "Rental and sale of outdoor equipment" },
+          "prixMoyen": 25
+        }
+      ]
+    },
+    {
+      "nom": "Veolia",
+      "type": "Services",
+      "description": {
+        "fr": "Gestion de l'eau potable et du recyclage sur le site.",
+        "en": "Management of drinking water and recycling on site."
+      },
+      "image": "/media/prestataires/veolia.png",
+      "email": "contact.evenement@veolia.com",
+      "tel": "+33 1 71 75 00 00",
+      "site": "https://www.veolia.com",
+      "services": [
+        {
+          "nom": { "fr": "Fontaines à eau", "en": "Water fountains" },
+          "description": { "fr": "Stations de remplissage bouteilles", "en": "Bottle refill stations" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Securitas",
+      "type": "Services",
+      "description": {
+        "fr": "Agence sécurité, contrôle des accès et soutien aux équipes internes.",
+        "en": "Security agency, access control and support for internal teams."
+      },
+      "image": "/media/prestataires/securitas.png",
+      "email": "evenements@securitas.fr",
+      "tel": "+33 1 49 92 12 34",
+      "site": "https://www.securitas.fr",
+      "services": [
+        {
+          "nom": { "fr": "Contrôle d'accès", "en": "Access control" },
+          "description": { "fr": "Agents filtrage & patrouilles", "en": "Screening agents & patrols" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Deezer",
+      "type": "Média & Animation",
+      "description": {
+        "fr": "Partenaire média avec playlists exclusives Golden Coast.",
+        "en": "Media partner with exclusive Golden Coast playlists."
+      },
+      "image": "/media/prestataires/deezer.png",
+      "email": "events@deezer.com",
+      "tel": "+46 8 578 479 00",
+      "site": "https://Deezer.com",
+      "services": [
+        {
+          "nom": { "fr": "Studio podcast", "en": "Podcast studio" },
+          "description": { "fr": "Interviews artistes en direct du festival", "en": "Live artist interviews from the festival" },
+          "prixMoyen": 0
+        }
+      ]
+    },
+    {
+      "nom": "Happn",
+      "type": "Média & Animation",
+      "description": {
+        "fr": "Activation matchmaking & espace chill pour les festivaliers.",
+        "en": "Matchmaking activation & chill space for festival-goers."
+      },
+      "image": "/media/prestataires/happn.png",
+      "email": "partners@happn.com",
+      "tel": "+33 1 84 16 17 30",
+      "site": "https://www.happn.com",
+      "services": [
+        {
+          "nom": { "fr": "Lounge expérientiel", "en": "Experiential lounge" },
+          "description": { "fr": "Rencontres et activités interactives", "en": "Meetups and interactive activities" },
+          "prixMoyen": 5
+        }
+      ]
+    },
+    {
+      "nom": "Jeager",
+      "type": "Boissons",
+      "description": {
+        "fr": "Liqueur allemande à base de plantes.",
+        "en": "German herbal liqueur."
+      },
+      "image": "/media/prestataires/jager.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Ricard",
+      "type": "Boissons",
+      "description": {
+        "fr": "Anisette française.",
+        "en": "French anisette."
+      },
+      "image": "/media/prestataires/ricard.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "JBL",
+      "type": "Commerces & Équipements",
+      "description": {
+        "fr": "Marque d'enceintes et de matériel audio.",
+        "en": "Brand of speakers and audio equipment."
+      },
+      "image": "/media/prestataires/jbl.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Pepsi",
+      "type": "Boissons",
+      "description": {
+        "fr": "Boisson gazeuse sucrée.",
+        "en": "Sweet carbonated drink."
+      },
+      "image": "/media/prestataires/pepsi.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Lipton",
+      "type": "Boissons",
+      "description": {
+        "fr": "Marque de thé et de boissons.",
+        "en": "Tea and beverage brand."
+      },
+      "image": "/media/prestataires/lipton.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Bagels",
+      "type": "Restauration",
+      "description": {
+        "fr": "Pain en forme d'anneau, souvent garni.",
+        "en": "Ring-shaped bread, often filled."
+      },
+      "image": "/media/prestataires/bagels.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Pizza",
+      "type": "Restauration",
+      "description": {
+        "fr": "Plat italien à base de pâte, sauce tomate et garnitures.",
+        "en": "Italian dish made with dough, tomato sauce and toppings."
+      },
+      "image": "/media/prestataires/pizza.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Ail et fines herbes",
+      "type": "Restauration",
+      "description": {
+        "fr": "Fromage frais aromatisé.",
+        "en": "Flavored fresh cheese."
+      },
+      "image": "/media/prestataires/afh.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Nouilles",
+      "type": "Restauration",
+      "description": {
+        "fr": "Pâtes alimentaires.",
+        "en": "Noodles."
+      },
+      "image": "/media/prestataires/nouilles.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Coiffure",
+      "type": "Services",
+      "description": {
+        "fr": "Salon de coiffure pour hommes et femmes.",
+        "en": "Hair salon for men and women."
+      },
+      "image": "/media/prestataires/coiffure.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Merch",
+      "type": "Commerces & Équipements",
+      "description": {
+        "fr": "Vêtements et accessoires à l'effigie d'une marque ou d'un artiste.",
+        "en": "Clothing and accessories featuring a brand or artist."
+      },
+      "image": "/media/prestataires/merch.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Borne d'arcade",
+      "type": "Média & Animation",
+      "description": {
+        "fr": "Jeux vidéo sur borne d'arcade.",
+        "en": "Video games on arcade machine."
+      },
+      "image": "/media/prestataires/arcade.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    },
+    {
+      "nom": "Terrain de basket",
+      "type": "Média & Animation",
+      "description": {
+        "fr": "Terrain pour jouer au basket-ball.",
+        "en": "Basketball court."
+      },
+      "image": "/media/prestataires/basket.png",
+      "prixMoyen": 0,
+      "email": "",
+      "tel": "",
+      "site": "",
+      "services": []
+    }
+  ]
+}
