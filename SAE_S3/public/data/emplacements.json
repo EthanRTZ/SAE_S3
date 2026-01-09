@@ -1,14 +1,5 @@
 {
   "emplacementsDisponibles": [
-    "47.30532,4.96457",
-    "47.30519,4.96433",
-    "47.30508,4.96423",
-    "47.30501,4.96413",
-    "47.30495,4.96406",
-    "47.30269,4.96492",
-    "47.30400,4.96441",
-    "47.30486,4.96394",
-    "47.30278,4.96521",
     "47.30411,4.96460",
     "47.30477,4.96382",
     "47.30469,4.96373",
@@ -30,82 +21,142 @@
     {
       "id": 1,
       "coordonnees": "47.30532,4.96457",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "OTacos",
+      "dateAttribution": "2026-08-15T10:00:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Stand OTacos - Zone Restauration",
+      "moyens_logistiques": "Électricité 220V, Wi-Fi, Éclairage LED",
+      "surface_volume": "45 m²",
+      "nombre_prises": 4,
+      "acces_eau": true,
+      "description": "Emplacement idéal pour restauration rapide avec accès eau et électricité"
     },
     {
       "id": 2,
       "coordonnees": "47.30519,4.96433",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Red Bull",
+      "dateAttribution": "2026-08-15T10:30:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Bar Red Bull - Zone Animation",
+      "moyens_logistiques": "Électricité 220V, Sonorisation, Éclairage",
+      "surface_volume": "60 m²",
+      "nombre_prises": 6,
+      "acces_eau": true,
+      "description": "Espace bar avec zone détente et animations"
     },
     {
       "id": 3,
       "coordonnees": "47.30508,4.96423",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Poliakov",
+      "dateAttribution": "2026-08-15T11:00:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Bar Poliakov - Zone Principale",
+      "moyens_logistiques": "Électricité 220V, Réfrigération, Éclairage",
+      "surface_volume": "50 m²",
+      "nombre_prises": 5,
+      "acces_eau": true,
+      "description": "Bar principal avec espace service complet"
     },
     {
       "id": 4,
       "coordonnees": "47.30501,4.96413",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Decathlon",
+      "dateAttribution": "2026-08-15T11:30:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Stand Decathlon - Zone Équipements",
+      "moyens_logistiques": "Électricité 220V, Wi-Fi, Éclairage",
+      "surface_volume": "80 m²",
+      "nombre_prises": 3,
+      "acces_eau": false,
+      "description": "Espace de vente et location d'équipements sportifs"
     },
     {
       "id": 5,
       "coordonnees": "47.30495,4.96406",
-      "statut": "libre",
-      "prestataireNom": null,
+      "statut": "en_attente",
+      "prestataireNom": "Jack Daniel's",
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": "2026-08-20T14:00:00Z",
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 6,
       "coordonnees": "47.30269,4.96492",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Deezer",
+      "dateAttribution": "2026-08-15T12:00:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Espace Deezer - Zone Média",
+      "moyens_logistiques": "Électricité 220V, Wi-Fi haut débit, Sonorisation",
+      "surface_volume": "40 m²",
+      "nombre_prises": 8,
+      "acces_eau": false,
+      "description": "Espace streaming et playlists avec zone d'écoute"
     },
     {
       "id": 7,
       "coordonnees": "47.30400,4.96441",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Merch",
+      "dateAttribution": "2026-08-15T12:30:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Boutique Officielle - Zone Merch",
+      "moyens_logistiques": "Électricité 220V, Éclairage, Caisse enregistreuse",
+      "surface_volume": "70 m²",
+      "nombre_prises": 2,
+      "acces_eau": false,
+      "description": "Boutique de merchandising officiel du festival"
     },
     {
       "id": 8,
       "coordonnees": "47.30486,4.96394",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "Pizza",
+      "dateAttribution": "2026-08-15T13:00:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Stand Pizza - Zone Restauration",
+      "moyens_logistiques": "Électricité 220V, Four à bois, Éclairage",
+      "surface_volume": "55 m²",
+      "nombre_prises": 3,
+      "acces_eau": true,
+      "description": "Stand de pizzas artisanales avec four à bois"
     },
     {
       "id": 9,
       "coordonnees": "47.30278,4.96521",
-      "statut": "libre",
-      "prestataireNom": null,
-      "dateAttribution": null,
-      "dateDemande": null
+      "statut": "pris",
+      "prestataireNom": "JBL",
+      "dateAttribution": "2026-08-15T13:30:00Z",
+      "dateDemande": null,
+      "nom_emplacement": "Zone JBL - Sonorisation",
+      "moyens_logistiques": "Électricité 220V, Sonorisation professionnelle, Éclairage",
+      "surface_volume": "35 m²",
+      "nombre_prises": 10,
+      "acces_eau": false,
+      "description": "Espace démonstration audio avec équipement JBL"
     },
     {
       "id": 10,
       "coordonnees": "47.30411,4.96460",
-      "statut": "libre",
-      "prestataireNom": null,
+      "statut": "en_attente",
+      "prestataireNom": "Bagels",
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": "2026-08-21T09:00:00Z",
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 11,
@@ -113,7 +164,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 12,
@@ -121,7 +178,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 13,
@@ -129,7 +192,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 14,
@@ -137,7 +206,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 15,
@@ -145,7 +220,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 16,
@@ -153,7 +234,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 17,
@@ -161,7 +248,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 18,
@@ -169,7 +262,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 19,
@@ -177,7 +276,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 20,
@@ -185,7 +290,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 21,
@@ -193,7 +304,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 22,
@@ -201,7 +318,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 23,
@@ -209,7 +332,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 24,
@@ -217,7 +346,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     },
     {
       "id": 25,
@@ -225,7 +360,13 @@
       "statut": "libre",
       "prestataireNom": null,
       "dateAttribution": null,
-      "dateDemande": null
+      "dateDemande": null,
+      "nom_emplacement": null,
+      "moyens_logistiques": null,
+      "surface_volume": null,
+      "nombre_prises": null,
+      "acces_eau": false,
+      "description": null
     }
   ],
   "demandesEmplacement": []

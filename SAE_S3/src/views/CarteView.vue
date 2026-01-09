@@ -32,12 +32,29 @@
       {{ panelCollapsed ? '❯' : '❮' }}
     </button>
     <div ref="mapContainer" id="map"></div>
+    
+    <!-- AJOUT: Modal pour le formulaire d'emplacement -->
+    <div v-if="showEmplacementForm" class="emplacement-form-modal" @click.self="closeEmplacementForm">
+      <div class="emplacement-form-modal-content">
+        <EmplacementForm
+          :emplacement="selectedEmplacement"
+          :is-edit="formMode === 'edit'"
+          @save="saveEmplacementInfo"
+          @cancel="closeEmplacementForm"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import EmplacementForm from '@/components/EmplacementForm.vue'
+
 export default {
   name: 'CarteView',
+  components: {
+    EmplacementForm
+  },
   props: {
     embedded: { type: Boolean, default: false },
   },
@@ -79,6 +96,11 @@ export default {
 
       // MODIFICATION: Emplacements avec statut
       emplacements: [], // Tous les emplacements avec leur statut
+      
+      // AJOUT: Gestion du formulaire d'emplacement
+      showEmplacementForm: false,
+      selectedEmplacement: null,
+      formMode: 'add' // 'add' ou 'edit'
     };
   },
   mounted() {
@@ -155,6 +177,17 @@ export default {
         window.addEventListener('emplacement-updated', () => {
           this.loadPrestataires();
         });
+        
+        // AJOUT: Écouter les changements d'authentification pour mettre à jour les popups
+        this.handleAuthChanged = () => {
+          this.initEmplacementsLibres();
+        };
+        window.addEventListener('auth-changed', this.handleAuthChanged);
+        
+        // AJOUT: Fonction globale pour ouvrir le formulaire depuis les popups
+        window.openEmplacementForm = (emplacementId) => {
+          this.openEmplacementForm(emplacementId);
+        };
       })
       .catch((e) => console.error(e));
   },
@@ -182,11 +215,35 @@ export default {
     },
   },
   computed: {
-    // N’affiche le bouton que si la route correspond à la carte
+    // N'affiche le bouton que si la route correspond à la carte
     showToggleButton() {
       const r = this.$route;
       if (!r) return true; // fallback si pas de router
       return r.name === 'Carte' || /carte/i.test(r.path || '');
+    },
+    // AJOUT: Vérification de l'authentification et du rôle
+    authUser() {
+      try {
+        const raw = localStorage.getItem('authUser');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    },
+    isAuthenticated() {
+      return !!this.authUser;
+    },
+    userRole() {
+      return this.authUser?.role || 'user';
+    },
+    isAdmin() {
+      return this.userRole === 'admin';
+    },
+    isPrestataire() {
+      return this.userRole === 'prestataire';
+    },
+    prestataireNom() {
+      return this.authUser?.prestataireNom || '';
     },
   },
   methods: {
@@ -203,6 +260,23 @@ export default {
         // Charger les emplacements avec statut
         this.emplacements = emplacementsData.emplacements || [];
         this.zones = zonesData.zones || [];
+        
+        // AJOUT: Charger les informations d'emplacement depuis localStorage
+        try {
+          const emplacementsInfoRaw = localStorage.getItem('emplacementsInfo');
+          if (emplacementsInfoRaw) {
+            const emplacementsInfo = JSON.parse(emplacementsInfoRaw);
+            this.emplacements = this.emplacements.map(e => {
+              const info = emplacementsInfo[e.id];
+              if (info) {
+                return { ...e, ...info };
+              }
+              return e;
+            });
+          }
+        } catch (e) {
+          console.error('Erreur chargement informations emplacements', e);
+        }
 
         // AJOUT: Charger les personnalisations des prestataires
         let customPrestataires = {};
@@ -441,6 +515,19 @@ export default {
     initEmplacementsLibres() {
       const L = this._L;
       if (!L || !this.map) return;
+      
+      // AJOUT: Récupérer les informations d'authentification
+      let authUser = null;
+      try {
+        const raw = localStorage.getItem('authUser');
+        authUser = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        authUser = null;
+      }
+      const userRole = authUser?.role || 'user';
+      const isAdmin = userRole === 'admin';
+      const isPrestataire = userRole === 'prestataire';
+      const prestataireNom = authUser?.prestataireNom || '';
 
       // Nettoyer les anciens marqueurs d'emplacements libres
       Object.values(this.emplacementsLibresMarkers).forEach(m => {
@@ -483,16 +570,69 @@ export default {
 
         let html = '';
         if (emplacement.statut === 'libre') {
-          // Emplacement libre - afficher les coordonnées
-          html = `
-            <div class="popup-emplacement">
-              <h3 style="color: ${color};">${label}</h3>
-              <p>Emplacement #${emplacement.id}</p>
-              <p class="coordinates">${coords}</p>
-            </div>
-          `;
+          // Vérifier si l'emplacement a des informations
+          const hasInfo = emplacement.nom_emplacement || 
+                         emplacement.moyens_logistiques || 
+                         emplacement.surface_volume || 
+                         emplacement.nombre_prises || 
+                         emplacement.acces_eau || 
+                         emplacement.description;
+          
+          // Construire les informations de l'emplacement
+          const emplacementInfoParts = [];
+          if (emplacement.nom_emplacement) {
+            emplacementInfoParts.push(`<p class="emplacement-info-title"><strong>📍 ${emplacement.nom_emplacement}</strong></p>`);
+          }
+          if (emplacement.surface_volume) {
+            emplacementInfoParts.push(`<p class="emplacement-info">${this.$t('carte.surface')}: ${emplacement.surface_volume}</p>`);
+          }
+          if (emplacement.nombre_prises) {
+            emplacementInfoParts.push(`<p class="emplacement-info">${this.$t('carte.outlets')}: ${emplacement.nombre_prises}</p>`);
+          }
+          if (emplacement.acces_eau) {
+            emplacementInfoParts.push(`<p class="emplacement-info">✓ ${this.$t('carte.water')}</p>`);
+          }
+          if (emplacement.moyens_logistiques) {
+            emplacementInfoParts.push(`<p class="emplacement-info"><small>${emplacement.moyens_logistiques}</small></p>`);
+          }
+          
+          // AJOUT: Vérifier si l'utilisateur peut modifier les informations
+          const canEditEmplacement = isAdmin;
+          
+          if (!hasInfo) {
+            // Emplacement vide - bouton "Saisir les informations"
+            html = `
+              <div class="popup-prestataire-emplacement">
+                <h3 class="prestataire-nom">${label}</h3>
+                <p class="prestataire-type"><strong>Emplacement #${emplacement.id}</strong></p>
+                <p class="coordinates" style="margin: 8px 0; font-family: monospace; font-size: 0.8rem; color: rgba(255,255,255,0.7);">${coords}</p>
+                ${canEditEmplacement ? `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-add-info">
+                    ${this.$t('carte.addLocationInfo')}
+                  </button>
+                ` : ''}
+              </div>
+            `;
+          } else {
+            // Emplacement avec infos - afficher infos + bouton "Modifier"
+            html = `
+              <div class="popup-prestataire-emplacement">
+                <h3 class="prestataire-nom">${emplacement.nom_emplacement || 'Emplacement #' + emplacement.id}</h3>
+                <p class="status-badge status-libre">${label}</p>
+                ${emplacementInfoParts.length > 0 ? `<div class="emplacement-infos-section">${emplacementInfoParts.join('')}</div>` : ''}
+                ${canEditEmplacement ? `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-edit-info">
+                    ${this.$t('carte.editLocation')}
+                  </button>
+                ` : ''}
+              </div>
+            `;
+          }
 
-          marker.bindPopup(html);
+          marker.bindPopup(html, {
+            maxWidth: 300,
+            className: 'prestataire-popup'
+          });
 
           marker.bindTooltip(this.$t('carte.availableLocation'), {
             permanent: false,
@@ -500,10 +640,41 @@ export default {
             offset: [0, -10]
           });
         } else {
-          // Emplacement occupé ou en attente - afficher les infos du prestataire
+          // Emplacement occupé ou en attente - afficher les infos du prestataire + infos emplacement
           const prestataire = this.prestataires.find(p => p.nom === emplacement.prestataireNom);
           const prestataireNom = encodeURIComponent(emplacement.prestataireNom || '');
+          
+          // AJOUT: Vérifier si l'emplacement a des informations
+          const hasEmplacementInfo = emplacement.nom_emplacement || 
+                                    emplacement.moyens_logistiques || 
+                                    emplacement.surface_volume || 
+                                    emplacement.nombre_prises || 
+                                    emplacement.acces_eau || 
+                                    emplacement.description;
+          
+          // AJOUT: Construire les informations de l'emplacement
+          const emplacementInfoParts = [];
+          if (emplacement.nom_emplacement) {
+            emplacementInfoParts.push(`<p class="emplacement-info-title"><strong>📍 ${emplacement.nom_emplacement}</strong></p>`);
+          }
+          if (emplacement.surface_volume) {
+            emplacementInfoParts.push(`<p class="emplacement-info">${this.$t('carte.surface')}: ${emplacement.surface_volume}</p>`);
+          }
+          if (emplacement.nombre_prises) {
+            emplacementInfoParts.push(`<p class="emplacement-info">${this.$t('carte.outlets')}: ${emplacement.nombre_prises}</p>`);
+          }
+          if (emplacement.acces_eau) {
+            emplacementInfoParts.push(`<p class="emplacement-info">✓ ${this.$t('carte.water')}</p>`);
+          }
+          if (emplacement.moyens_logistiques) {
+            emplacementInfoParts.push(`<p class="emplacement-info"><small>${emplacement.moyens_logistiques}</small></p>`);
+          }
 
+          // AJOUT: Vérifier si l'utilisateur peut modifier les informations
+          // Les admins peuvent tout modifier, les prestataires peuvent modifier leur propre emplacement
+          const canEditEmplacement = isAdmin || 
+            (isPrestataire && emplacement.prestataireNom === prestataireNom);
+          
           if (prestataire) {
             // MODIFICATION: Utiliser le texte personnalisé si disponible
             const customPopupText = prestataire.popupText;
@@ -515,20 +686,40 @@ export default {
                 <h3 class="prestataire-nom">${emplacement.prestataireNom}</h3>
                 <p class="prestataire-type"><strong>Type:</strong> ${prestataire.type}</p>
                 ${descriptionCourte ? `<p class="prestataire-desc">${descriptionCourte}</p>` : ''}
+                ${emplacementInfoParts.length > 0 ? `<div class="emplacement-infos-section">${emplacementInfoParts.join('')}</div>` : ''}
                 <p class="status-badge status-${emplacement.statut}">${label}</p>
                 <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
                   ${this.$t('carte.seeDetails')}
                 </a>
+                ${canEditEmplacement ? (hasEmplacementInfo ? `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-edit-info" style="margin-top: 8px;">
+                    ${this.$t('carte.editLocation')}
+                  </button>
+                ` : `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-add-info" style="margin-top: 8px;">
+                    ${this.$t('carte.addLocationInfo')}
+                  </button>
+                `) : ''}
               </div>
             `;
           } else {
             html = `
               <div class="popup-prestataire-emplacement">
                 <h3 class="prestataire-nom">${emplacement.prestataireNom}</h3>
+                ${emplacementInfoParts.length > 0 ? `<div class="emplacement-infos-section">${emplacementInfoParts.join('')}</div>` : ''}
                 <p class="status-badge status-${emplacement.statut}">${label}</p>
                 <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
                   ${this.$t('carte.seeDetails')}
                 </a>
+                ${canEditEmplacement ? (hasEmplacementInfo ? `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-edit-info" style="margin-top: 8px;">
+                    ${this.$t('carte.editLocation')}
+                  </button>
+                ` : `
+                  <button onclick="window.openEmplacementForm(${emplacement.id})" class="btn-add-info" style="margin-top: 8px;">
+                    ${this.$t('carte.addLocationInfo')}
+                  </button>
+                `) : ''}
               </div>
             `;
           }
@@ -891,6 +1082,86 @@ export default {
       tempDiv.innerHTML = html;
       return tempDiv.textContent || tempDiv.innerText || '';
     },
+    
+    // AJOUT: Ouvrir le formulaire d'emplacement
+    openEmplacementForm(emplacementId) {
+      // AJOUT: Vérification des permissions
+      let authUser = null;
+      try {
+        const raw = localStorage.getItem('authUser');
+        authUser = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        authUser = null;
+      }
+      const userRole = authUser?.role || 'user';
+      const isAdmin = userRole === 'admin';
+      const isPrestataire = userRole === 'prestataire';
+      const prestataireNom = authUser?.prestataireNom || '';
+      
+      const emplacement = this.emplacements.find(e => e.id === emplacementId);
+      if (!emplacement) return;
+      
+      // Vérifier si l'utilisateur peut modifier cet emplacement
+      const canEdit = isAdmin || 
+        (isPrestataire && emplacement.prestataireNom === prestataireNom);
+      
+      if (!canEdit) {
+        alert(this.$t('carte.noPermission'));
+        return;
+      }
+      
+      this.selectedEmplacement = emplacement;
+      this.formMode = (emplacement.nom_emplacement || emplacement.moyens_logistiques || 
+                      emplacement.surface_volume || emplacement.nombre_prises || 
+                      emplacement.acces_eau || emplacement.description) ? 'edit' : 'add';
+      this.showEmplacementForm = true;
+      
+      // Fermer la popup Leaflet
+      if (this.map) {
+        this.map.closePopup();
+      }
+    },
+    
+    // AJOUT: Fermer le formulaire
+    closeEmplacementForm() {
+      this.showEmplacementForm = false;
+      this.selectedEmplacement = null;
+    },
+    
+    // AJOUT: Sauvegarder les informations d'emplacement
+    async saveEmplacementInfo(emplacementData) {
+      try {
+        // Sauvegarder dans localStorage
+        const emplacementsInfoRaw = localStorage.getItem('emplacementsInfo') || '{}';
+        const emplacementsInfo = JSON.parse(emplacementsInfoRaw);
+        emplacementsInfo[emplacementData.id] = {
+          nom_emplacement: emplacementData.nom_emplacement,
+          moyens_logistiques: emplacementData.moyens_logistiques,
+          surface_volume: emplacementData.surface_volume,
+          nombre_prises: emplacementData.nombre_prises,
+          acces_eau: emplacementData.acces_eau,
+          description: emplacementData.description
+        };
+        localStorage.setItem('emplacementsInfo', JSON.stringify(emplacementsInfo));
+        
+        // Mettre à jour l'emplacement local
+        const index = this.emplacements.findIndex(e => e.id === emplacementData.id);
+        if (index !== -1) {
+          this.emplacements[index] = { ...this.emplacements[index], ...emplacementsInfo[emplacementData.id] };
+        }
+        
+        // Recharger les marqueurs
+        this.initEmplacementsLibres();
+        
+        // Fermer le formulaire
+        this.closeEmplacementForm();
+        
+        alert(this.$t('carte.locationSaved'));
+      } catch (e) {
+        console.error('Erreur sauvegarde emplacement', e);
+        alert(this.$t('carte.locationError'));
+      }
+    },
   },
   beforeUnmount() {
     // Nettoyage Leaflet
@@ -901,6 +1172,12 @@ export default {
       Object.values(this.equipementLayers || {}).forEach(l => this.map.hasLayer(l) && this.map.removeLayer(l));
       this.map.remove();
       this.map = null;
+    }
+    
+    // AJOUT: Nettoyage écouteur d'authentification
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('auth-changed', this.handleAuthChanged);
+      delete window.openEmplacementForm;
     }
   },
 };
@@ -1187,6 +1464,12 @@ export default {
   color: #ff9800;
 }
 
+:deep(.status-libre) {
+  background: rgba(76, 175, 80, 0.2);
+  border: 2px solid #4caf50;
+  color: #4caf50;
+}
+
 /* Styles pour les popups des prestataires sur emplacements */
 :deep(.prestataire-popup .leaflet-popup-content-wrapper) {
   background: rgba(4, 16, 61, 0.95);
@@ -1232,6 +1515,64 @@ export default {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+/* AJOUT: Styles pour les informations d'emplacement dans les popups prestataires */
+:deep(.popup-prestataire-emplacement .emplacement-infos-section) {
+  margin: 12px 0;
+  padding: 8px;
+  background: rgba(252, 220, 30, 0.1);
+  border-left: 3px solid #FCDC1E;
+  border-radius: 4px;
+}
+
+:deep(.popup-prestataire-emplacement .emplacement-info-title) {
+  margin: 0 0 6px 0;
+  color: #FCDC1E;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+:deep(.popup-prestataire-emplacement .emplacement-info) {
+  margin: 4px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+}
+
+:deep(.popup-prestataire-emplacement .coordinates) {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+  display: inline-block;
+}
+
+/* AJOUT: Styles pour les boutons dans les popups prestataires */
+:deep(.popup-prestataire-emplacement .btn-add-info),
+:deep(.popup-prestataire-emplacement .btn-edit-info) {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(252, 220, 30, 0.3);
+  text-align: center;
+}
+
+:deep(.popup-prestataire-emplacement .btn-add-info:hover),
+:deep(.popup-prestataire-emplacement .btn-edit-info:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(252, 220, 30, 0.4);
 }
 
 :deep(.popup-prestataire-emplacement .status-badge) {
@@ -1288,6 +1629,68 @@ export default {
     width: 40px;
     height: 40px;
     border-radius: 20px;
+  }
+}
+
+/* AJOUT: Styles pour les boutons dans les popups d'emplacement */
+:deep(.popup-emplacement .btn-add-info),
+:deep(.popup-emplacement .btn-edit-info) {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(252, 220, 30, 0.3);
+  text-align: center;
+}
+
+:deep(.popup-emplacement .btn-add-info:hover),
+:deep(.popup-emplacement .btn-edit-info:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(252, 220, 30, 0.4);
+}
+
+/* AJOUT: Modal pour le formulaire */
+.emplacement-form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.emplacement-form-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 </style>

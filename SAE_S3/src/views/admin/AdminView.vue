@@ -860,9 +860,7 @@ const savePresentation = async () => {
   // Sauvegarder dans localStorage (cache local)
   localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
   
-  // TODO: Sauvegarder dans la BDD via API
-  // Pour l'instant, on simule en mettant à jour festival.json
-  // En production, cela sera fait via une API PUT /api/festival/presentation
+  // Sauvegarde locale uniquement (API désactivée)
   try {
     // Charger festival.json actuel
     const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
@@ -870,11 +868,7 @@ const savePresentation = async () => {
       const festivalData = await festivalResp.json()
       // Mettre à jour la présentation
       festivalData.presentation = festivalPresentation.value
-      
-      // Note: En production, on ferait un PUT vers l'API
-      // await fetch('/api/festival/presentation', { method: 'PUT', body: JSON.stringify(festivalPresentation.value) })
-      // Pour l'instant, on garde juste localStorage comme cache
-      console.log('Présentation mise à jour (sera sauvegardée dans la BDD via API)')
+      console.log('Présentation mise à jour (sauvegardée dans localStorage)')
     }
   } catch (e) {
     console.error('Erreur lors de la sauvegarde de la présentation:', e)
@@ -896,9 +890,6 @@ const resetPresentation = async () => {
 
   // Sauvegarder la réinitialisation
   localStorage.setItem('festivalPresentation', JSON.stringify(festivalPresentation.value))
-  
-  // TODO: Sauvegarder dans la BDD via API
-  // await fetch('/api/festival/presentation', { method: 'PUT', body: JSON.stringify(festivalPresentation.value) })
   
   window.dispatchEvent(new Event('festival-presentation-updated'))
   alert('Textes réinitialisés aux valeurs par défaut!')
