@@ -11,7 +11,6 @@ import AdminView from "@/views/admin/AdminView.vue";
 import PanierView from "@/views/PanierView.vue";
 import PaymentView from "@/views/PaymentView.vue";
 import AvisView from "@/views/AvisView.vue";
-import TestBackendView from "@/views/TestBackendView.vue";
 import BasketReservationView from "@/views/BasketReservationView.vue";
 
 const routes = [
@@ -19,11 +18,6 @@ const routes = [
         path: '/',
         name: 'home',
         component: HomeView,
-    },
-    {
-        path: '/test-backend',
-        name: 'test-backend',
-        component: TestBackendView,
     },
     {
         path: '/programmation',

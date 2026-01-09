@@ -17,6 +17,7 @@ const routesPrest = require('./routes/prestataires');
 const routesServ = require('./routes/services');
 const routesEmplacements = require('./routes/emplacements');
 const routesStats = require('./routes/stats');
+const routesManifestations = require('./routes/manifestations');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ app.use('/api/prestataires', simpleAuth, routesPrest);
 app.use('/api/services', simpleAuth, routesServ);
 app.use('/api/emplacements', simpleAuth, routesEmplacements);
 app.use('/api/stats', simpleAuth, routesStats);
+app.use('/api/manifestations', simpleAuth, routesManifestations);
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -58,6 +60,3 @@ sequelize.sync({ alter: false }) // alter: false pour ne pas modifier la structu
     console.error('❌ Failed to sync Sequelize:', err);
     process.exit(1);
   });
-
-
-
