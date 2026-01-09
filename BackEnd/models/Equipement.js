@@ -1,17 +1,17 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Emplacement = sequelize.define('Emplacement', {
-  id_emplacement: {
+const Equipement = sequelize.define('Equipement', {
+  id_equipement: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    field: 'id_emplacement'
+    field: 'id_equipement'
   },
-  nom_emplacement: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    field: 'nom_emplacement'
+  type_equipement: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    field: 'type_equipement'
   },
   coord_x: {
     type: DataTypes.DECIMAL(10, 6),
@@ -37,18 +37,17 @@ const Emplacement = sequelize.define('Emplacement', {
       key: 'id_zone'
     }
   },
-  statut: {
-    type: DataTypes.STRING(20),
-    defaultValue: 'libre'
-  },
   description: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  actif: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
-  tableName: 'emplacements',
+  tableName: 'equipements',
   timestamps: false
 });
 
-module.exports = Emplacement;
-
+module.exports = Equipement;

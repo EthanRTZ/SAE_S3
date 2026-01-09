@@ -35,6 +35,16 @@ const SessionAuthentification = sequelize.define('SessionAuthentification', {
   actif: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  ip_adresse: {
+    type: DataTypes.STRING(45),
+    allowNull: true,
+    field: 'ip_adresse'
+  },
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'user_agent'
   }
 }, {
   tableName: 'session_authentification',

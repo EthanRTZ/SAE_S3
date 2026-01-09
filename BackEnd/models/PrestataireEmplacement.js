@@ -19,6 +19,30 @@ const PrestataireEmplacement = sequelize.define('PrestataireEmplacement', {
       model: 'emplacements',
       key: 'id_emplacement'
     }
+  },
+  date_demande: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'date_demande'
+  },
+  date_attribution: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'date_attribution'
+  },
+  date_debut: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'date_debut'
+  },
+  date_fin: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'date_fin'
+  },
+  statut: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'demandé'
   }
 }, {
   tableName: 'prestataire_emplacement',

@@ -13,6 +13,10 @@ const Role = sequelize.define('Role', {
     allowNull: false,
     unique: true,
     field: 'nom_rôle'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'rôles',

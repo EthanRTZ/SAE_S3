@@ -17,14 +17,25 @@ const Service = sequelize.define('Service', {
       key: 'id_prestataire'
     }
   },
-  nom_service: {
+  nom_service_fr: {
     type: DataTypes.STRING(100),
     allowNull: false,
-    field: 'nom_service'
+    field: 'nom_service_fr'
   },
-  description: {
+  nom_service_en: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'nom_service_en'
+  },
+  description_fr: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'description_fr'
+  },
+  description_en: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'description_en'
   },
   prix_estime: {
     type: DataTypes.DECIMAL(10, 2),

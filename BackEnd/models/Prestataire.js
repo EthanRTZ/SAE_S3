@@ -10,16 +10,23 @@ const Prestataire = sequelize.define('Prestataire', {
   },
   nom: {
     type: DataTypes.STRING(100),
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
   type_prestataire: {
     type: DataTypes.STRING(100),
     allowNull: false,
     field: 'type_prestataire'
   },
-  description: {
+  description_fr: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'description_fr'
+  },
+  description_en: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'description_en'
   },
   contact_email: {
     type: DataTypes.STRING(150),
@@ -45,6 +52,10 @@ const Prestataire = sequelize.define('Prestataire', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
     field: 'date_creation'
+  },
+  actif: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   tableName: 'prestataire',

@@ -36,6 +36,10 @@ const Utilisateur = sequelize.define('Utilisateur', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
     field: 'date_creation'
+  },
+  actif: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   tableName: 'utilisateurs',
