@@ -103,7 +103,7 @@ router.get('/:id', ctrl.getServiceById);
  *                 example: Food Service
  *               nom_service:
  *                 type: object
- *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 description: Format bilingue alternatif
  *                 properties:
  *                   fr:
  *                     type: string
@@ -117,7 +117,7 @@ router.get('/:id', ctrl.getServiceById);
  *                 example: On-site food service
  *               description:
  *                 type: object
- *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 description: Format bilingue alternatif
  *                 properties:
  *                   fr:
  *                     type: string

@@ -79,7 +79,7 @@ router.get('/:id', ctrl.getPrestataireById);
  *                 example: Premium street food cuisine
  *               description:
  *                 type: object
- *                 description: Alternative format bilingue {fr: "...", en: "..."}
+ *                 description: Format bilingue alternatif
  *                 properties:
  *                   fr:
  *                     type: string
