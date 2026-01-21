@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
@@ -425,21 +425,72 @@ const formatCurrency = (amount) => {
 }
 
 const loadData = async () => {
+  console.log('🚀 loadData() appelée')
+
   if (!isAdmin.value) {
+    console.log('❌ Pas admin, arrêt du chargement')
     loading.value = false
     return
   }
 
+  console.log('✅ Utilisateur est admin, début du chargement...')
+
   try {
-    const [usersResp, prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
-      fetch('/data/users.json', { cache: 'no-store' }),
+    console.log('📡 Fetch de users.json...')
+    const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
+    console.log('📡 Réponse users.json:', usersResp.ok, usersResp.status)
+
+    if (usersResp.ok) {
+      const usersData = await usersResp.json()
+      console.log('📥 Données JSON brutes:', usersData)
+
+      // MODIFICATION COMPLÈTE: Assigner directement sans localStorage d'abord
+      // pour tester si c'est un problème de réactivité
+      users.value = []
+      await nextTick()
+
+      // Ensuite assigner les données
+      const customUsersRaw = localStorage.getItem('users')
+      if (customUsersRaw) {
+        try {
+          const parsedUsers = JSON.parse(customUsersRaw)
+          // Assigner chaque utilisateur un par un pour forcer la réactivité
+          parsedUsers.forEach(user => {
+            users.value.push(user)
+          })
+          console.log('✅ users.value assigné depuis localStorage:', users.value.length)
+        } catch (e) {
+          console.error('❌ Erreur parsing localStorage users:', e)
+          usersData.forEach(user => {
+            users.value.push(user)
+          })
+          localStorage.setItem('users', JSON.stringify(users.value))
+        }
+      } else {
+        usersData.forEach(user => {
+          users.value.push(user)
+        })
+        localStorage.setItem('users', JSON.stringify(users.value))
+        console.log('✅ users.value assigné depuis JSON (première fois):', users.value.length)
+      }
+
+      // FORCER le re-render
+      await nextTick()
+      console.log('🔍 APRÈS nextTick - users.value.length:', users.value.length)
+
+    } else {
+      console.error('❌ Erreur HTTP:', usersResp.status)
+      users.value = []
+    }
+
+    // Charger les autres données
+    const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
       fetch('/data/prestataires.json', { cache: 'no-store' }),
       fetch('/data/zones.json', { cache: 'no-store' }),
       fetch('/data/emplacements.json', { cache: 'no-store' }),
       fetch('/data/avis.json', { cache: 'no-store' })
     ])
 
-    const usersData = usersResp.ok ? await usersResp.json() : []
     const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
     const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
     const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
@@ -448,18 +499,6 @@ const loadData = async () => {
     // AJOUT: Charger les zones pour la carte
     zones.value = zonesData.zones || []
     emplacementsForMap.value = emplacementsData.emplacements || []
-
-    // Charger les utilisateurs avec modifications locales
-    const customUsersRaw = localStorage.getItem('users')
-    if (customUsersRaw) {
-      try {
-        users.value = JSON.parse(customUsersRaw)
-      } catch (e) {
-        users.value = Array.isArray(usersData) ? usersData : []
-      }
-    } else {
-      users.value = Array.isArray(usersData) ? usersData : []
-    }
 
     // Filtrer uniquement les prestataires présents dans avis.json
     const prestatairesValides = Object.keys(avisData)
@@ -1605,6 +1644,13 @@ onMounted(() => {
   // AJOUT: Écouter les mises à jour en temps réel
   window.addEventListener('demandes-updated', loadDemandesEmplacement)
   window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
+})
+
+// AJOUT: Computed simplifié sans Proxy
+const displayUsers = computed(() => {
+  console.log('👁️ displayUsers computed appelé, longueur:', users.value.length)
+  // Retourner directement sans transformation
+  return users.value
 })
 </script>
 
@@ -2888,6 +2934,7 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+          </div>
 
           <div class="stats-main-section">
             <div class="stats-section-header festival-header">
@@ -3002,10 +3049,10 @@ onMounted(() => {
             </button>
           </div>
 
-          <div class="users-list">
+          <div v-if="!loading && users && users.length > 0" class="users-list">
             <div
-              v-for="user in users"
-              :key="user.email"
+              v-for="(user, index) in users"
+              :key="`user-${user.email || index}`"
               class="user-item"
               @click="selectUser(user)"
             >
@@ -3025,6 +3072,19 @@ onMounted(() => {
               </div>
               <span class="arrow">→</span>
             </div>
+          </div>
+
+          <div v-else-if="loading" class="loading-state" style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+            <h3 style="color: var(--text); margin: 0;">Chargement des utilisateurs...</h3>
+          </div>
+
+          <div v-else class="no-users-message" style="background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 40px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">⚠️</div>
+            <h3 style="color: #ef4444; margin: 0 0 12px 0;">Aucun utilisateur trouvé</h3>
+            <p style="color: rgba(226, 232, 240, 0.8); margin: 0;">
+              Aucun utilisateur n'est enregistré dans le système.
+            </p>
           </div>
         </div>
 
@@ -3154,7 +3214,6 @@ onMounted(() => {
               ⚠️ Vous ne pouvez pas supprimer votre propre compte
             </div>
           </div>
-        </div>
         </div>
       </main>
     </div>
@@ -3818,7 +3877,7 @@ onMounted(() => {
   color: var(--text);
   font-size: 1.6rem;
   font-weight: 800;
-  margin: 0 0 8px 0;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -4165,103 +4224,8 @@ onMounted(() => {
   font-size: 1.2rem;
   font-weight: 800;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.prest-card-type {
-  background: rgba(168, 85, 247, 0.2);
-  color: var(--purple);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-
-.prest-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.prest-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.prest-meta-icon {
-  font-size: 1.1rem;
-}
-
-.prest-meta-value {
-  font-weight: 600;
-}
-
-.prest-card-changes {
-  background: rgba(234, 179, 8, 0.1);
-  border: 1px solid rgba(234, 179, 8, 0.3);
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 8px;
-}
-
-.prest-changes-label {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.prest-changes-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.prest-change-tag {
-  background: rgba(234, 179, 8, 0.3);
-  color: var(--yellow);
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.prest-card-footer {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-light);
-}
-
-.prest-btn-view {
-  width: 100%;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: var(--blue);
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.prest-btn-view:hover {
-  background: rgba(59, 130, 246, 0.25);
-  transform: translateY(-2px);
-}
-
-.prest-btn-icon {
-  font-size: 1rem;
-}
 
 /* ================================================ */
 /* DÉTAIL PRESTATAIRE - STYLES MANQUANTS */
@@ -4372,6 +4336,7 @@ onMounted(() => {
 
 .prest-service-card:hover {
   background: rgba(255, 255, 255, 0.05);
+  border-color: var(--purple);
 }
 
 .prest-service-inactive {
@@ -5198,41 +5163,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Boutons de sélection de langue */
-.pres-lang-btn {
-  padding: 0.5rem 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pres-lang-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.pres-lang-btn-active {
-  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
-  border-color: #a855f7;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-}
-
-.pres-lang-btn-active:hover {
-  background: linear-gradient(135deg, #a855f7 0%, #818cf8 100%);
-  border-color: #a855f7;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
-}
 
 /* Boutons de sélection de langue */
 .pres-lang-btn {
