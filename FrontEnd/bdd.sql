@@ -155,8 +155,12 @@ CREATE TABLE emplacements (
                               coord_y NUMERIC(10, 6), -- Latitude (plus précis)
                               coordonnees_completes VARCHAR(50), -- Format "lat,lng"
                               id_zone INT REFERENCES zones(id_zone),
-                              statut VARCHAR(20) DEFAULT 'libre', -- 'libre', 'réservé', 'occupé', 'indisponible'
+                              statut VARCHAR(20) DEFAULT 'libre', -- 'libre', 'pris', 'en_attente', 'indisponible'
                               description TEXT,
+                              moyens_logistiques TEXT, -- Nouveaux champs ajoutés
+                              surface_volume VARCHAR(50), -- Ex: "45 m²" ou "100 m³"
+                              nombre_prises INT, -- Nombre de prises électriques
+                              acces_eau BOOLEAN DEFAULT FALSE, -- Accès à l'eau
                               date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -372,7 +376,10 @@ INSERT INTO prestataire (nom, type_prestataire, description_fr, description_en, 
                                                                                                                                      ('Coiffure Festival', 'Services / Bien-être', 'Stand de coiffure et coupe', 'Haircut and styling stand', 'contact@coiffure.fr', '+33 1 23 45 67 80', 'https://coiffure-festival.fr', '/media/prestataires/coiffure.png'),
                                                                                                                                      ('Merch Golden Coast', 'Merchandising', 'Boutique officielle du festival', 'Official festival store', 'merch@goldencoast.com', '+33 1 34 56 78 91', 'https://goldencoast.com/merch', '/media/prestataires/merch.png'),
                                                                                                                                      ('Arcade Zone', 'Divertissement', 'Borne d''arcade et jeux rétro', 'Arcade machines and retro games', 'contact@arcadezone.fr', '+33 1 45 67 89 02', 'https://arcadezone.fr', '/media/prestataires/arcade.png'),
-                                                                                                                                     ('Basket 3x3', 'Sport / Animation', 'Terrain de basket 3x3', '3x3 basketball court', 'contact@basket3x3.fr', '+33 1 56 78 90 13', 'https://basket3x3.fr', '/media/prestataires/basket.png');
+                                                                                                                                     ('Basket 3x3', 'Sport / Animation', 'Terrain de basket 3x3', '3x3 basketball court', 'contact@basket3x3.fr', '+33 1 56 78 90 13', 'https://basket3x3.fr', '/media/prestataires/basket.png'),
+                                                                                                                                     ('Merch', 'Commerces & Équipements', 'Vêtements et accessoires à l''effigie d''une marque ou d''un artiste.', 'Clothing and accessories featuring a brand or artist.', NULL, NULL, NULL, '/media/prestataires/merch.png'),
+                                                                                                                                     ('Pizza', 'Restauration', 'Plat italien à base de pâte, sauce tomate et garnitures.', 'Italian dish made with dough, tomato sauce and toppings.', NULL, NULL, NULL, '/media/prestataires/pizza.png'),
+                                                                                                                                     ('Bagels', 'Restauration', 'Pain en forme d''anneau, souvent garni.', 'Ring-shaped bread, often filled.', NULL, NULL, NULL, '/media/prestataires/bagels.png');
 
 -- Mise à jour des sponsors des scènes (après insertion des prestataires)
 UPDATE scenes SET id_prestataire_sponsor = (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer') WHERE nom = 'ZERO GRAVITY';
@@ -492,34 +499,34 @@ INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heur
 -- Note: Ajouter les autres jours (Samedi 29 et Dimanche 30 août) si nécessaire dans programmation.json
 
 -- ============================================
--- EMPLACEMENTS (basés sur emplacements.json)
+-- EMPLACEMENTS (basés sur emplacements.json avec nouveaux champs)
 -- ============================================
-INSERT INTO emplacements (nom_emplacement, coord_x, coord_y, coordonnees_completes, id_zone, statut) VALUES
-                                                                                                         ('Emplacement 1', 4.96457, 47.30532, '47.30532,4.96457', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 2', 4.96433, 47.30519, '47.30519,4.96433', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 3', 4.96423, 47.30508, '47.30508,4.96423', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 4', 4.96413, 47.30501, '47.30501,4.96413', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 5', 4.96406, 47.30495, '47.30495,4.96406', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 6', 4.96492, 47.30269, '47.30269,4.96492', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 7', 4.96441, 47.30400, '47.30400,4.96441', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 8', 4.96394, 47.30486, '47.30486,4.96394', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 9', 4.96521, 47.30278, '47.30278,4.96521', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 10', 4.96460, 47.30411, '47.30411,4.96460', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 11', 4.96382, 47.30477, '47.30477,4.96382', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 12', 4.96373, 47.30469, '47.30469,4.96373', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 13', 4.96478, 47.30424, '47.30424,4.96478', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 14', 4.96550, 47.30284, '47.30284,4.96550', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 15', 4.96467, 47.30263, '47.30263,4.96467', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 16', 4.96585, 47.30291, '47.30291,4.96585', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 17', 4.96500, 47.30434, '47.30434,4.96500', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 18', 4.96416, 47.30431, '47.30431,4.96416', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 19', 4.96451, 47.30444, '47.30444,4.96451', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 20', 4.96437, 47.30256, '47.30256,4.96437', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 21', 4.96352, 47.30338, '47.30338,4.96352', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 22', 4.96669, 47.30427, '47.30427,4.96669', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 23', 4.96672, 47.30424, '47.30424,4.96672', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 24', 4.96660, 47.30441, '47.30441,4.96660', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre'),
-                                                                                                         ('Emplacement 25', 4.96343, 47.30356, '47.30356,4.96343', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre');
+INSERT INTO emplacements (nom_emplacement, coord_x, coord_y, coordonnees_completes, id_zone, statut, moyens_logistiques, surface_volume, nombre_prises, acces_eau, description) VALUES
+  ('Stand OTacos - Zone Restauration', 4.96457, 47.30532, '47.30532,4.96457', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Wi-Fi, Éclairage LED', '45 m²', 4, TRUE, 'Emplacement idéal pour restauration rapide avec accès eau et électricité'),
+  ('Bar Red Bull - Zone Animation', 4.96433, 47.30519, '47.30519,4.96433', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Sonorisation, Éclairage', '60 m²', 6, TRUE, 'Espace bar avec zone détente et animations'),
+  ('Bar Poliakov - Zone Principale', 4.96423, 47.30508, '47.30508,4.96423', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Réfrigération, Éclairage', '50 m²', 5, TRUE, 'Bar principal avec espace service complet'),
+  ('Stand Decathlon - Zone Équipements', 4.96413, 47.30501, '47.30501,4.96413', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Wi-Fi, Éclairage', '80 m²', 3, FALSE, 'Espace de vente et location d''équipements sportifs'),
+  (NULL, 4.96406, 47.30495, '47.30495,4.96406', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'en_attente', NULL, NULL, NULL, FALSE, NULL),
+  ('Espace Deezer - Zone Média', 4.96492, 47.30269, '47.30269,4.96492', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Wi-Fi haut débit, Sonorisation', '40 m²', 8, FALSE, 'Espace streaming et playlists avec zone d''écoute'),
+  ('Boutique Officielle - Zone Merch', 4.96441, 47.30400, '47.30400,4.96441', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Éclairage, Caisse enregistreuse', '70 m²', 2, FALSE, 'Boutique de merchandising officiel du festival'),
+  ('Stand Pizza - Zone Restauration', 4.96394, 47.30486, '47.30486,4.96394', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Four à bois, Éclairage', '55 m²', 3, TRUE, 'Stand de pizzas artisanales avec four à bois'),
+  ('Zone JBL - Sonorisation', 4.96521, 47.30278, '47.30278,4.96521', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'pris', 'Électricité 220V, Sonorisation professionnelle, Éclairage', '35 m²', 10, FALSE, 'Espace démonstration audio avec équipement JBL'),
+  (NULL, 4.96460, 47.30411, '47.30411,4.96460', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'en_attente', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96382, 47.30477, '47.30477,4.96382', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96373, 47.30469, '47.30469,4.96373', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96478, 47.30424, '47.30424,4.96478', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96550, 47.30284, '47.30284,4.96550', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96467, 47.30263, '47.30263,4.96467', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96585, 47.30291, '47.30291,4.96585', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96500, 47.30434, '47.30434,4.96500', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96416, 47.30431, '47.30431,4.96416', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96451, 47.30444, '47.30444,4.96451', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96437, 47.30256, '47.30256,4.96437', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96352, 47.30338, '47.30338,4.96352', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96669, 47.30427, '47.30427,4.96669', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96672, 47.30424, '47.30424,4.96672', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96660, 47.30441, '47.30441,4.96660', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL),
+  (NULL, 4.96343, 47.30356, '47.30356,4.96343', (SELECT id_zone FROM zones WHERE nom = 'Zone principale du festival'), 'libre', NULL, NULL, NULL, FALSE, NULL);
 
 -- ============================================
 -- ÉQUIPEMENTS (basés sur equipements.json)
@@ -568,6 +575,24 @@ INSERT INTO utilisateur_prestataire (id_utilisateur, id_prestataire) VALUES
                                                                          ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'securitas@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas')),
                                                                          ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'happn@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn')),
                                                                          ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'allianz@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz'));
+
+-- ============================================
+-- RELATIONS PRESTATAIRE-EMPLACEMENT (basées sur emplacements.json)
+-- ============================================
+-- Emplacements pris ou en attente avec prestataires associés
+-- Note: Les noms de prestataires doivent correspondre exactement à ceux dans la table prestataire
+INSERT INTO prestataire_emplacement (id_prestataire, id_emplacement, date_demande, date_attribution, statut) VALUES
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 1, NULL, '2026-08-15 10:00:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'), 2, NULL, '2026-08-15 10:30:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'), 3, NULL, '2026-08-15 11:00:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'), 4, NULL, '2026-08-15 11:30:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s'), 5, '2026-08-20 14:00:00', NULL, 'demandé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 6, NULL, '2026-08-15 12:00:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Merch'), 7, NULL, '2026-08-15 12:30:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza'), 8, NULL, '2026-08-15 13:00:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'JBL'), 9, NULL, '2026-08-15 13:30:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels'), 10, '2026-08-21 09:00:00', NULL, 'demandé')
+ON CONFLICT (id_prestataire, id_emplacement) DO NOTHING;
 
 -- ============================================
 -- AVIS (basés sur avis.json - exemples pour quelques prestataires)
