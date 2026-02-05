@@ -5,7 +5,11 @@ import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminDashboard from '@/components/admin/AdminDashboard.vue'
 import AdminStats from '@/components/admin/AdminStats.vue'
 import AdminPresentation from '@/components/admin/AdminPresentation.vue'
+// AJOUT: Imports manquants pour les prestataires
+import AdminPrestataires from '@/components/admin/AdminPrestataires.vue'
+import AdminPrestataireDetail from '@/components/admin/AdminPrestataireDetail.vue'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
+import AdminProgrammation from '@/components/admin/AdminProgrammation.vue'
 
 // AJOUT: Référence pour le canvas Chart.js
 const chartCanvas = ref(null)
@@ -481,9 +485,13 @@ const loadData = async () => {
 
     // Filtrer uniquement les prestataires présents dans avis.json
     const prestatairesValides = Object.keys(avisData)
-    const prestatairesFiltered = (prestataireData.prestataires || []).filter(p =>
-      prestatairesValides.includes(p.nom)
-    )
+    const prestatairesFiltered = (prestataireData.prestataires || [])
+      .filter(p => prestatairesValides.includes(p.nom))
+      .map(p => ({
+        ...p,
+        // AJOUT: S'assurer que description est toujours une chaîne
+        description: typeof p.description === 'string' ? p.description : (p.description || '')
+      }))
 
     prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestatairesFiltered))
 
@@ -501,7 +509,14 @@ const loadData = async () => {
     prestataires.value = prestatairesFiltered.map(p => {
       const custom = customPrestataires.value[p.nom]
       if (custom) {
-        return { ...p, ...custom }
+        return {
+          ...p,
+          ...custom,
+          // AJOUT: S'assurer que description reste une chaîne après fusion
+          description: typeof custom.description === 'string'
+            ? custom.description
+            : (custom.description || p.description || '')
+        }
       }
       return p
     })
@@ -1364,7 +1379,14 @@ const changeSection = (section) => {
 
 // AJOUT: Fonction selectPrestataire manquante
 const selectPrestataire = (prestataire) => {
-  selectedPrestataire.value = JSON.parse(JSON.stringify(prestataire))
+  const normalized = {
+    ...prestataire,
+    // AJOUT: Normaliser description lors de la sélection
+    description: typeof prestataire.description === 'string'
+      ? prestataire.description
+      : (prestataire.description || '')
+  }
+  selectedPrestataire.value = JSON.parse(JSON.stringify(normalized))
   currentSection.value = 'prestataire-detail'
 }
 
@@ -1667,6 +1689,44 @@ const handleResetPresentation = async () => {
           @changeLang="handleChangeLang"
           @reset="handleResetPresentation"
         />
+
+        <!-- Gestion Prestataires -->
+        <AdminPrestataires
+          v-if="currentSection === 'prestataires'"
+          :prestataires="prestataires"
+          :customPrestataires="customPrestataires"
+          @select="selectPrestataire"
+        />
+
+        <!-- Détail Prestataire -->
+        <AdminPrestataireDetail
+          v-if="currentSection === 'prestataire-detail' && selectedPrestataire"
+          :prestataire="selectedPrestataire"
+          :hasModifications="hasModifications(selectedPrestataire)"
+          :modifiedFields="getModifiedFields(selectedPrestataire)"
+          @save="savePrestataireChanges"
+          @back="changeSection('prestataires')"
+          @reset="resetPrestataire"
+        />
+
+        <!-- Programmation -->
+        <AdminProgrammation
+          v-if="currentSection === 'programmation'"
+          :programmation="programmation"
+          :selectedDayIndex="selectedDayIndex"
+          :selectedStage="selectedStage"
+          :editingSlot="editingSlot"
+          @update:selectedDayIndex="selectedDayIndex = $event"
+          @update:selectedStage="selectedStage = $event"
+          @update:editingSlot="editingSlot = $event"
+          @addSlot="addSlot"
+          @editSlot="editSlot"
+          @deleteSlot="deleteSlot"
+          @saveSlot="saveSlot"
+          @cancelEdit="cancelEdit"
+          @save="saveProgrammation"
+        />
+
         <!-- ...existing sections... -->
       </main>
     </div>
