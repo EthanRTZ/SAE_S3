@@ -211,19 +211,12 @@ onMounted(fetchProducts)
             <header class="card-header">
               <div>
                 <h3>{{ product.name }}</h3>
-                <p class="description">{{ product.description }}</p>
               </div>
               <div class="price-block">
                 <small>{{ t('merch.from') }}</small>
                 <div class="price">{{ formatPrice(product.price) }}</div>
               </div>
             </header>
-
-            <div class="meta-row">
-              <span class="pill">{{ product.category }}</span>
-              <span v-if="product.colors?.length" class="pill">{{ t('merch.colors') }}: {{ product.colors.join(' · ') }}</span>
-              <span v-if="product.sizes?.length" class="pill">{{ t('merch.sizes') }}: {{ product.sizes.join(' · ') }}</span>
-            </div>
 
             <footer class="card-footer">
               <span :class="stockClass(product.stock)">{{ stockText(product.stock) }}</span>
@@ -408,12 +401,6 @@ onMounted(fetchProducts)
   letter-spacing: -0.2px;
 }
 
-.description {
-  color: #cbd5ff;
-  margin-top: 4px;
-  line-height: 1.45;
-}
-
 .price-block {
   min-width: 110px;
   text-align: right;
@@ -430,21 +417,6 @@ onMounted(fetchProducts)
   font-size: 1.2rem;
 }
 
-.meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.pill {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(252, 220, 30, 0.18);
-  color: #e8ecff;
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
 
 .card-footer {
   display: flex;
