@@ -1197,133 +1197,18 @@ const initAdminZones = () => {
   })
 }
 
-// AJOUT: Fonction pour créer le graphique Chart.js
-const createBarChart = async () => {
-  if (!chartCanvas.value) return
+// SUPPRESSION: Supprimer la référence chartCanvas et les fonctions createBarChart/initChart
+// car elles sont maintenant dans AdminStats.vue
 
-  // Charger Chart.js dynamiquement
-  if (!window.Chart) {
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js'
-    script.onload = () => initChart()
-    script.onerror = () => {}
-    document.head.appendChild(script)
-  } else {
-    initChart()
-  }
-}
-
-const initChart = () => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-
-  if (!chartCanvas.value) return
-
-  const ctx = chartCanvas.value.getContext('2d')
-
-  // Préparer les données
-  const sortedStats = [...avisStatsParPrestataire.value]
-    .filter(p => p.nbAvis > 0)
-    .sort((a, b) => b.moyenne - a.moyenne)
-
-  if (sortedStats.length === 0) return
-
-  const labels = sortedStats.map(p => p.nom)
-  const data = sortedStats.map(p => p.moyenne)
-  const backgroundColors = sortedStats.map(p => {
-    if (p.moyenne >= 4.5) return 'rgba(34, 197, 94, 0.8)'
-    if (p.moyenne >= 4) return 'rgba(252, 220, 30, 0.8)'
-    if (p.moyenne >= 3) return 'rgba(255, 152, 0, 0.8)'
-    return 'rgba(239, 68, 68, 0.8)'
-  })
-
-  chartInstance = new window.Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Note moyenne',
-            data: data,
-            backgroundColor: backgroundColors,
-            borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
-            borderWidth: 2,
-            borderRadius: 8,
-            barThickness: 50
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#FCDC1E',
-              bodyColor: '#e5e7eb',
-              borderColor: 'rgba(252, 220, 30, 0.5)',
-              borderWidth: 1,
-              padding: 12,
-              displayColors: false,
-              callbacks: {
-                label: function (context) {
-                  const prestataire = sortedStats[context.dataIndex]
-                  return [
-                    `Note: ${context.parsed.y.toFixed(2)} / 5`,
-                    `Nombre d'avis: ${prestataire.nbAvis}`
-                  ]
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 5,
-              ticks: {
-                stepSize: 1,
-                color: 'rgba(226, 232, 240, 0.8)',
-                font: {
-                  size: 12,
-                  weight: 'bold'
-                }
-              },
-              grid: {
-                color: 'rgba(148, 163, 184, 0.2)',
-                drawBorder: false
-              }
-            },
-            x: {
-              ticks: {
-                color: 'rgba(226, 232, 240, 0.8)',
-                font: {
-                  size: 11,
-                  weight: '600'
-                },
-                maxRotation: 45,
-                minRotation: 45
-              },
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      }
-  )
-}
-
-// AJOUT: Watcher pour recréer le graphique quand on change de section
-watch(currentSection, async (newSection) => {
-  if (newSection === 'statistiques') {
-    await nextTick()
-    if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
-      createBarChart()
-    }
-  }
-})
+// SUPPRESSION: Supprimer aussi le watcher qui crée le graphique
+// watch(currentSection, async (newSection) => {
+//   if (newSection === 'statistiques') {
+//     await nextTick()
+//     if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
+//       createBarChart()
+//     }
+//   }
+// })
 
 onMounted(() => {
   loadAuthFromStorage()
@@ -1331,19 +1216,53 @@ onMounted(() => {
 
   loadData().then(async () => {
     await computeAvisStatsForPrestataires()
-
-    // AJOUT: Si on est déjà sur la section statistiques, créer le graphique
-    if (currentSection.value === 'statistiques') {
-      await nextTick()
-      if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
-        createBarChart()
-      }
-    }
   })
 
-  // AJOUT: Écouter les mises à jour en temps réel
+  // MODIFICATION: Écouter les mises à jour en temps réel
   window.addEventListener('demandes-updated', loadDemandesEmplacement)
   window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.addEventListener('avis-updated', handleAvisUpdated)
+})
+
+// AJOUT: Fonction pour gérer les mises à jour d'avis
+const handleAvisUpdated = async (event) => {
+  console.log('🔔 Avis mis à jour, rechargement des statistiques...', event?.detail)
+
+  // Recharger toutes les données (incluant les avis)
+  await loadData()
+
+  // Recalculer les stats d'avis des prestataires
+  await computeAvisStatsForPrestataires()
+
+  // Forcer le re-render si on est sur la section statistiques
+  if (currentSection.value === 'statistiques') {
+    await nextTick()
+  }
+
+  console.log('✅ Statistiques rechargées')
+}
+
+onMounted(() => {
+  loadAuthFromStorage()
+  if (!checkAdminAccess()) return
+
+  loadData().then(async () => {
+    await computeAvisStatsForPrestataires()
+  })
+
+  // MODIFICATION: Écouter les mises à jour en temps réel
+  window.addEventListener('demandes-updated', loadDemandesEmplacement)
+  window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.addEventListener('avis-updated', handleAvisUpdated)
+})
+
+// AJOUT: Nettoyer les écouteurs d'événements au démontage
+import { onBeforeUnmount } from 'vue'
+
+onBeforeUnmount(() => {
+  window.removeEventListener('demandes-updated', loadDemandesEmplacement)
+  window.removeEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.removeEventListener('avis-updated', handleAvisUpdated)
 })
 
 // AJOUT: Computed simplifié sans Proxy
@@ -1671,7 +1590,6 @@ const handleResetPresentation = async () => {
           v-if="currentSection === 'statistiques'"
           :avisStatsParPrestataire="avisStatsParPrestataire"
           :stats="stats"
-          @createChart="createBarChart"
         />
         <!-- Présentation Festival (WYSIWYG) - MODIFIER CETTE SECTION -->
         <AdminPresentation

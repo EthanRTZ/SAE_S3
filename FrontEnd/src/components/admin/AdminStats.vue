@@ -17,30 +17,146 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['selectPrestataire', 'createChart'])
+const emit = defineEmits(['selectPrestataire'])
 
 // Ref pour le canvas Chart.js
 const chartCanvas = ref(null)
 const selectedPrestataireStats = ref(null)
+let chartInstance = null
 
 const selectPrestataireStats = (item) => {
   selectedPrestataireStats.value = item
 }
 
-// Créer le graphique Chart.js quand le canvas est prêt
+// MODIFICATION: Fonction pour créer le graphique directement dans le composant
+const createBarChart = () => {
+  if (!chartCanvas.value) return
+
+  // Charger Chart.js si nécessaire
+  if (!window.Chart) {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js'
+    script.onload = () => initChart()
+    document.head.appendChild(script)
+  } else {
+    initChart()
+  }
+}
+
+const initChart = () => {
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+
+  if (!chartCanvas.value) return
+
+  const ctx = chartCanvas.value.getContext('2d')
+
+  // Préparer les données
+  const sortedStats = [...props.avisStatsParPrestataire]
+    .filter(p => p.nbAvis > 0)
+    .sort((a, b) => b.moyenne - a.moyenne)
+
+  if (sortedStats.length === 0) return
+
+  const labels = sortedStats.map(p => p.nom)
+  const data = sortedStats.map(p => p.moyenne)
+  const backgroundColors = sortedStats.map(p => {
+    if (p.moyenne >= 4.5) return 'rgba(34, 197, 94, 0.8)'
+    if (p.moyenne >= 4) return 'rgba(252, 220, 30, 0.8)'
+    if (p.moyenne >= 3) return 'rgba(255, 152, 0, 0.8)'
+    return 'rgba(239, 68, 68, 0.8)'
+  })
+
+  chartInstance = new window.Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Note moyenne',
+        data: data,
+        backgroundColor: backgroundColors,
+        borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+        borderWidth: 2,
+        borderRadius: 8,
+        barThickness: 50
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#FCDC1E',
+          bodyColor: '#e5e7eb',
+          borderColor: 'rgba(252, 220, 30, 0.5)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: function (context) {
+              const prestataire = sortedStats[context.dataIndex]
+              return [
+                `Note: ${context.parsed.y.toFixed(2)} / 5`,
+                `Nombre d'avis: ${prestataire.nbAvis}`
+              ]
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 5,
+          ticks: {
+            stepSize: 1,
+            color: 'rgba(226, 232, 240, 0.8)',
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.2)',
+            drawBorder: false
+          }
+        },
+        x: {
+          ticks: {
+            color: 'rgba(226, 232, 240, 0.8)',
+            font: {
+              size: 11,
+              weight: '600'
+            },
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  })
+}
+
+// MODIFICATION: Créer le graphique au montage et lors des changements
 onMounted(() => {
   nextTick(() => {
     if (chartCanvas.value && props.avisStatsParPrestataire.length > 0) {
-      emit('createChart', chartCanvas.value)
+      createBarChart()
     }
   })
 })
 
-// Recréer le graphique si les données changent
 watch(() => props.avisStatsParPrestataire, (newVal) => {
   if (newVal.length > 0 && chartCanvas.value) {
     nextTick(() => {
-      emit('createChart', chartCanvas.value)
+      createBarChart()
     })
   }
 }, { deep: true })
@@ -366,8 +482,15 @@ watch(() => props.avisStatsParPrestataire, (newVal) => {
 }
 
 .chart-container {
-  min-height: 400px;
+  position: relative;
+  height: 440px;
   width: 100%;
+  margin-bottom: 20px;
+}
+
+#prestataireChart {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .chart-hint {
