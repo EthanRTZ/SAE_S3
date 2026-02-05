@@ -8,6 +8,7 @@
     "admin": "Admin",
     "carte": "Carte",
     "reservation": "Réservation",
+    "merch": "Boutique",
     "panier": "Panier",
     "connexion": "Connexion",
     "createAccount": "Créer un compte",
@@ -455,5 +456,21 @@
     "editingLanguage": "Langue d'édition :",
     "french": "Français",
     "english": "Anglais"
+  },
+  "merch": {
+    "title": "Boutique officielle",
+    "subtitle": "Equipe-toi pour le Golden Coast avant d'arriver sur le site.",
+    "categories": "Catégories",
+    "all": "Tous les articles",
+    "colors": "Coloris",
+    "sizes": "Tailles",
+    "from": "À partir de",
+    "loadError": "Impossible de charger le merch, affichage d'une sélection fixe.",
+    "empty": "Aucun article dans cette catégorie pour le moment.",
+    "inStock": "En stock",
+    "lowStock": "Plus que {count} en stock",
+    "soldOut": "Épuisé",
+    "cta": "Ajouter au panier",
+    "ctaDisabled": "Bientôt disponible"
   }
 }

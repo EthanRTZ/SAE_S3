@@ -8,6 +8,7 @@
     "admin": "Admin",
     "carte": "Map",
     "reservation": "Booking",
+    "merch": "Merch",
     "panier": "Cart",
     "connexion": "Login",
     "createAccount": "Create account",
@@ -455,5 +456,21 @@
     "editingLanguage": "Editing language:",
     "french": "French",
     "english": "English"
+  },
+  "merch": {
+    "title": "Official merch shop",
+    "subtitle": "Gear up for Golden Coast before you arrive on site.",
+    "categories": "Categories",
+    "all": "All items",
+    "colors": "Colors",
+    "sizes": "Sizes",
+    "from": "From",
+    "loadError": "Could not load merch, showing a fixed selection instead.",
+    "empty": "No item in this category yet.",
+    "inStock": "In stock",
+    "lowStock": "Only {count} left",
+    "soldOut": "Sold out",
+    "cta": "Add to cart",
+    "ctaDisabled": "Coming soon"
   }
 }

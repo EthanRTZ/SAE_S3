@@ -188,6 +188,7 @@ const changeLanguage = (lang) => {
           <!-- CHANGED: liens conditionnels selon le rôle -->
           <router-link v-if="showAccueilLink" to="/" class="nav-link">{{ $t('nav.home') }}</router-link>
           <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link">{{ $t('nav.programmation') }}</router-link>
+          <router-link to="/merch" class="nav-link">{{ $t('nav.merch') }}</router-link>
           <!-- Menu déroulant Prestataire pour les prestataires connectés -->
           <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-wrapper">
             <button 
@@ -299,6 +300,7 @@ const changeLanguage = (lang) => {
         <!-- CHANGED: liens conditionnels selon le rôle (mobile) -->
         <router-link v-if="showAccueilLink" to="/" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.home') }}</router-link>
         <router-link v-if="showProgrammationLinkInNav" to="/programmation" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.programmation') }}</router-link>
+        <router-link to="/merch" class="nav-link-mobile" @click="() => { toggleMenu(); closeUserMenu(); closePrestataireDropdown(); }">{{ $t('nav.merch') }}</router-link>
         <!-- Menu déroulant Prestataire pour les prestataires connectés (mobile) -->
         <div v-if="showPrestataireLink && isPrestataire" class="prestataire-dropdown-mobile">
           <button 

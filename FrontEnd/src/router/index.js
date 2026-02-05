@@ -10,6 +10,7 @@ import RegisterView from "@/views/RegisterView.vue";
 import AdminView from "@/views/admin/AdminView.vue";
 import PanierView from "@/views/PanierView.vue";
 import PaymentView from "@/views/PaymentView.vue";
+import MerchView from "@/views/MerchView.vue";
 import AvisView from "@/views/AvisView.vue";
 import BasketReservationView from "@/views/BasketReservationView.vue";
 
@@ -93,6 +94,11 @@ const routes = [
         path: '/avis',
         name: 'avis',
         component: AvisView
+    },
+    {
+        path: '/merch',
+        name: 'merch',
+        component: MerchView,
     },
     {
         path: '/:pathMatch(.*)*',
