@@ -1,0 +1,28 @@
+:root {
+  /* Couleurs principales */
+  --admin-bg: linear-gradient(180deg, #0b122a 0%, #07103a 100%);
+  --admin-primary: #FCDC1E;
+  --yellow: #FCDC1E;
+  --purple: #9C27B0;
+
+  /* Textes */
+  --admin-text: rgba(226, 232, 240, 1);
+  --text: rgba(226, 232, 240, 1);
+  --text-muted: rgba(226, 232, 240, 0.7);
+
+  /* Bordures */
+  --admin-border: rgba(252, 220, 30, 0.15);
+  --border: rgba(252, 220, 30, 0.15);
+  --border-light: rgba(255, 255, 255, 0.1);
+
+  /* Backgrounds */
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(252, 220, 30, 0.08);
+  --bg-input: rgba(0, 0, 0, 0.3);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 6px 20px rgba(252, 220, 30, 0.15);
+  --shadow-yellow: 0 4px 12px rgba(252, 220, 30, 0.4);
+}

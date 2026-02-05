@@ -1087,14 +1087,9 @@ watch(editingLang, () => {
               <span class="menu-icon">📊</span>
               <span>{{ $t('prestataireSpace.menuStats') }}</span>
             </li>
-            <!-- AJOUT: Onglet Réservations (pour tous les prestataires) -->
             <li :class="{ active: selectedSection === 'reservations' }" @click="selectedSection = 'reservations'">
               <span class="menu-icon">📅</span>
               <span>Réservations</span>
-            </li>
-            <li :class="{ active: selectedSection === 'config' }" @click="selectedSection = 'config'">
-              <span class="menu-icon">⚙️</span>
-              <span>{{ $t('prestataireSpace.menuConfig') }}</span>
             </li>
             <li :class="{ active: selectedSection === 'user' }" @click="selectedSection = 'user'">
               <span class="menu-icon">👤</span>
@@ -1433,36 +1428,6 @@ watch(editingLang, () => {
                   </tr>
                   </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Configuration -->
-          <div v-if="selectedSection === 'config'" class="section-content">
-            <div class="section-header">
-              <h2>{{ $t('prestataireSpace.configTitle') }}</h2>
-              <p class="section-description">{{ $t('prestataireSpace.configDesc') }}</p>
-            </div>
-            <div class="config-grid">
-              <div class="config-item">
-                <label>{{ $t('prestataireSpace.autoAssignment') }}</label>
-                <select class="input">
-                  <option>{{ $t('prestataireSpace.no') }}</option>
-                  <option>{{ $t('prestataireSpace.byName') }}</option>
-                  <option>{{ $t('prestataireSpace.byCategory') }}</option>
-                </select>
-              </div>
-              <div class="config-item">
-                <label>{{ $t('prestataireSpace.defaultVisibility') }}</label>
-                <select class="input">
-                  <option>{{ $t('prestataireSpace.publicDefault') }}</option>
-                  <option>{{ $t('prestataireSpace.private') }}</option>
-                </select>
-              </div>
-              <div class="config-actions">
-                <button class="btn btn-primary" @click="() => alert(t('prestataireSpace.configSaved'))">
-                  {{ $t('prestataireSpace.saveConfig') }}
-                </button>
               </div>
             </div>
           </div>
@@ -2017,30 +1982,6 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 }
 
 .form-actions {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(252,220,30,0.2);
-}
-
-/* config */
-.config-grid {
-  display: grid;
-  gap: 20px;
-}
-
-.config-item {
-  margin-bottom: 0;
-}
-
-.config-item label {
-  display: block;
-  color: #FCDC1E;
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 0.95rem;
-}
-
-.config-actions {
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid rgba(252,220,30,0.2);

@@ -6,9 +6,10 @@
         <source :src="normalizePublicPath('/media/fond.mp4')" type="video/mp4">
       </video>
       <div class="hero-content">
-        <h1 class="hero-title">{{ translatedPresentation.titre }}</h1>
-        <p class="hero-date"><strong>{{ translatedPresentation.date }}</strong></p>
-        <p class="hero-location"><strong>{{ translatedPresentation.lieu }}</strong></p>
+        <!-- CHANGED: Utiliser v-html pour le titre -->
+        <h1 class="hero-title" v-html="translatedPresentation.titre"></h1>
+        <p class="hero-date"><strong v-html="translatedPresentation.date"></strong></p>
+        <p class="hero-location"><strong v-html="translatedPresentation.lieu"></strong></p>
         <div class="hero-buttons">
           <router-link to="/reservation" class="btn-hero btn-primary">{{ $t('home.buyTickets') }}</router-link>
           <router-link to="/programmation" class="btn-hero btn-secondary">{{ $t('nav.programmation') }}</router-link>
@@ -44,17 +45,20 @@
           <div class="about-grid">
             <div class="about-card">
               <div class="card-icon">🎤</div>
-              <h3>{{ translatedPresentation.aboutCard1Titre }}</h3>
+              <!-- CHANGED: Utiliser v-html -->
+              <h3 v-html="translatedPresentation.aboutCard1Titre"></h3>
               <p v-html="translatedPresentation.aboutCard1Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">🌳</div>
-              <h3>{{ translatedPresentation.aboutCard2Titre }}</h3>
+              <!-- CHANGED: Utiliser v-html -->
+              <h3 v-html="translatedPresentation.aboutCard2Titre"></h3>
               <p v-html="translatedPresentation.aboutCard2Texte"></p>
             </div>
             <div class="about-card">
               <div class="card-icon">👥</div>
-              <h3>{{ translatedPresentation.aboutCard3Titre }}</h3>
+              <!-- CHANGED: Utiliser v-html -->
+              <h3 v-html="translatedPresentation.aboutCard3Titre"></h3>
               <p v-html="translatedPresentation.aboutCard3Texte"></p>
             </div>
           </div>
@@ -65,11 +69,13 @@
     <section class="description-section">
       <div class="description-container two-col">
         <div class="description-left">
-          <h2 class="description-title"><strong>{{ translatedPresentation.desc1Titre }}</strong></h2>
+          <!-- CHANGED: Utiliser v-html -->
+          <h2 class="description-title" v-html="translatedPresentation.desc1Titre"></h2>
           <p class="description-text" v-html="translatedPresentation.desc1Texte"></p>
           <div class="description-highlights">
-            <span class="highlight-chip"><strong>{{ translatedPresentation.desc1Chip1 }}</strong></span>
-            <span class="highlight-chip"><strong>{{ translatedPresentation.desc1Chip2 }}</strong></span>
+            <!-- CHANGED: Utiliser v-html -->
+            <span class="highlight-chip" v-html="translatedPresentation.desc1Chip1"></span>
+            <span class="highlight-chip" v-html="translatedPresentation.desc1Chip2"></span>
           </div>
         </div>
         <div class="description-right">
@@ -82,7 +88,8 @@
           <img :src="normalizePublicPath('/media/accueil2.jpeg')" alt="Ambiance Golden Coast" class="description-image" />
         </div>
         <div class="description-left">
-          <h2 class="description-title"><strong>{{ translatedPresentation.desc2Titre }}</strong></h2>
+          <!-- CHANGED: Utiliser v-html -->
+          <h2 class="description-title" v-html="translatedPresentation.desc2Titre"></h2>
           <p class="description-text" v-html="translatedPresentation.desc2Texte"></p>
         </div>
       </div>
@@ -131,8 +138,9 @@
     <!-- Section Carte -->
     <section class="map-section">
       <div class="map-container">
-        <h2 class="section-title">{{ translatedPresentation.mapTitre }}</h2>
-        <p class="map-intro">{{ translatedPresentation.mapIntro }}</p>
+        <!-- CHANGED: Utiliser v-html -->
+        <h2 class="section-title" v-html="translatedPresentation.mapTitre"></h2>
+        <p class="map-intro" v-html="translatedPresentation.mapIntro"></p>
         <!-- pleine largeur avec cadre léger -->
         <div class="map-frame">
           <div class="map-inner">
@@ -148,9 +156,13 @@
     <!-- Section CTA -->
     <section class="cta-section">
       <div class="cta-container">
-        <h2 class="cta-title"><strong>{{ translatedPresentation.ctaTitre }}</strong></h2>
-        <p class="cta-text"><strong>{{ translatedPresentation.ctaTexte }}</strong></p>
-        <router-link to="/reservation" class="btn-cta">{{ translatedPresentation.ctaBouton }}</router-link>
+        <!-- CHANGED: Utiliser v-html -->
+        <h2 class="cta-title" v-html="translatedPresentation.ctaTitre"></h2>
+        <p class="cta-text" v-html="translatedPresentation.ctaTexte"></p>
+        <!-- CHANGED: Le bouton garde le texte normal car c'est dans un attribut -->
+        <router-link to="/reservation" class="btn-cta">
+          <span v-html="translatedPresentation.ctaBouton"></span>
+        </router-link>
       </div>
     </section>
 
@@ -366,13 +378,23 @@ export default {
     // Charger la présentation depuis festival.json
     const loadFestivalPresentation = async () => {
       try {
+        const localPresentation = localStorage.getItem('festivalPresentation');
+        if (localPresentation) {
+          try {
+            festivalPresentation.value = JSON.parse(localPresentation);
+            return;
+          } catch (e) {
+            // Silencieux
+          }
+        }
+
         const response = await fetch('/data/festival.json', { cache: 'no-store' });
         const data = await response.json();
         if (data.presentation) {
           festivalPresentation.value = data.presentation;
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de la présentation:', error);
+        // Silencieux
       }
     };
 
@@ -400,7 +422,8 @@ export default {
         ctaTexte: '',
         ctaBouton: '',
         mapTitre: '',
-        mapIntro: ''
+        mapIntro: '',
+        footerDescription: '' // AJOUT: Propriété pour la description du footer
       };
     });
 
@@ -422,7 +445,7 @@ export default {
           footerDescription.value = data.footerDescription[currentLang] || data.footerDescription.fr || '';
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de la description du footer:', error);
+        // Silencieux
       }
     };
 
@@ -438,18 +461,16 @@ export default {
     // Charger les prestataires
     const loadPrestataires = async () => {
       try {
-        // Charger les modifications locales
         const customRaw = localStorage.getItem('customPrestataires');
         let customPrestataires = null;
         if (customRaw) {
           try {
             customPrestataires = JSON.parse(customRaw);
           } catch (e) {
-            // ignore
+            // Silencieux
           }
         }
 
-        // Charger depuis le fichier JSON
         const response = await fetch('/data/prestataires.json');
         const data = await response.json();
         let prestatairesData = data.prestataires || [];
@@ -519,7 +540,7 @@ export default {
 
         prestataires.value = prestatairesData;
       } catch (error) {
-        console.error('Erreur lors du chargement des prestataires:', error);
+        // Silencieux
       }
     };
 
@@ -955,7 +976,7 @@ export default {
   .description-container.two-col {
     grid-template-columns: 1fr;
     gap: 40px;
-    text-align: center;
+    margin-bottom: 60px;
   }
 
   .description-container.two-col:nth-child(even) .description-right {

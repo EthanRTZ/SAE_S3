@@ -26,10 +26,7 @@ let isInternalUpdate = false
 const TINYMCE_API_KEY = 'b25zghivmcfp9xxkc3awneitl1ujlu2ejfz4mbb2zxlspwdm'
 
 const initEditor = () => {
-  if (typeof window.tinymce === 'undefined') {
-    console.error('TinyMCE not loaded')
-    return
-  }
+  if (typeof window.tinymce === 'undefined') return
 
   window.tinymce.init({
     selector: `#${editorId.value}`,
@@ -111,37 +108,33 @@ const initEditor = () => {
 }
 
 const loadTinyMCE = () => {
-  // Vérifier si déjà chargé
   if (typeof window.tinymce !== 'undefined') {
     initEditor()
     return
   }
 
-  // Charger TinyMCE depuis CDN avec la clé API
   const script = document.createElement('script')
   script.src = `https://cdn.tiny.cloud/1/${TINYMCE_API_KEY}/tinymce/6/tinymce.min.js`
   script.referrerPolicy = 'origin'
   script.onload = () => {
-    // Charger le pack de langue français
     const langScript = document.createElement('script')
     langScript.src = `https://cdn.tiny.cloud/1/${TINYMCE_API_KEY}/tinymce/6/langs/fr_FR.js`
     langScript.onload = () => initEditor()
-    langScript.onerror = () => initEditor() // Continue même si la langue ne charge pas
+    langScript.onerror = () => initEditor()
     document.head.appendChild(langScript)
   }
-  script.onerror = () => {
-    console.error('Erreur de chargement de TinyMCE')
-  }
+  script.onerror = () => {}
   document.head.appendChild(script)
 }
 
+// CORRECTION: Watcher avec vérification de editorInstance
 watch(() => props.modelValue, (newValue) => {
   if (editorInstance && editorInstance.getContent() !== newValue) {
     isInternalUpdate = true
     editorInstance.setContent(newValue || '')
     isInternalUpdate = false
   }
-})
+}, { immediate: false }) // CHANGED: immediate à false pour éviter l'erreur au montage
 
 onMounted(() => {
   loadTinyMCE()
@@ -181,4 +174,3 @@ onBeforeUnmount(() => {
   resize: vertical;
 }
 </style>
-
