@@ -10,6 +10,7 @@ import AdminPrestataires from '@/components/admin/AdminPrestataires.vue'
 import AdminPrestataireDetail from '@/components/admin/AdminPrestataireDetail.vue'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 import AdminProgrammation from '@/components/admin/AdminProgrammation.vue'
+import AdminMap from '@/components/admin/AdminMap.vue'
 
 // AJOUT: Référence pour le canvas Chart.js
 const chartCanvas = ref(null)
@@ -437,7 +438,6 @@ const loadData = async () => {
 
     if (usersResp.ok) {
       const usersData = await usersResp.json()
-
       users.value = []
       await nextTick()
 
@@ -479,17 +479,13 @@ const loadData = async () => {
     const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
     const avisData = avisResp.ok ? await avisResp.json() : {}
 
-    // AJOUT: Charger les zones pour la carte
     zones.value = zonesData.zones || []
     emplacementsForMap.value = emplacementsData.emplacements || []
 
-    // Filtrer uniquement les prestataires présents dans avis.json
-    const prestatairesValides = Object.keys(avisData)
+    // MODIFICATION: Utiliser TOUS les prestataires du JSON, pas seulement ceux avec des avis
     const prestatairesFiltered = (prestataireData.prestataires || [])
-      .filter(p => prestatairesValides.includes(p.nom))
       .map(p => ({
         ...p,
-        // AJOUT: S'assurer que description est toujours une chaîne
         description: typeof p.description === 'string' ? p.description : (p.description || '')
       }))
 
@@ -512,7 +508,6 @@ const loadData = async () => {
         return {
           ...p,
           ...custom,
-          // AJOUT: S'assurer que description reste une chaîne après fusion
           description: typeof custom.description === 'string'
             ? custom.description
             : (custom.description || p.description || '')
@@ -608,7 +603,6 @@ const loadData = async () => {
     let totalAvis = 0
     let sommeNotes = 0
     const repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    // Suppression de tousLesAvisPrestataires
 
     Object.entries(allAvis).forEach(([prestataire, entry]) => {
       const avisArray = entry.avis || []
@@ -619,7 +613,6 @@ const loadData = async () => {
         if (repartitionNotes[note] !== undefined) {
           repartitionNotes[note]++
         }
-        // Suppression de l'ajout dans tousLesAvisPrestataires
       })
     })
 
@@ -661,7 +654,7 @@ const loadData = async () => {
 
     stats.value = {
       totalUsers: users.value.length,
-      totalPrestataires: prestataires.value.length,
+      totalPrestataires: prestataires.value.length, // MODIFICATION: Utilise le nombre total de prestataires
       totalReservations: reservations.length,
       totalServices,
       totalTickets,
@@ -1725,6 +1718,20 @@ const handleResetPresentation = async () => {
           @saveSlot="saveSlot"
           @cancelEdit="cancelEdit"
           @save="saveProgrammation"
+        />
+
+        <!-- Carte Interactive -->
+        <AdminMap
+          v-if="currentSection === 'carte'"
+          :prestataires="prestataires"
+          :zones="zones"
+          :emplacements="emplacementsForMap"
+          :demandesEmplacement="demandesEmplacement"
+          :emplacementsAttribues="emplacementsAttribues"
+          @accepterDemande="accepterDemande"
+          @refuserDemande="refuserDemande"
+          @assignerEmplacement="assignerEmplacement"
+          @libererEmplacement="libererEmplacementAdmin"
         />
 
         <!-- ...existing sections... -->
