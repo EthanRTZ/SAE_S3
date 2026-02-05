@@ -8,97 +8,70 @@ const fallbackProducts = [
   {
     id: 'tee-classic',
     name: 'T-shirt logo',
-    category: 'T-shirts',
     price: 25,
-    description: 'Coton bio 180g, impression poitrine ton sur ton et col renforcé.',
-    colors: ['Noir carbone', 'Blanc craie', 'Bleu nuit'],
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     stock: 32,
     badge: 'Best-seller',
     accent: '#fcdc1e',
-    image: ''
+    image: '/media/merch/tshirt.jpeg'
   },
   {
     id: 'tee-oversize',
     name: 'T-shirt oversize',
-    category: 'T-shirts',
     price: 29,
-    description: 'Coupe large, épaules tombantes, sérigraphie "Golden Coast" au dos.',
-    colors: ['Blanc', 'Anthracite'],
     sizes: ['S', 'M', 'L', 'XL'],
     stock: 12,
     badge: 'Nouveauté',
     accent: '#a855f7',
-    image: ''
+    image: '/media/merch/tshirt.jpeg'
   },
   {
     id: 'hoodie',
     name: 'Hoodie premium',
-    category: 'Sweats & hoodies',
     price: 55,
-    description: 'Molleton brossé 350g, capuche doublée, cordons tressés jaune.',
-    colors: ['Noir', 'Bleu marine'],
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
     stock: 7,
     badge: 'Edition limitée',
     accent: '#0ea5e9',
-    image: ''
+    image: '/media/merch/hoodie.jpeg'
   },
   {
     id: 'windbreaker',
     name: 'Veste coupe-vent',
-    category: 'Vestes',
     price: 65,
-    description: 'Déperlante, poche kangourou, zip étanche et patch tissé sur la manche.',
-    colors: ['Noir', 'Sable'],
     sizes: ['S', 'M', 'L', 'XL'],
     stock: 18,
     badge: 'Outdoor',
     accent: '#f97316',
-    image: ''
+    image: '/media/merch/hoodie.jpeg'
   },
   {
     id: 'cap',
     name: 'Casquette 5 panels',
-    category: 'Casquettes',
     price: 22,
-    description: 'Visière courbée, sangle réglable, broderie GC en relief.',
-    colors: ['Noir', 'Olive', 'Bleu ciel'],
     sizes: ['Taille unique'],
     stock: 0,
     badge: 'Sold out',
     accent: '#22c55e',
-    image: ''
+    image: '/media/merch/casquette.jpeg'
   },
   {
     id: 'tote',
     name: 'Tote bag renforcé',
-    category: 'Accessoires',
     price: 15,
-    description: 'Toile 320g, anses longues, sérigraphie deux faces.',
-    colors: ['Naturel', 'Noir'],
     sizes: ['38x42 cm'],
     stock: 44,
     badge: 'Essentiel',
     accent: '#eab308',
-    image: ''
+    image: '/media/merch/tshirt.jpeg'
   }
 ]
 
 const products = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
-const selectedCategory = ref('all')
 
-const categories = computed(() => {
-  const unique = new Set(products.value.map(p => p.category))
-  return ['all', ...unique]
-})
-
-const displayedProducts = computed(() => {
-  if (selectedCategory.value === 'all') return products.value
-  return products.value.filter(p => p.category === selectedCategory.value)
-})
+const displayedProducts = computed(() => products.value)
 
 const formatPrice = (value) => {
   const lang = locale.value === 'en' ? 'en-US' : 'fr-FR'
@@ -130,6 +103,17 @@ const mediaStyle = (product) => {
   }
 }
 
+const normalizeProducts = (items) => {
+  return (items || []).map((item, idx) => {
+    const fallback = fallbackProducts[idx] || {}
+    return {
+      ...fallback,
+      ...item,
+      accent: item?.accent || fallback.accent || '#2046b3'
+    }
+  })
+}
+
 const fetchProducts = async () => {
   isLoading.value = true
   try {
@@ -137,12 +121,13 @@ const fetchProducts = async () => {
     if (!resp.ok) throw new Error('fetch failed')
     const data = await resp.json()
     const items = Array.isArray(data.items) ? data.items : []
-    products.value = items.length ? items : fallbackProducts
+    const list = items.length ? items : fallbackProducts
+    products.value = normalizeProducts(list)
     if (!items.length) {
       errorMessage.value = t('merch.loadError')
     }
   } catch (err) {
-    products.value = fallbackProducts
+    products.value = normalizeProducts(fallbackProducts)
     errorMessage.value = t('merch.loadError')
   } finally {
     isLoading.value = false
@@ -163,26 +148,7 @@ onMounted(fetchProducts)
         <span>Textiles responsables</span>
         <span>Quantités limitées</span>
       </div>
-    </section>
-
-    <section class="merch-filters">
-      <div class="filters-header">
-        <div>
-          <p class="filters-label">{{ t('merch.categories') }}</p>
-          <small v-if="errorMessage" class="filters-error">{{ errorMessage }}</small>
-        </div>
-      </div>
-      <div class="filters-chips">
-        <button
-          v-for="category in categories"
-          :key="category"
-          type="button"
-          :class="['filter-chip', { active: selectedCategory === category } ]"
-          @click="selectedCategory = category"
-        >
-          {{ category === 'all' ? t('merch.all') : category }}
-        </button>
-      </div>
+      <small v-if="errorMessage" class="hero-error">{{ errorMessage }}</small>
     </section>
 
     <section class="merch-grid">
@@ -291,57 +257,16 @@ onMounted(fetchProducts)
   font-size: 0.9rem;
 }
 
-.merch-filters {
-  max-width: 1080px;
-  margin: 22px auto 10px;
-  padding: 0 18px;
-}
-
-.filters-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.filters-label {
-  font-weight: 700;
-  color: #f6f7ff;
-  letter-spacing: 0.3px;
-}
-
-.filters-error {
-  color: #fca5a5;
+.hero-error {
   display: block;
-  margin-top: 4px;
-}
-
-.filters-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.filter-chip {
-  border: 1px solid rgba(252, 220, 30, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-  color: #e8ecff;
-  padding: 9px 14px;
-  border-radius: 12px;
-  cursor: pointer;
+  margin-top: 12px;
+  color: #fca5a5;
   font-weight: 700;
-  transition: all 0.18s ease;
-}
-
-.filter-chip.active {
-  background: #fcdc1e;
-  color: #0b0f29;
-  border-color: #fcdc1e;
 }
 
 .merch-grid {
   max-width: 1180px;
-  margin: 8px auto 0;
+  margin: 18px auto 0;
   padding: 0 6px;
 }
 

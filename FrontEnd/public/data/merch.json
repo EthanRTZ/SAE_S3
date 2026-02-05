@@ -3,80 +3,62 @@
     {
       "id": "tee-classic",
       "name": "T-shirt logo",
-      "category": "T-shirts",
       "price": 25,
-      "description": "Coton bio 180g, impression poitrine ton sur ton et col renforcé.",
-      "colors": ["Noir carbone", "Blanc craie", "Bleu nuit"],
       "sizes": ["S", "M", "L", "XL", "XXL"],
       "stock": 32,
       "badge": "Best-seller",
       "accent": "#fcdc1e",
-      "image": ""
+      "image": "/media/merch/tshirt.jpeg"
     },
     {
       "id": "tee-oversize",
       "name": "T-shirt oversize",
-      "category": "T-shirts",
       "price": 29,
-      "description": "Coupe large, épaules tombantes, sérigraphie \"Golden Coast\" au dos.",
-      "colors": ["Blanc", "Anthracite"],
       "sizes": ["S", "M", "L", "XL"],
       "stock": 12,
       "badge": "Nouveauté",
       "accent": "#a855f7",
-      "image": ""
+      "image": "/media/merch/tshirt.jpeg"
     },
     {
       "id": "hoodie",
       "name": "Hoodie premium",
-      "category": "Sweats & hoodies",
       "price": 55,
-      "description": "Molleton brossé 350g, capuche doublée, cordons tressés jaune.",
-      "colors": ["Noir", "Bleu marine"],
       "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
       "stock": 7,
       "badge": "Edition limitée",
       "accent": "#0ea5e9",
-      "image": ""
+      "image": "/media/merch/hoodie.jpeg"
     },
     {
       "id": "windbreaker",
       "name": "Veste coupe-vent",
-      "category": "Vestes",
       "price": 65,
-      "description": "Déperlante, poche kangourou, zip étanche et patch tissé sur la manche.",
-      "colors": ["Noir", "Sable"],
       "sizes": ["S", "M", "L", "XL"],
       "stock": 18,
       "badge": "Outdoor",
       "accent": "#f97316",
-      "image": ""
+      "image": "/media/merch/hoodie.jpeg"
     },
     {
       "id": "cap",
       "name": "Casquette 5 panels",
-      "category": "Casquettes",
       "price": 22,
-      "description": "Visière courbée, sangle réglable, broderie GC en relief.",
-      "colors": ["Noir", "Olive", "Bleu ciel"],
       "sizes": ["Taille unique"],
       "stock": 0,
       "badge": "Sold out",
       "accent": "#22c55e",
-      "image": ""
+      "image": "/media/merch/casquette.jpeg"
     },
     {
       "id": "tote",
       "name": "Tote bag renforcé",
-      "category": "Accessoires",
       "price": 15,
-      "description": "Toile 320g, anses longues, sérigraphie deux faces.",
-      "colors": ["Naturel", "Noir"],
       "sizes": ["38x42 cm"],
       "stock": 44,
       "badge": "Essentiel",
       "accent": "#eab308",
-      "image": ""
+      "image": "/media/merch/tshirt.jpeg"
     }
   ]
 }

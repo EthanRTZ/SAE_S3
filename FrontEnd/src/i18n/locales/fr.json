@@ -459,18 +459,14 @@
   },
   "merch": {
     "title": "Boutique officielle",
-    "subtitle": "Equipe-toi pour le Golden Coast avant d'arriver sur le site.",
-    "categories": "Catégories",
-    "all": "Tous les articles",
-    "colors": "Coloris",
-    "sizes": "Tailles",
-    "from": "À partir de",
-    "loadError": "Impossible de charger le merch, affichage d'une sélection fixe.",
-    "empty": "Aucun article dans cette catégorie pour le moment.",
-    "inStock": "En stock",
-    "lowStock": "Plus que {count} en stock",
+    "subtitle": "Textile, vestes, casquettes et accessoires du festival.",
+    "loadError": "Catalogue indisponible, affichage de la sélection par défaut.",
     "soldOut": "Épuisé",
-    "cta": "Ajouter au panier",
-    "ctaDisabled": "Bientôt disponible"
+    "lowStock": "Plus que {count}",
+    "inStock": "En stock",
+    "from": "À partir de",
+    "ctaDisabled": "Indisponible",
+    "cta": "Ajouter",
+    "empty": "Aucun article pour le moment."
   }
 }
