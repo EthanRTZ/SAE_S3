@@ -210,7 +210,18 @@ const onSubmit = async () => {
     saveCustomUsers(updatedCustom)
 
     persistAuthUser(newUser)
+
+    // AJOUT: Émettre plusieurs événements pour garantir la synchronisation
+    window.dispatchEvent(new Event('auth-changed'))
+    window.dispatchEvent(new Event('storage'))
+
+    // AJOUT: Émettre un événement custom avec les détails
+    window.dispatchEvent(new CustomEvent('user-registered', {
+      detail: { email: newUser.email, role: newUser.role }
+    }))
+
     success.value = t('register.success')
+
     setTimeout(() => {
       router.push('/')
     }, 1000)

@@ -11,6 +11,8 @@ import AdminPrestataireDetail from '@/components/admin/AdminPrestataireDetail.vu
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 import AdminProgrammation from '@/components/admin/AdminProgrammation.vue'
 import AdminMap from '@/components/admin/AdminMap.vue'
+import AdminUsers from '@/components/admin/AdminUsers.vue'
+import AdminUserDetail from '@/components/admin/AdminUserDetail.vue'
 
 // AJOUT: Référence pour le canvas Chart.js
 const chartCanvas = ref(null)
@@ -411,28 +413,53 @@ const deleteUser = () => {
     return
   }
 
-  const index = users.value.findIndex(u => u.email === selectedUser.value.email)
-  if (index !== -1) {
-    users.value.splice(index, 1)
-    localStorage.setItem('users', JSON.stringify(users.value))
+  try {
+    const emailToDelete = selectedUser.value.email
+
+    // MODIFICATION: Supprimer de users.value
+    const index = users.value.findIndex(u => u.email === emailToDelete)
+    if (index !== -1) {
+      users.value.splice(index, 1)
+    }
+
+    // MODIFICATION: Supprimer du localStorage 'users' (créés via AdminView)
+    const localStorageUsersRaw = localStorage.getItem('users')
+    if (localStorageUsersRaw) {
+      try {
+        let localUsers = JSON.parse(localStorageUsersRaw)
+        localUsers = localUsers.filter(u => u.email !== emailToDelete)
+        localStorage.setItem('users', JSON.stringify(localUsers))
+      } catch (e) {
+        console.error('Erreur suppression localStorage users', e)
+      }
+    }
+
+    // MODIFICATION: Supprimer du localStorage 'customUsers' (créés via RegisterView)
+    const customUsersRaw = localStorage.getItem('customUsers')
+    if (customUsersRaw) {
+      try {
+        let customUsers = JSON.parse(customUsersRaw)
+        customUsers = customUsers.filter(u => u.email !== emailToDelete)
+        localStorage.setItem('customUsers', JSON.stringify(customUsers))
+      } catch (e) {
+        console.error('Erreur suppression customUsers', e)
+      }
+    }
+
+    // AJOUT: Émettre des événements pour synchroniser
+    window.dispatchEvent(new Event('auth-changed'))
+    window.dispatchEvent(new Event('storage'))
+
     alert('Utilisateur supprimé avec succès!')
     changeSection('users')
+  } catch (e) {
+    console.error('Erreur lors de la suppression:', e)
+    alert('Erreur lors de la suppression de l\'utilisateur')
   }
 }
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount)
-}
-
-const loadData = async () => {
-  if (!isAdmin.value) {
-    loading.value = false
-    return
-  }
-
+// AJOUT: Fonction pour recharger les utilisateurs
+const reloadUsers = async () => {
   try {
     const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
 
@@ -441,30 +468,65 @@ const loadData = async () => {
       users.value = []
       await nextTick()
 
-      const customUsersRaw = localStorage.getItem('users')
+      // Charger depuis localStorage (qui contient les utilisateurs créés via RegisterView)
+      const customUsersRaw = localStorage.getItem('customUsers')
+      const localStorageUsersRaw = localStorage.getItem('users')
+
+      let allUsers = [...usersData]
+
+      // Ajouter les utilisateurs de customUsers (créés via RegisterView)
       if (customUsersRaw) {
         try {
-          const parsedUsers = JSON.parse(customUsersRaw)
-          parsedUsers.forEach(user => {
-            users.value.push(user)
-          })
+          const customUsers = JSON.parse(customUsersRaw)
+          allUsers = [...allUsers, ...customUsers]
         } catch (e) {
-          usersData.forEach(user => {
-            users.value.push(user)
-          })
-          localStorage.setItem('users', JSON.stringify(users.value))
+          console.error('Erreur parsing customUsers', e)
         }
-      } else {
-        usersData.forEach(user => {
-          users.value.push(user)
-        })
-        localStorage.setItem('users', JSON.stringify(users.value))
       }
 
+      // Ajouter les utilisateurs de users (créés via AdminView)
+      if (localStorageUsersRaw) {
+        try {
+          const localUsers = JSON.parse(localStorageUsersRaw)
+          // Fusionner en évitant les doublons par email
+          localUsers.forEach(localUser => {
+            if (!allUsers.some(u => u.email === localUser.email)) {
+              allUsers.push(localUser)
+            }
+          })
+        } catch (e) {
+          console.error('Erreur parsing users', e)
+        }
+      }
+
+      // Supprimer les doublons basés sur l'email
+      const uniqueUsers = allUsers.reduce((acc, user) => {
+        if (!acc.some(u => u.email === user.email)) {
+          acc.push(user)
+        }
+        return acc
+      }, [])
+
+      users.value = uniqueUsers
       await nextTick()
-    } else {
-      users.value = []
+
+      console.log('✅ Utilisateurs rechargés:', users.value.length)
     }
+  } catch (e) {
+    console.error('Erreur rechargement utilisateurs', e)
+  }
+}
+
+// MODIFICATION: Fonction loadData - simplifier le chargement des utilisateurs
+const loadData = async () => {
+  if (!isAdmin.value) {
+    loading.value = false
+    return
+  }
+
+  try {
+    // Utiliser reloadUsers au lieu de dupliquer le code
+    await reloadUsers()
 
     // Charger les autres données
     const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
@@ -1222,6 +1284,10 @@ onMounted(() => {
   window.addEventListener('demandes-updated', loadDemandesEmplacement)
   window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
   window.addEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Écouter les changements d'authentification (création de compte)
+  window.addEventListener('auth-changed', reloadUsers)
+  window.addEventListener('storage', reloadUsers)
 })
 
 // AJOUT: Fonction pour gérer les mises à jour d'avis
@@ -1254,6 +1320,10 @@ onMounted(() => {
   window.addEventListener('demandes-updated', loadDemandesEmplacement)
   window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
   window.addEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Écouter les changements d'authentification (création de compte)
+  window.addEventListener('auth-changed', reloadUsers)
+  window.addEventListener('storage', reloadUsers)
 })
 
 // AJOUT: Nettoyer les écouteurs d'événements au démontage
@@ -1263,6 +1333,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('demandes-updated', loadDemandesEmplacement)
   window.removeEventListener('emplacements-updated', loadEmplacementsAttribues)
   window.removeEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Nettoyer les écouteurs d'utilisateurs
+  window.removeEventListener('auth-changed', reloadUsers)
+  window.removeEventListener('storage', reloadUsers)
 })
 
 // AJOUT: Computed simplifié sans Proxy
@@ -1586,12 +1660,13 @@ const handleResetPresentation = async () => {
 
       <main class="admin-main">
         <AdminDashboard v-if="currentSection === 'dashboard'" :stats="stats" />
+
         <AdminStats
           v-if="currentSection === 'statistiques'"
           :avisStatsParPrestataire="avisStatsParPrestataire"
           :stats="stats"
         />
-        <!-- Présentation Festival (WYSIWYG) - MODIFIER CETTE SECTION -->
+
         <AdminPresentation
           v-if="currentSection === 'presentation'"
           :festivalPresentation="festivalPresentation"
@@ -1601,7 +1676,6 @@ const handleResetPresentation = async () => {
           @reset="handleResetPresentation"
         />
 
-        <!-- Gestion Prestataires -->
         <AdminPrestataires
           v-if="currentSection === 'prestataires'"
           :prestataires="prestataires"
@@ -1609,7 +1683,6 @@ const handleResetPresentation = async () => {
           @select="selectPrestataire"
         />
 
-        <!-- Détail Prestataire -->
         <AdminPrestataireDetail
           v-if="currentSection === 'prestataire-detail' && selectedPrestataire"
           :prestataire="selectedPrestataire"
@@ -1620,7 +1693,6 @@ const handleResetPresentation = async () => {
           @reset="resetPrestataire"
         />
 
-        <!-- Programmation -->
         <AdminProgrammation
           v-if="currentSection === 'programmation'"
           :programmation="programmation"
@@ -1638,7 +1710,6 @@ const handleResetPresentation = async () => {
           @save="saveProgrammation"
         />
 
-        <!-- Carte Interactive -->
         <AdminMap
           v-if="currentSection === 'carte'"
           :prestataires="prestataires"
@@ -1652,7 +1723,25 @@ const handleResetPresentation = async () => {
           @libererEmplacement="libererEmplacementAdmin"
         />
 
-        <!-- ...existing sections... -->
+        <!-- AJOUT: Gestion utilisateurs -->
+        <AdminUsers
+          v-if="currentSection === 'users'"
+          :users="users"
+          @select="selectUser"
+          @create="startCreateUser"
+        />
+
+        <!-- AJOUT: Détail utilisateur -->
+        <AdminUserDetail
+          v-if="currentSection === 'user-detail'"
+          :user="isCreatingUser ? newUser : selectedUser"
+          :isCreating="isCreatingUser"
+          :prestataires="prestataires"
+          :authUserEmail="adminEmail"
+          @save="saveUser"
+          @back="changeSection('users')"
+          @delete="deleteUser"
+        />
       </main>
     </div>
   </div>
