@@ -3,7 +3,9 @@ import { ref, watch } from 'vue'
 // Props: utilisateur sélectionné, mode création
 const props = defineProps({
   user: { type: Object, default: null },
-  isCreating: { type: Boolean, default: false }
+  isCreating: { type: Boolean, default: false },
+  prestataires: { type: Array, default: () => [] },
+  authUserEmail: { type: String, default: '' }
 })
 
 // Emits: save(updated), back(), delete(email)
@@ -22,166 +24,301 @@ watch(() => props.user, (u) => {
 
 const onSave = () => emit('save', { ...model.value })
 const onBack = () => emit('back')
-const onDelete = () => emit('delete', model.value.email)
+const onDelete = () => {
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${model.value.email} ?`)) {
+    return
+  }
+  emit('delete')
+}
 </script>
 
 <template>
-  <section class="admin-user-detail">
-    <header class="section-header">
-      <h2>{{ isCreating ? '➕ Créer un utilisateur' : '✏️ Modifier l\'utilisateur' }}</h2>
-      <button class="btn-back" @click="onBack">← Retour</button>
-    </header>
-
-    <div class="form-grid">
-      <label class="form-label">
-        <span>Email</span>
-        <input v-model="model.email" type="email" class="input" />
-      </label>
-      <label class="form-label">
-        <span>Mot de passe</span>
-        <input v-model="model.password" type="password" class="input" />
-      </label>
-      <label class="form-label">
-        <span>Rôle</span>
-        <select v-model="model.role" class="input">
-          <option value="user">Utilisateur</option>
-          <option value="admin">Admin</option>
-          <option value="prestataire">Prestataire</option>
-        </select>
-      </label>
-      <label class="form-label">
-        <span>Prestataire associé</span>
-        <input v-model="model.prestataireNom" type="text" class="input" placeholder="Nom du prestataire" />
-      </label>
+  <div class="section-content">
+    <div class="section-header">
+      <button @click="onBack" class="btn-back">← Retour</button>
+      <h1 class="section-title">
+        {{ isCreating ? 'Créer un utilisateur' : 'Modifier l\'utilisateur' }}
+      </h1>
     </div>
 
-    <footer class="actions">
-      <button class="btn-primary" @click="onSave">💾 Sauvegarder</button>
-      <button class="btn-danger" v-if="!isCreating" @click="onDelete">🗑️ Supprimer</button>
-    </footer>
-  </section>
+    <div class="user-detail-wrapper">
+      <div class="user-editor-card">
+        <div class="user-editor-section">
+          <h3 class="user-editor-section-title">
+            <span class="user-section-icon">ℹ️</span>
+            Informations du compte
+          </h3>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Email *</label>
+            <input
+              v-if="isCreating"
+              v-model="model.email"
+              type="email"
+              class="user-form-input"
+              placeholder="email@example.com"
+            />
+            <input
+              v-else
+              :value="model.email"
+              type="email"
+              class="user-form-input"
+              placeholder="email@example.com"
+              disabled
+            />
+            <p v-if="!isCreating" class="user-form-hint">
+              <span class="hint-icon">🔒</span>
+              L'email ne peut pas être modifié
+            </p>
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">
+              Mot de passe {{ isCreating ? '*' : '' }}
+            </label>
+            <input
+              v-model="model.password"
+              type="text"
+              class="user-form-input"
+              :placeholder="isCreating ? 'Minimum 6 caractères' : 'Laisser vide pour ne pas modifier'"
+            />
+            <p class="user-form-hint">
+              <span class="hint-icon">💡</span>
+              {{ isCreating ? 'Minimum 6 caractères' : 'Laisser vide pour ne pas modifier' }}
+            </p>
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Rôle *</label>
+            <select v-model="model.role" class="user-form-input">
+              <option value="user">Utilisateur</option>
+              <option value="prestataire">Prestataire</option>
+              <option value="admin">Administrateur</option>
+            </select>
+            <p class="user-form-hint">
+              <span class="hint-icon">👑</span>
+              Les admins ont accès à toutes les fonctionnalités
+            </p>
+          </div>
+
+          <div
+            v-if="model.role === 'prestataire'"
+            class="user-form-group"
+          >
+            <label class="user-form-label">Prestataire associé</label>
+            <select v-model="model.prestataireNom" class="user-form-input">
+              <option value="">-- Sélectionner un prestataire --</option>
+              <option
+                v-for="prestataire in prestataires"
+                :key="prestataire.nom"
+                :value="prestataire.nom"
+              >
+                {{ prestataire.nom }}
+              </option>
+            </select>
+            <p class="user-form-hint">
+              <span class="hint-icon">🏢</span>
+              Requis pour les comptes prestataires
+            </p>
+          </div>
+        </div>
+
+        <div class="user-editor-footer">
+          <button @click="onSave" class="user-btn-save">
+            <span class="user-btn-icon">💾</span>
+            {{ isCreating ? 'Créer l\'utilisateur' : 'Sauvegarder les modifications' }}
+          </button>
+          <button
+            v-if="!isCreating && model?.email !== authUserEmail"
+            @click="onDelete"
+            class="user-btn-delete"
+          >
+            <span class="user-btn-icon">🗑️</span>
+            Supprimer l'utilisateur
+          </button>
+        </div>
+
+        <div v-if="!isCreating && model?.email === authUserEmail" class="warning-box">
+          <span class="warning-icon">⚠️</span>
+          <p>Vous ne pouvez pas supprimer votre propre compte</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.admin-user-detail {
-  padding: 28px;
-  background: rgba(255, 255, 255, 0.05);
+.user-detail-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.user-editor-card {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  border: 1px solid rgba(252, 220, 30, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
 }
 
-.section-header {
+.user-editor-section {
+  margin-bottom: 32px;
+}
+
+.user-editor-section-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(252, 220, 30, 0.2);
-}
-
-.section-header h2 {
-  color: #FCDC1E;
-  font-size: 1.8rem;
-  margin: 0;
+  gap: 12px;
+  color: var(--text);
+  font-size: 1.4rem;
   font-weight: 800;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border-light);
 }
 
-.btn-back {
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
+.user-section-icon {
+  font-size: 1.5rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.15));
+  border-radius: 12px;
+  border: 2px solid rgba(59, 130, 246, 0.35);
 }
 
-.btn-back:hover {
-  background: rgba(252, 220, 30, 0.1);
-  border-color: rgba(252, 220, 30, 0.3);
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+.user-form-group {
   margin-bottom: 24px;
-}
-
-.form-label {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
 }
 
-.input {
+.user-form-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.user-form-input {
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid var(--border-light);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 12px;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-family: inherit;
 }
 
-.input:focus {
+.user-form-input:focus {
   outline: none;
-  border-color: #FCDC1E;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 3px rgba(252, 220, 30, 0.1);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  background: rgba(255, 255, 255, 0.12);
 }
 
-select.input {
-  cursor: pointer;
+.user-form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.actions {
+.user-form-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 8px 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hint-icon {
+  font-size: 1rem;
+}
+
+.user-editor-footer {
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
-  padding-top: 16px;
-  border-top: 1px solid rgba(252, 220, 30, 0.15);
+  padding-top: 24px;
+  border-top: 2px solid var(--border-light);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+.user-btn-save {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--yellow) 0%, #ffe676 100%);
   color: #0a0a0a;
   border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: 700;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 28px rgba(252, 220, 30, 0.4);
 }
 
-.btn-primary:hover {
-  background: #ffe676;
+.user-btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.4);
+  box-shadow: 0 10px 40px rgba(252, 220, 30, 0.6);
 }
 
-.btn-danger {
-  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
+.user-btn-delete {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--red);
+  padding: 14px 28px;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.btn-danger:hover {
-  background: #d32f2f;
+.user-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.25);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.user-btn-icon {
+  font-size: 1.1rem;
+}
+
+.warning-box {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 2px solid rgba(255, 152, 0, 0.4);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--orange);
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+}
+
+.warning-box p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 </style>

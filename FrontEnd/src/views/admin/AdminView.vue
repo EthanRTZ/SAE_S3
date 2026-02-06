@@ -10,6 +10,9 @@ import AdminPrestataires from '@/components/admin/AdminPrestataires.vue'
 import AdminPrestataireDetail from '@/components/admin/AdminPrestataireDetail.vue'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 import AdminProgrammation from '@/components/admin/AdminProgrammation.vue'
+import AdminMap from '@/components/admin/AdminMap.vue'
+import AdminUsers from '@/components/admin/AdminUsers.vue'
+import AdminUserDetail from '@/components/admin/AdminUserDetail.vue'
 
 // AJOUT: Référence pour le canvas Chart.js
 const chartCanvas = ref(null)
@@ -410,22 +413,111 @@ const deleteUser = () => {
     return
   }
 
-  const index = users.value.findIndex(u => u.email === selectedUser.value.email)
-  if (index !== -1) {
-    users.value.splice(index, 1)
-    localStorage.setItem('users', JSON.stringify(users.value))
+  try {
+    const emailToDelete = selectedUser.value.email
+
+    // MODIFICATION: Supprimer de users.value
+    const index = users.value.findIndex(u => u.email === emailToDelete)
+    if (index !== -1) {
+      users.value.splice(index, 1)
+    }
+
+    // MODIFICATION: Supprimer du localStorage 'users' (créés via AdminView)
+    const localStorageUsersRaw = localStorage.getItem('users')
+    if (localStorageUsersRaw) {
+      try {
+        let localUsers = JSON.parse(localStorageUsersRaw)
+        localUsers = localUsers.filter(u => u.email !== emailToDelete)
+        localStorage.setItem('users', JSON.stringify(localUsers))
+      } catch (e) {
+        console.error('Erreur suppression localStorage users', e)
+      }
+    }
+
+    // MODIFICATION: Supprimer du localStorage 'customUsers' (créés via RegisterView)
+    const customUsersRaw = localStorage.getItem('customUsers')
+    if (customUsersRaw) {
+      try {
+        let customUsers = JSON.parse(customUsersRaw)
+        customUsers = customUsers.filter(u => u.email !== emailToDelete)
+        localStorage.setItem('customUsers', JSON.stringify(customUsers))
+      } catch (e) {
+        console.error('Erreur suppression customUsers', e)
+      }
+    }
+
+    // AJOUT: Émettre des événements pour synchroniser
+    window.dispatchEvent(new Event('auth-changed'))
+    window.dispatchEvent(new Event('storage'))
+
     alert('Utilisateur supprimé avec succès!')
     changeSection('users')
+  } catch (e) {
+    console.error('Erreur lors de la suppression:', e)
+    alert('Erreur lors de la suppression de l\'utilisateur')
   }
 }
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount)
+// AJOUT: Fonction pour recharger les utilisateurs
+const reloadUsers = async () => {
+  try {
+    const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
+
+    if (usersResp.ok) {
+      const usersData = await usersResp.json()
+      users.value = []
+      await nextTick()
+
+      // Charger depuis localStorage (qui contient les utilisateurs créés via RegisterView)
+      const customUsersRaw = localStorage.getItem('customUsers')
+      const localStorageUsersRaw = localStorage.getItem('users')
+
+      let allUsers = [...usersData]
+
+      // Ajouter les utilisateurs de customUsers (créés via RegisterView)
+      if (customUsersRaw) {
+        try {
+          const customUsers = JSON.parse(customUsersRaw)
+          allUsers = [...allUsers, ...customUsers]
+        } catch (e) {
+          console.error('Erreur parsing customUsers', e)
+        }
+      }
+
+      // Ajouter les utilisateurs de users (créés via AdminView)
+      if (localStorageUsersRaw) {
+        try {
+          const localUsers = JSON.parse(localStorageUsersRaw)
+          // Fusionner en évitant les doublons par email
+          localUsers.forEach(localUser => {
+            if (!allUsers.some(u => u.email === localUser.email)) {
+              allUsers.push(localUser)
+            }
+          })
+        } catch (e) {
+          console.error('Erreur parsing users', e)
+        }
+      }
+
+      // Supprimer les doublons basés sur l'email
+      const uniqueUsers = allUsers.reduce((acc, user) => {
+        if (!acc.some(u => u.email === user.email)) {
+          acc.push(user)
+        }
+        return acc
+      }, [])
+
+      users.value = uniqueUsers
+      await nextTick()
+
+      console.log('✅ Utilisateurs rechargés:', users.value.length)
+    }
+  } catch (e) {
+    console.error('Erreur rechargement utilisateurs', e)
+  }
 }
 
+// MODIFICATION: Fonction loadData - simplifier le chargement des utilisateurs
 const loadData = async () => {
   if (!isAdmin.value) {
     loading.value = false
@@ -433,38 +525,8 @@ const loadData = async () => {
   }
 
   try {
-    const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
-
-    if (usersResp.ok) {
-      const usersData = await usersResp.json()
-
-      users.value = []
-      await nextTick()
-
-      const customUsersRaw = localStorage.getItem('users')
-      if (customUsersRaw) {
-        try {
-          const parsedUsers = JSON.parse(customUsersRaw)
-          parsedUsers.forEach(user => {
-            users.value.push(user)
-          })
-        } catch (e) {
-          usersData.forEach(user => {
-            users.value.push(user)
-          })
-          localStorage.setItem('users', JSON.stringify(users.value))
-        }
-      } else {
-        usersData.forEach(user => {
-          users.value.push(user)
-        })
-        localStorage.setItem('users', JSON.stringify(users.value))
-      }
-
-      await nextTick()
-    } else {
-      users.value = []
-    }
+    // Utiliser reloadUsers au lieu de dupliquer le code
+    await reloadUsers()
 
     // Charger les autres données
     const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
@@ -479,17 +541,13 @@ const loadData = async () => {
     const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
     const avisData = avisResp.ok ? await avisResp.json() : {}
 
-    // AJOUT: Charger les zones pour la carte
     zones.value = zonesData.zones || []
     emplacementsForMap.value = emplacementsData.emplacements || []
 
-    // Filtrer uniquement les prestataires présents dans avis.json
-    const prestatairesValides = Object.keys(avisData)
+    // MODIFICATION: Utiliser TOUS les prestataires du JSON, pas seulement ceux avec des avis
     const prestatairesFiltered = (prestataireData.prestataires || [])
-      .filter(p => prestatairesValides.includes(p.nom))
       .map(p => ({
         ...p,
-        // AJOUT: S'assurer que description est toujours une chaîne
         description: typeof p.description === 'string' ? p.description : (p.description || '')
       }))
 
@@ -512,7 +570,6 @@ const loadData = async () => {
         return {
           ...p,
           ...custom,
-          // AJOUT: S'assurer que description reste une chaîne après fusion
           description: typeof custom.description === 'string'
             ? custom.description
             : (custom.description || p.description || '')
@@ -608,7 +665,6 @@ const loadData = async () => {
     let totalAvis = 0
     let sommeNotes = 0
     const repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    // Suppression de tousLesAvisPrestataires
 
     Object.entries(allAvis).forEach(([prestataire, entry]) => {
       const avisArray = entry.avis || []
@@ -619,7 +675,6 @@ const loadData = async () => {
         if (repartitionNotes[note] !== undefined) {
           repartitionNotes[note]++
         }
-        // Suppression de l'ajout dans tousLesAvisPrestataires
       })
     })
 
@@ -661,7 +716,7 @@ const loadData = async () => {
 
     stats.value = {
       totalUsers: users.value.length,
-      totalPrestataires: prestataires.value.length,
+      totalPrestataires: prestataires.value.length, // MODIFICATION: Utilise le nombre total de prestataires
       totalReservations: reservations.length,
       totalServices,
       totalTickets,
@@ -1204,133 +1259,18 @@ const initAdminZones = () => {
   })
 }
 
-// AJOUT: Fonction pour créer le graphique Chart.js
-const createBarChart = async () => {
-  if (!chartCanvas.value) return
+// SUPPRESSION: Supprimer la référence chartCanvas et les fonctions createBarChart/initChart
+// car elles sont maintenant dans AdminStats.vue
 
-  // Charger Chart.js dynamiquement
-  if (!window.Chart) {
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js'
-    script.onload = () => initChart()
-    script.onerror = () => {}
-    document.head.appendChild(script)
-  } else {
-    initChart()
-  }
-}
-
-const initChart = () => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-
-  if (!chartCanvas.value) return
-
-  const ctx = chartCanvas.value.getContext('2d')
-
-  // Préparer les données
-  const sortedStats = [...avisStatsParPrestataire.value]
-    .filter(p => p.nbAvis > 0)
-    .sort((a, b) => b.moyenne - a.moyenne)
-
-  if (sortedStats.length === 0) return
-
-  const labels = sortedStats.map(p => p.nom)
-  const data = sortedStats.map(p => p.moyenne)
-  const backgroundColors = sortedStats.map(p => {
-    if (p.moyenne >= 4.5) return 'rgba(34, 197, 94, 0.8)'
-    if (p.moyenne >= 4) return 'rgba(252, 220, 30, 0.8)'
-    if (p.moyenne >= 3) return 'rgba(255, 152, 0, 0.8)'
-    return 'rgba(239, 68, 68, 0.8)'
-  })
-
-  chartInstance = new window.Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Note moyenne',
-            data: data,
-            backgroundColor: backgroundColors,
-            borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
-            borderWidth: 2,
-            borderRadius: 8,
-            barThickness: 50
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#FCDC1E',
-              bodyColor: '#e5e7eb',
-              borderColor: 'rgba(252, 220, 30, 0.5)',
-              borderWidth: 1,
-              padding: 12,
-              displayColors: false,
-              callbacks: {
-                label: function (context) {
-                  const prestataire = sortedStats[context.dataIndex]
-                  return [
-                    `Note: ${context.parsed.y.toFixed(2)} / 5`,
-                    `Nombre d'avis: ${prestataire.nbAvis}`
-                  ]
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 5,
-              ticks: {
-                stepSize: 1,
-                color: 'rgba(226, 232, 240, 0.8)',
-                font: {
-                  size: 12,
-                  weight: 'bold'
-                }
-              },
-              grid: {
-                color: 'rgba(148, 163, 184, 0.2)',
-                drawBorder: false
-              }
-            },
-            x: {
-              ticks: {
-                color: 'rgba(226, 232, 240, 0.8)',
-                font: {
-                  size: 11,
-                  weight: '600'
-                },
-                maxRotation: 45,
-                minRotation: 45
-              },
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      }
-  )
-}
-
-// AJOUT: Watcher pour recréer le graphique quand on change de section
-watch(currentSection, async (newSection) => {
-  if (newSection === 'statistiques') {
-    await nextTick()
-    if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
-      createBarChart()
-    }
-  }
-})
+// SUPPRESSION: Supprimer aussi le watcher qui crée le graphique
+// watch(currentSection, async (newSection) => {
+//   if (newSection === 'statistiques') {
+//     await nextTick()
+//     if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
+//       createBarChart()
+//     }
+//   }
+// })
 
 onMounted(() => {
   loadAuthFromStorage()
@@ -1338,19 +1278,65 @@ onMounted(() => {
 
   loadData().then(async () => {
     await computeAvisStatsForPrestataires()
-
-    // AJOUT: Si on est déjà sur la section statistiques, créer le graphique
-    if (currentSection.value === 'statistiques') {
-      await nextTick()
-      if (chartCanvas.value && avisStatsParPrestataire.value.length > 0) {
-        createBarChart()
-      }
-    }
   })
 
-  // AJOUT: Écouter les mises à jour en temps réel
+  // MODIFICATION: Écouter les mises à jour en temps réel
   window.addEventListener('demandes-updated', loadDemandesEmplacement)
   window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.addEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Écouter les changements d'authentification (création de compte)
+  window.addEventListener('auth-changed', reloadUsers)
+  window.addEventListener('storage', reloadUsers)
+})
+
+// AJOUT: Fonction pour gérer les mises à jour d'avis
+const handleAvisUpdated = async (event) => {
+  console.log('🔔 Avis mis à jour, rechargement des statistiques...', event?.detail)
+
+  // Recharger toutes les données (incluant les avis)
+  await loadData()
+
+  // Recalculer les stats d'avis des prestataires
+  await computeAvisStatsForPrestataires()
+
+  // Forcer le re-render si on est sur la section statistiques
+  if (currentSection.value === 'statistiques') {
+    await nextTick()
+  }
+
+  console.log('✅ Statistiques rechargées')
+}
+
+onMounted(() => {
+  loadAuthFromStorage()
+  if (!checkAdminAccess()) return
+
+  loadData().then(async () => {
+    await computeAvisStatsForPrestataires()
+  })
+
+  // MODIFICATION: Écouter les mises à jour en temps réel
+  window.addEventListener('demandes-updated', loadDemandesEmplacement)
+  window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.addEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Écouter les changements d'authentification (création de compte)
+  window.addEventListener('auth-changed', reloadUsers)
+  window.addEventListener('storage', reloadUsers)
+})
+
+// AJOUT: Nettoyer les écouteurs d'événements au démontage
+import { onBeforeUnmount } from 'vue'
+
+onBeforeUnmount(() => {
+  window.removeEventListener('demandes-updated', loadDemandesEmplacement)
+  window.removeEventListener('emplacements-updated', loadEmplacementsAttribues)
+  window.removeEventListener('avis-updated', handleAvisUpdated)
+
+  // AJOUT: Nettoyer les écouteurs d'utilisateurs
+  window.removeEventListener('auth-changed', reloadUsers)
+  window.removeEventListener('storage', reloadUsers)
 })
 
 // AJOUT: Computed simplifié sans Proxy
@@ -1674,13 +1660,13 @@ const handleResetPresentation = async () => {
 
       <main class="admin-main">
         <AdminDashboard v-if="currentSection === 'dashboard'" :stats="stats" />
+
         <AdminStats
           v-if="currentSection === 'statistiques'"
           :avisStatsParPrestataire="avisStatsParPrestataire"
           :stats="stats"
-          @createChart="createBarChart"
         />
-        <!-- Présentation Festival (WYSIWYG) - MODIFIER CETTE SECTION -->
+
         <AdminPresentation
           v-if="currentSection === 'presentation'"
           :festivalPresentation="festivalPresentation"
@@ -1690,7 +1676,6 @@ const handleResetPresentation = async () => {
           @reset="handleResetPresentation"
         />
 
-        <!-- Gestion Prestataires -->
         <AdminPrestataires
           v-if="currentSection === 'prestataires'"
           :prestataires="prestataires"
@@ -1698,7 +1683,6 @@ const handleResetPresentation = async () => {
           @select="selectPrestataire"
         />
 
-        <!-- Détail Prestataire -->
         <AdminPrestataireDetail
           v-if="currentSection === 'prestataire-detail' && selectedPrestataire"
           :prestataire="selectedPrestataire"
@@ -1709,7 +1693,6 @@ const handleResetPresentation = async () => {
           @reset="resetPrestataire"
         />
 
-        <!-- Programmation -->
         <AdminProgrammation
           v-if="currentSection === 'programmation'"
           :programmation="programmation"
@@ -1727,7 +1710,38 @@ const handleResetPresentation = async () => {
           @save="saveProgrammation"
         />
 
-        <!-- ...existing sections... -->
+        <AdminMap
+          v-if="currentSection === 'carte'"
+          :prestataires="prestataires"
+          :zones="zones"
+          :emplacements="emplacementsForMap"
+          :demandesEmplacement="demandesEmplacement"
+          :emplacementsAttribues="emplacementsAttribues"
+          @accepterDemande="accepterDemande"
+          @refuserDemande="refuserDemande"
+          @assignerEmplacement="assignerEmplacement"
+          @libererEmplacement="libererEmplacementAdmin"
+        />
+
+        <!-- AJOUT: Gestion utilisateurs -->
+        <AdminUsers
+          v-if="currentSection === 'users'"
+          :users="users"
+          @select="selectUser"
+          @create="startCreateUser"
+        />
+
+        <!-- AJOUT: Détail utilisateur -->
+        <AdminUserDetail
+          v-if="currentSection === 'user-detail'"
+          :user="isCreatingUser ? newUser : selectedUser"
+          :isCreating="isCreatingUser"
+          :prestataires="prestataires"
+          :authUserEmail="adminEmail"
+          @save="saveUser"
+          @back="changeSection('users')"
+          @delete="deleteUser"
+        />
       </main>
     </div>
   </div>

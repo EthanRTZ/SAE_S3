@@ -252,24 +252,39 @@ const submitAvis = () => {
     date: new Date().toISOString()
   };
 
-  // Charger les avis localStorage existants
-  const stored = localStorage.getItem('festivalAvis');
-  let localAvis = [];
-  if (stored) {
-    try {
-      localAvis = JSON.parse(stored);
-    } catch (e) {
-      localAvis = [];
+  // MODIFICATION: Différencier festival et prestataires
+  if (formData.value.prestataire === 'Festival') {
+    // Avis sur le festival
+    const storedFestival = localStorage.getItem('avisFestival');
+    let avisFestival = [];
+    if (storedFestival) {
+      try {
+        avisFestival = JSON.parse(storedFestival);
+      } catch (e) {
+        avisFestival = [];
+      }
     }
+    avisFestival.unshift(newAvis);
+    localStorage.setItem('avisFestival', JSON.stringify(avisFestival));
+  } else {
+    // Avis sur un prestataire
+    const stored = localStorage.getItem('festivalAvis');
+    let localAvis = [];
+    if (stored) {
+      try {
+        localAvis = JSON.parse(stored);
+      } catch (e) {
+        localAvis = [];
+      }
+    }
+    localAvis.unshift(newAvis);
+    localStorage.setItem('festivalAvis', JSON.stringify(localAvis));
   }
-
-  // Ajouter le nouvel avis
-  localAvis.unshift(newAvis);
-  localStorage.setItem('festivalAvis', JSON.stringify(localAvis));
 
   // Émettre un événement global pour notifier les autres composants
   window.dispatchEvent(new CustomEvent('avis-updated', {
     detail: {
+      type: formData.value.prestataire === 'Festival' ? 'festival' : 'prestataire',
       prestataire: newAvis.prestataire,
       avis: newAvis
     }
