@@ -47,18 +47,44 @@ const sections = [
 </template>
 
 <style scoped>
+/* MODIFICATION: Sidebar fixe avec scroll interne */
 .admin-sidebar {
   padding: 0;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(252, 220, 30, 0.15);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+/* AJOUT: Personnaliser la scrollbar de la sidebar */
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(252, 220, 30, 0.3);
+  border-radius: 3px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(252, 220, 30, 0.5);
 }
 
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid rgba(252, 220, 30, 0.2);
+  flex-shrink: 0;
 }
 
 .logo {
@@ -74,6 +100,7 @@ const sections = [
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .admin-avatar {
@@ -86,6 +113,7 @@ const sections = [
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
+  flex-shrink: 0;
 }
 
 .admin-details {
@@ -93,6 +121,7 @@ const sections = [
   flex-direction: column;
   gap: 4px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .admin-details strong {
@@ -112,6 +141,7 @@ const sections = [
 .sidebar-nav {
   flex: 1;
   padding: 12px 8px;
+  overflow-y: auto;
 }
 
 .sidebar-nav ul {
@@ -155,9 +185,13 @@ const sections = [
   font-size: 1.2rem;
   width: 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .sidebar-nav button .label {
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

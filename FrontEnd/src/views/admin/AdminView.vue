@@ -1751,5 +1751,19 @@ const handleResetPresentation = async () => {
 /* Importer les styles modulaires avec des chemins relatifs */
 @import '../../styles/admin/variables.css';
 @import '../../styles/admin/base.css';
-/* ...existing imports... */
+
+/* MODIFICATION: Layout admin avec sidebar fixe */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-main {
+  margin-left: 280px;
+  width: calc(100% - 280px);
+  padding: 40px;
+  overflow-y: auto;
+  height: 100vh;
+}
 </style>
