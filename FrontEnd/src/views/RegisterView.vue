@@ -109,6 +109,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { register } from '@/services/authService.js'
 
 const { t } = useI18n()
 const email = ref('')
@@ -120,45 +121,6 @@ const success = ref('')
 const showPwd = ref(false)
 const showConfirmPwd = ref(false)
 const router = useRouter()
-
-const USERS_JSON_URL = '/data/users.json'
-const LOCAL_USERS_KEY = 'customUsers'
-
-const fetchUsers = async () => {
-  try {
-    const resp = await fetch(USERS_JSON_URL, { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
-    return Array.isArray(data) ? data : []
-  } catch (e) {
-    return [{ email: 'test@example.com', password: 'secret123', role: 'user' }]
-  }
-}
-
-const readCustomUsers = () => {
-  try {
-    const raw = localStorage.getItem(LOCAL_USERS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (e) {
-    return []
-  }
-}
-
-const saveCustomUsers = (users) => {
-  localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users))
-}
-
-const persistAuthUser = (user) => {
-  const payload = {
-    email: user.email,
-    role: user.role || 'user',
-    ts: Date.now()
-  }
-  localStorage.setItem('authUser', JSON.stringify(payload))
-  window.dispatchEvent(new Event('auth-changed'))
-}
 
 const validateEmail = (value) => /\S+@\S+\.\S+/.test(value)
 
@@ -188,45 +150,16 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    const [baseUsers, customUsers] = await Promise.all([
-      fetchUsers(),
-      Promise.resolve(readCustomUsers())
-    ])
-    const lowerEmail = email.value.toLowerCase()
-    const exists = [...customUsers, ...baseUsers].some(
-      (u) => (u.email || '').toLowerCase() === lowerEmail
-    )
-    if (exists) {
-      error.value = t('register.emailExists')
-      return
-    }
-
-    const newUser = {
+    // Inscription via l'API backend
+    await register({
       email: email.value,
       password: password.value,
-      role: 'user'
-    }
-    const updatedCustom = [...customUsers, newUser]
-    saveCustomUsers(updatedCustom)
-
-    persistAuthUser(newUser)
-
-    // AJOUT: Émettre plusieurs événements pour garantir la synchronisation
-    window.dispatchEvent(new Event('auth-changed'))
-    window.dispatchEvent(new Event('storage'))
-
-    // AJOUT: Émettre un événement custom avec les détails
-    window.dispatchEvent(new CustomEvent('user-registered', {
-      detail: { email: newUser.email, role: newUser.role }
-    }))
+    })
 
     success.value = t('register.success')
-
-    setTimeout(() => {
-      router.push('/')
-    }, 1000)
+    setTimeout(() => router.push('/'), 1000)
   } catch (e) {
-    error.value = t('register.createError')
+    error.value = e.message || t('register.createError')
   } finally {
     loading.value = false
   }
