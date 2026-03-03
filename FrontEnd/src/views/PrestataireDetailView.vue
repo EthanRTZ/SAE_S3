@@ -343,32 +343,33 @@ const loadPrestataire = async () => {
     // Appliquer les modifications locales si elles existent
     if (customPrestataires && customPrestataires[prestataireNom]) {
       const customData = customPrestataires[prestataireNom]
-      
-      // Gérer la présentation bilingue
-      if (customData.presentationHtml) {
-        if (typeof customData.presentationHtml === 'object' && customData.presentationHtml.fr !== undefined) {
-          found.description = customData.presentationHtml[currentLang] || customData.presentationHtml.fr || found.description || ''
-        } else if (typeof customData.presentationHtml === 'string') {
-          found.description = customData.presentationHtml
+
+      // Gérer la description sauvegardée par l'admin (clé "description")
+      const descSource = customData.description || customData.presentationHtml
+      if (descSource) {
+        if (typeof descSource === 'object' && descSource.fr !== undefined) {
+          // Format bilingue { fr: '...', en: '...' }
+          found.description = descSource[currentLang] || descSource.fr || found.description || ''
+        } else if (typeof descSource === 'string') {
+          found.description = descSource
         }
       }
-      
+
       // Gérer les services bilingues
       if (customData.services && Array.isArray(customData.services)) {
         found.services = customData.services.map(s => {
           const service = { ...s }
-          // Si c'est le format bilingue
           if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
             service.nom = s.nom[currentLang] || s.nom.fr || ''
-            service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
+            service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
               ? (s.description[currentLang] || s.description.fr || '')
               : (s.description || '')
           }
           return service
         })
       }
-      
-      // Copier les autres champs (email, tel, site, popupText)
+
+      // Copier les autres champs (email, tel, site)
       if (customData.email) found.email = customData.email
       if (customData.tel) found.tel = customData.tel
       if (customData.site) found.site = customData.site

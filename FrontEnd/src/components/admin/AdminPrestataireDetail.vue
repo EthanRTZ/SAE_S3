@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import WysiwygEditor from '@/components/WysiwygEditor.vue'
 
 const props = defineProps({
@@ -10,15 +10,35 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'back', 'reset'])
 
-// CORRECTION: Normaliser la description en chaîne de caractères
+// Langue d'édition
+const editingLang = ref('fr')
+
+// CORRECTION: Normaliser la description en objet bilingue
 const normalizePrestataire = (prestataire) => {
   if (!prestataire) return null
 
   const normalized = JSON.parse(JSON.stringify(prestataire))
 
-  // S'assurer que description est une chaîne
-  if (typeof normalized.description !== 'string') {
-    normalized.description = normalized.description ? String(normalized.description) : ''
+  // S'assurer que description est un objet bilingue { fr: '', en: '' }
+  if (typeof normalized.description === 'string') {
+    normalized.description = { fr: normalized.description, en: '' }
+  } else if (!normalized.description || typeof normalized.description !== 'object') {
+    normalized.description = { fr: '', en: '' }
+  } else {
+    // S'assurer que les deux langues existent
+    normalized.description = {
+      fr: normalized.description.fr || '',
+      en: normalized.description.en || ''
+    }
+  }
+
+  // Normaliser les services en bilingue aussi
+  if (normalized.services && Array.isArray(normalized.services)) {
+    normalized.services = normalized.services.map(s => ({
+      nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
+      description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
+      actif: s.actif !== false
+    }))
   }
 
   return normalized
@@ -26,11 +46,64 @@ const normalizePrestataire = (prestataire) => {
 
 const model = ref(normalizePrestataire(props.prestataire))
 
-watch(() => props.prestataire, (newVal) => {
-  if (newVal) {
-    model.value = normalizePrestataire(newVal)
+// Refs séparées pour les descriptions FR et EN pour éviter les problèmes de réactivité
+const descriptionFr = ref('')
+const descriptionEn = ref('')
+
+// Flag pour savoir si nous sommes en train d'éditer (pour éviter les réinitialisations intempestives)
+const isEditing = ref(false)
+
+// Initialiser les descriptions
+if (model.value?.description) {
+  descriptionFr.value = model.value.description.fr || ''
+  descriptionEn.value = model.value.description.en || ''
+}
+
+// Computed pour obtenir la bonne description selon la langue
+const currentDescription = computed({
+  get: () => {
+    return editingLang.value === 'fr' ? descriptionFr.value : descriptionEn.value
+  },
+  set: (value) => {
+    isEditing.value = true // Marquer comme en édition
+    if (editingLang.value === 'fr') {
+      descriptionFr.value = value
+    } else {
+      descriptionEn.value = value
+    }
   }
-}, { deep: true })
+})
+
+// Fonction pour changer la langue d'édition
+const changeEditingLang = (lang) => {
+  editingLang.value = lang
+}
+
+// Watch pour mettre à jour le model quand le prestataire change
+// Seulement lors du montage initial ou changement de prestataire (pas après sauvegarde)
+watch(() => props.prestataire, (newVal, oldVal) => {
+  // Ne mettre à jour que si :
+  // - C'est le montage initial (pas d'oldVal)
+  // - OU le nom du prestataire a changé (navigation vers un autre prestataire)
+  const prestataireChanged = !oldVal || oldVal.nom !== newVal?.nom
+
+  if (newVal && prestataireChanged) {
+    const normalized = normalizePrestataire(newVal)
+    model.value = normalized
+
+    // Mettre à jour les descriptions
+    if (normalized?.description) {
+      descriptionFr.value = normalized.description.fr || ''
+      descriptionEn.value = normalized.description.en || ''
+    } else {
+      descriptionFr.value = ''
+      descriptionEn.value = ''
+    }
+
+    // Réinitialiser le flag d'édition
+    isEditing.value = false
+  }
+}, { immediate: true })
 
 const addService = () => {
   if (!model.value) return
@@ -38,8 +111,8 @@ const addService = () => {
     model.value.services = []
   }
   model.value.services.push({
-    nom: 'Nouveau service',
-    description: 'Description du service',
+    nom: { fr: 'Nouveau service', en: 'New service' },
+    description: { fr: 'Description du service', en: 'Service description' },
     actif: true
   })
 }
@@ -58,13 +131,23 @@ const deleteService = (index) => {
 const onSave = () => {
   if (!model.value) return
 
-  // S'assurer que description est une chaîne avant de sauvegarder
+  // Mettre à jour le model avec les descriptions des refs
+  if (!model.value.description) {
+    model.value.description = { fr: '', en: '' }
+  }
+  model.value.description.fr = descriptionFr.value
+  model.value.description.en = descriptionEn.value
+
+  // S'assurer que description est un objet bilingue avant de sauvegarder
   const toSave = JSON.parse(JSON.stringify(model.value))
-  if (typeof toSave.description !== 'string') {
-    toSave.description = toSave.description ? String(toSave.description) : ''
+  if (!toSave.description || typeof toSave.description !== 'object') {
+    toSave.description = { fr: '', en: '' }
   }
 
   emit('save', toSave)
+
+  // Réinitialiser le flag après la sauvegarde
+  isEditing.value = false
 }
 
 const onBack = () => {
@@ -73,6 +156,14 @@ const onBack = () => {
 
 const onReset = () => {
   if (confirm('Êtes-vous sûr de vouloir réinitialiser ce prestataire ? Toutes les modifications locales seront supprimées.')) {
+    // Réinitialiser les descriptions
+    if (props.prestataire?.description) {
+      descriptionFr.value = props.prestataire.description.fr || ''
+      descriptionEn.value = props.prestataire.description.en || ''
+    } else {
+      descriptionFr.value = ''
+      descriptionEn.value = ''
+    }
     emit('reset')
   }
 }
@@ -147,9 +238,30 @@ const onReset = () => {
             Description (Éditeur WYSIWYG)
           </h3>
 
+          <!-- Sélecteur de langue -->
+          <div class="language-selector" style="margin-bottom: 20px;">
+            <label style="font-weight: 600; color: #FCDC1E; margin-right: 12px;">Langue d'édition :</label>
+            <button
+              class="btn-lang"
+              :class="{ active: editingLang === 'fr' }"
+              @click="changeEditingLang('fr')"
+              type="button"
+            >
+              🇫🇷 Français
+            </button>
+            <button
+              class="btn-lang"
+              :class="{ active: editingLang === 'en' }"
+              @click="changeEditingLang('en')"
+              type="button"
+            >
+              🇬🇧 English
+            </button>
+          </div>
+
           <div class="prest-form-group">
             <WysiwygEditor
-              v-model="model.description"
+              v-model="currentDescription"
               :height="600"
               placeholder="Décrivez le prestataire, ajoutez des images..."
             />
@@ -160,8 +272,8 @@ const onReset = () => {
           </div>
 
           <div class="prest-form-group">
-            <label class="prest-form-label">Aperçu de la description</label>
-            <div class="prest-preview-box" v-html="model.description"></div>
+            <label class="prest-form-label">Aperçu de la description ({{ editingLang === 'fr' ? 'Français' : 'English' }})</label>
+            <div class="prest-preview-box" v-html="currentDescription"></div>
           </div>
         </div>
 
@@ -191,9 +303,9 @@ const onReset = () => {
 
               <div class="prest-service-content">
                 <div class="prest-form-group">
-                  <label class="prest-form-label-small">Nom du service</label>
+                  <label class="prest-form-label-small">Nom du service ({{ editingLang === 'fr' ? 'FR' : 'EN' }})</label>
                   <input
-                    v-model="service.nom"
+                    v-model="service.nom[editingLang]"
                     type="text"
                     class="prest-form-input"
                     placeholder="Nom du service"
@@ -201,9 +313,9 @@ const onReset = () => {
                 </div>
 
                 <div class="prest-form-group">
-                  <label class="prest-form-label-small">Description</label>
+                  <label class="prest-form-label-small">Description ({{ editingLang === 'fr' ? 'FR' : 'EN' }})</label>
                   <textarea
-                    v-model="service.description"
+                    v-model="service.description[editingLang]"
                     class="prest-form-textarea"
                     rows="3"
                     placeholder="Description du service"
@@ -652,5 +764,38 @@ const onReset = () => {
 
 .prest-btn-icon {
   font-size: 1.1rem;
+}
+
+/* Styles pour le sélecteur de langue */
+.language-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-lang {
+  padding: 8px 16px;
+  border: 2px solid rgba(252, 220, 30, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-lang:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(252, 220, 30, 0.5);
+  color: #fff;
+}
+
+.btn-lang.active {
+  background: linear-gradient(135deg, var(--yellow, #FCDC1E) 0%, #ffe676 100%);
+  border-color: var(--yellow, #FCDC1E);
+  color: #0a0a0a;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(252, 220, 30, 0.3);
 }
 </style>

@@ -4,7 +4,7 @@
       <h2>{{ $t('login.title') }}</h2>
       <p class="subtitle">{{ $t('login.subtitle') }}</p>
       <form @submit.prevent="onSubmit">
-        <!-- Champ Email avec icône -->
+        <!-- Champ Email ou nom d'utilisateur -->
         <div class="input-group">
           <label for="email">{{ $t('login.email') }}</label>
           <span class="input-icon" aria-hidden="true">
@@ -14,7 +14,7 @@
               <path d="M4 7l8 6 8-6" stroke="#FCDC1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-          <input id="email" type="email" v-model="email" required />
+          <input id="email" type="text" v-model="email" required placeholder="Email ou nom d'utilisateur" />
         </div>
 
         <!-- Champ Password avec icône + toggle visibilité -->
@@ -140,9 +140,13 @@ const onSubmit = async () => {
       Promise.resolve(readCustomUsers())
     ])
     const allUsers = [...customUsers, ...baseUsers]
+    const identifier = email.value.toLowerCase()
     const user = allUsers.find(
       (u) =>
-        (u.email || '').toLowerCase() === email.value.toLowerCase() &&
+        (
+          (u.email || '').toLowerCase() === identifier ||
+          (u.username || '').toLowerCase() === identifier
+        ) &&
         u.password === password.value
     )
 

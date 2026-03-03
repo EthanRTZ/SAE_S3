@@ -24,6 +24,7 @@ const prestataires = ref([])
 const prestatairesOriginaux = ref([])
 const customPrestataires = ref({})
 const selectedPrestataire = ref(null)
+const prestataireDetailKey = ref(0) // Pour forcer le remontage du composant après sauvegarde
 const users = ref([])
 const selectedUser = ref(null)
 const isCreatingUser = ref(false)
@@ -546,10 +547,25 @@ const loadData = async () => {
 
     // MODIFICATION: Utiliser TOUS les prestataires du JSON, pas seulement ceux avec des avis
     const prestatairesFiltered = (prestataireData.prestataires || [])
-      .map(p => ({
-        ...p,
-        description: typeof p.description === 'string' ? p.description : (p.description || '')
-      }))
+      .map(p => {
+        // Normaliser la description en objet bilingue
+        let description = p.description
+        if (typeof description === 'string') {
+          description = { fr: description, en: '' }
+        } else if (!description || typeof description !== 'object') {
+          description = { fr: '', en: '' }
+        } else {
+          description = {
+            fr: description.fr || '',
+            en: description.en || ''
+          }
+        }
+        
+        return {
+          ...p,
+          description: description
+        }
+      })
 
     prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestatairesFiltered))
 
@@ -567,12 +583,23 @@ const loadData = async () => {
     prestataires.value = prestatairesFiltered.map(p => {
       const custom = customPrestataires.value[p.nom]
       if (custom) {
+        // Normaliser la description custom aussi
+        let customDescription = custom.description
+        if (typeof customDescription === 'string') {
+          customDescription = { fr: customDescription, en: '' }
+        } else if (!customDescription || typeof customDescription !== 'object') {
+          customDescription = p.description // Utiliser l'original si custom est invalide
+        } else {
+          customDescription = {
+            fr: customDescription.fr || '',
+            en: customDescription.en || ''
+          }
+        }
+        
         return {
           ...p,
           ...custom,
-          description: typeof custom.description === 'string'
-            ? custom.description
-            : (custom.description || p.description || '')
+          description: customDescription
         }
       }
       return p
@@ -1365,12 +1392,24 @@ const changeSection = (section) => {
 
 // AJOUT: Fonction selectPrestataire manquante
 const selectPrestataire = (prestataire) => {
+  // Normaliser la description en objet bilingue
+  let description = prestataire.description
+  if (typeof description === 'string') {
+    // Convertir l'ancien format string en bilingue
+    description = { fr: description, en: '' }
+  } else if (!description || typeof description !== 'object') {
+    description = { fr: '', en: '' }
+  } else {
+    // S'assurer que les deux langues existent
+    description = {
+      fr: description.fr || '',
+      en: description.en || ''
+    }
+  }
+  
   const normalized = {
     ...prestataire,
-    // AJOUT: Normaliser description lors de la sélection
-    description: typeof prestataire.description === 'string'
-      ? prestataire.description
-      : (prestataire.description || '')
+    description: description
   }
   selectedPrestataire.value = JSON.parse(JSON.stringify(normalized))
   currentSection.value = 'prestataire-detail'
@@ -1421,21 +1460,79 @@ const resetPrestataire = () => {
 }
 
 // AJOUT: Fonction savePrestataireChanges manquante
-const savePrestataireChanges = () => {
-  if (!selectedPrestataire.value) return
+const savePrestataireChanges = (updatedPrestataire) => {
+  // Si les données sont passées depuis le composant enfant, les utiliser
+  // Sinon, utiliser selectedPrestataire.value (mode manuel)
+  const prestataireToSave = updatedPrestataire || selectedPrestataire.value
 
-  const nom = selectedPrestataire.value.nom
-  customPrestataires.value[nom] = JSON.parse(JSON.stringify(selectedPrestataire.value))
-  localStorage.setItem('customPrestataires', JSON.stringify(customPrestataires.value))
+  if (!prestataireToSave) return
 
-  // Mettre à jour la liste
-  const index = prestataires.value.findIndex(p => p.nom === nom)
-  if (index !== -1) {
-    prestataires.value[index] = JSON.parse(JSON.stringify(selectedPrestataire.value))
+  const nom = prestataireToSave.nom
+  console.log('🔵 Sauvegarde pour:', nom, prestataireToSave.description)
+
+  // Créer une copie propre des données à sauvegarder
+  const dataToSave = {
+    description: JSON.parse(JSON.stringify(prestataireToSave.description)),
+    services: JSON.parse(JSON.stringify(prestataireToSave.services || [])),
+    email: prestataireToSave.email || '',
+    tel: prestataireToSave.tel || '',
+    site: prestataireToSave.site || ''
   }
 
+  // S'assurer que description est un objet bilingue valide
+  if (typeof dataToSave.description === 'string') {
+    dataToSave.description = { fr: dataToSave.description, en: '' }
+  } else if (!dataToSave.description || typeof dataToSave.description !== 'object') {
+    dataToSave.description = { fr: '', en: '' }
+  } else {
+    dataToSave.description = {
+      fr: dataToSave.description.fr || '',
+      en: dataToSave.description.en || ''
+    }
+  }
+
+  console.log('💾 Sauvegarde localStorage:', dataToSave)
+
+  // Charger les données custom existantes
+  const raw = localStorage.getItem('customPrestataires')
+  let customPrestatairesList = raw ? JSON.parse(raw) : {}
+
+  // Sauvegarder les modifications
+  customPrestatairesList[nom] = dataToSave
+
+  // Sauvegarder dans localStorage
+  localStorage.setItem('customPrestataires', JSON.stringify(customPrestatairesList))
+
+  // Mettre à jour customPrestataires (réactif)
+  customPrestataires.value[nom] = dataToSave
+
+  // Mettre à jour la liste en mémoire
+  const index = prestataires.value.findIndex(p => p.nom === nom)
+  if (index !== -1) {
+    // Fusionner avec les données de base
+    const base = prestatairesOriginaux.value.find(p => p.nom === nom) || prestataires.value[index]
+    prestataires.value[index] = {
+      ...base,
+      ...dataToSave
+    }
+  }
+
+  // IMPORTANT: Mettre à jour selectedPrestataire avec les données sauvegardées
+  const base = prestatairesOriginaux.value.find(p => p.nom === nom)
+  if (base) {
+    selectedPrestataire.value = {
+      ...base,
+      ...dataToSave
+    }
+  }
+
+  // Déclencher un événement pour notifier les autres composants
+  window.dispatchEvent(new Event('prestataire-updated'))
+
   alert('Modifications sauvegardées avec succès!')
+  console.log('✅ Terminé')
 }
+
 
 // AJOUT: Fonction addService manquante
 const addService = () => {
@@ -1685,6 +1782,7 @@ const handleResetPresentation = async () => {
 
         <AdminPrestataireDetail
           v-if="currentSection === 'prestataire-detail' && selectedPrestataire"
+          :key="`${selectedPrestataire.nom}-${prestataireDetailKey}`"
           :prestataire="selectedPrestataire"
           :hasModifications="hasModifications(selectedPrestataire)"
           :modifiedFields="getModifiedFields(selectedPrestataire)"

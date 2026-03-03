@@ -176,14 +176,14 @@ const loadPrestataireInfo = async () => {
       ? customPrestataires[prestataireNom.value]
       : {}
 
-    // Présentation bilingue
-    let presentationHtmlBilingue = customData.presentationHtml || {}
-    if (typeof presentationHtmlBilingue === 'string') {
-      presentationHtmlBilingue = { fr: presentationHtmlBilingue, en: '' }
+    // Présentation bilingue (utilise 'description' pour uniformiser avec admin)
+    let descriptionBilingue = customData.description || customData.presentationHtml || {}
+    if (typeof descriptionBilingue === 'string') {
+      descriptionBilingue = { fr: descriptionBilingue, en: '' }
     }
     presentationText.value =
-      presentationHtmlBilingue[editingLang.value] ||
-      presentationHtmlBilingue.fr ||
+      descriptionBilingue[editingLang.value] ||
+      descriptionBilingue.fr ||
       base.description ||
       ''
 
@@ -471,14 +471,14 @@ const saveCustomPrestataire = () => {
     // Charger les données existantes pour préserver les autres langues
     const existing = obj[prestataireNom.value] || {}
     
-    // Structure bilingue pour presentationHtml
-    let presentationHtmlBilingue = existing.presentationHtml || {}
-    if (typeof presentationHtmlBilingue === 'string') {
+    // Structure bilingue pour description (renommé de presentationHtml pour uniformiser avec admin)
+    let descriptionBilingue = existing.description || existing.presentationHtml || {}
+    if (typeof descriptionBilingue === 'string') {
       // Convertir l'ancien format en bilingue
-      presentationHtmlBilingue = { fr: presentationHtmlBilingue, en: '' }
+      descriptionBilingue = { fr: descriptionBilingue, en: '' }
     }
-    presentationHtmlBilingue[editingLang.value] = presentationText.value
-    
+    descriptionBilingue[editingLang.value] = presentationText.value
+
     // Structure bilingue pour services
     const servicesBilingues = services.value.map(s => ({
       nom: s.nom,
@@ -489,7 +489,7 @@ const saveCustomPrestataire = () => {
     }))
     
     obj[prestataireNom.value] = {
-      presentationHtml: presentationHtmlBilingue,
+      description: descriptionBilingue, // Utiliser 'description' au lieu de 'presentationHtml'
       services: servicesBilingues,
       email: userFields.value.email,
       tel: userFields.value.tel,
@@ -515,8 +515,25 @@ const savePopupText = () => {
 // Fonction pour changer la langue d'édition
 const changeEditingLang = (lang) => {
   editingLang.value = lang
-  // Recharger les données selon la nouvelle langue
-  loadPrestataireInfo()
+
+  // Charger le texte de présentation pour la langue sélectionnée
+  try {
+    const raw = localStorage.getItem('customPrestataires')
+    const customPrestataires = raw ? JSON.parse(raw) : {}
+    const customData = customPrestataires[prestataireNom.value] || {}
+
+    // Présentation bilingue (utilise 'description' pour uniformiser avec admin)
+    let descriptionBilingue = customData.description || customData.presentationHtml || {}
+    if (typeof descriptionBilingue === 'string') {
+      // Convertir l'ancien format en bilingue
+      descriptionBilingue = { fr: descriptionBilingue, en: '' }
+    }
+
+    // Charger le texte selon la langue d'édition
+    presentationText.value = descriptionBilingue[lang] || ''
+  } catch (e) {
+    console.error('Erreur lors du changement de langue', e)
+  }
 }
 
 // Computed pour obtenir le texte de popup selon la langue d'édition
