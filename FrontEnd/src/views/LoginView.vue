@@ -4,9 +4,9 @@
       <h2>{{ $t('login.title') }}</h2>
       <p class="subtitle">{{ $t('login.subtitle') }}</p>
       <form @submit.prevent="onSubmit">
-        <!-- Champ Email avec icône -->
+        <!-- Champ Email/Username avec icône -->
         <div class="input-group">
-          <label for="email">{{ $t('login.email') }}</label>
+          <label for="identifier">{{ $t('login.identifier') }}</label>
           <span class="input-icon" aria-hidden="true">
             <!-- mail icon -->
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -14,7 +14,7 @@
               <path d="M4 7l8 6 8-6" stroke="#FCDC1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-          <input id="email" type="email" v-model="email" required />
+          <input id="identifier" type="text" v-model="identifier" required />
         </div>
 
         <!-- Champ Password avec icône + toggle visibilité -->
@@ -77,7 +77,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const email = ref('')
+const identifier = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -129,7 +129,7 @@ onMounted(() => {
 // Remplace la simulation par la vérification sur le JSON
 const onSubmit = async () => {
   error.value = ''
-  if (!email.value || !password.value) {
+  if (!identifier.value || !password.value) {
     error.value = t('login.fillFields')
     return
   }
@@ -142,7 +142,8 @@ const onSubmit = async () => {
     const allUsers = [...customUsers, ...baseUsers]
     const user = allUsers.find(
       (u) =>
-        (u.email || '').toLowerCase() === email.value.toLowerCase() &&
+        ((u.email || '').toLowerCase() === identifier.value.toLowerCase() ||
+         (u.username || '').toLowerCase() === identifier.value.toLowerCase()) &&
         u.password === password.value
     )
 

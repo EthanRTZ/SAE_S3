@@ -11,6 +11,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
   nom_utilisateur: {
     type: DataTypes.STRING(100),
     allowNull: false,
+    unique: true,
     field: 'nom_utilisateur'
   },
   email: {

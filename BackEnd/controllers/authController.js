@@ -1,6 +1,7 @@
 const { Utilisateur, Role, SessionAuthentification } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'votre_secret_jwt_changez_moi';
 const JWT_EXPIRES_IN = '7d';
@@ -64,15 +65,23 @@ exports.register = async (req, res) => {
  */
 exports.login = async (req, res) => {
     try {
-        const { email, mot_de_passe } = req.body;
+        const { email, identifier, mot_de_passe } = req.body;
 
-        if (!email || !mot_de_passe) {
-            return res.status(400).json({ error: 'Email and password are required' });
+        // Accepter soit 'identifier' (pour email OU username) soit 'email' (rétrocompatibilité)
+        const loginIdentifier = identifier || email;
+
+        if (!loginIdentifier || !mot_de_passe) {
+            return res.status(400).json({ error: 'Email/Username and password are required' });
         }
 
-        // Récupérer l'utilisateur avec son rôle
+        // Récupérer l'utilisateur avec son rôle (recherche par email OU nom_utilisateur)
         const user = await Utilisateur.findOne({
-            where: { email },
+            where: {
+                [Op.or]: [
+                    { email: loginIdentifier },
+                    { nom_utilisateur: loginIdentifier }
+                ]
+            },
             include: [{
                 model: Role,
                 as: 'role',

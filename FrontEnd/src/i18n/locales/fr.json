@@ -178,6 +178,7 @@
     "title": "Connexion",
     "subtitle": "Accédez à votre espace",
     "email": "Email",
+    "identifier": "Email ou Nom d'utilisateur",
     "password": "Mot de passe",
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",

@@ -1,159 +1,186 @@
 [
   {
+    "username": "user",
     "email": "user@abc.fr",
     "password": "user12",
     "role": "user"
   },
   {
+    "username": "admin",
     "email": "admin@abc.fr",
     "password": "admin12",
     "role": "admin"
   },
   {
+    "username": "otacos",
     "email": "otacos@prestataire.fr",
     "password": "otacos12",
     "role": "prestataire",
     "prestataireNom": "OTacos"
   },
   {
+    "username": "free",
     "email": "free@prestataire.fr",
     "password": "free12",
     "role": "prestataire",
     "prestataireNom": "Free"
   },
   {
+    "username": "decathlon",
     "email": "decathlon@prestataire.fr",
     "password": "decathlon12",
     "role": "prestataire",
     "prestataireNom": "Decathlon"
   },
   {
+    "username": "redbull",
     "email": "redbull@prestataire.fr",
     "password": "redbull12",
     "role": "prestataire",
     "prestataireNom": "Red Bull"
   },
   {
+    "username": "deezer",
     "email": "deezer@prestataire.fr",
     "password": "deezer12",
     "role": "prestataire",
     "prestataireNom": "Deezer"
   },
   {
+    "username": "poliakov",
     "email": "poliakov@prestataire.fr",
     "password": "poliakov12",
     "role": "prestataire",
     "prestataireNom": "Poliakov"
   },
   {
+    "username": "jackdaniels",
     "email": "jackdaniels@prestataire.fr",
     "password": "jackdaniels12",
     "role": "prestataire",
     "prestataireNom": "Jack Daniel's"
   },
   {
+    "username": "heetch",
     "email": "heetch@prestataire.fr",
     "password": "heetch12",
     "role": "prestataire",
     "prestataireNom": "Heetch"
   },
   {
+    "username": "veolia",
     "email": "veolia@prestataire.fr",
     "password": "veolia12",
     "role": "prestataire",
     "prestataireNom": "Veolia"
   },
   {
+    "username": "securitas",
     "email": "securitas@prestataire.fr",
     "password": "securitas12",
     "role": "prestataire",
     "prestataireNom": "Securitas"
   },
   {
+    "username": "happn",
     "email": "happn@prestataire.fr",
     "password": "happn12",
     "role": "prestataire",
     "prestataireNom": "Happn"
   },
   {
+    "username": "allianz",
     "email": "allianz@prestataire.fr",
     "password": "allianz12",
     "role": "prestataire",
     "prestataireNom": "Allianz"
   },
   {
+    "username": "jeager",
     "email": "jeager@prestataire.fr",
     "password": "jeager12",
     "role": "prestataire",
     "prestataireNom": "Jeager"
   },
   {
+    "username": "ricard",
     "email": "ricard@prestataire.fr",
     "password": "ricard12",
     "role": "prestataire",
     "prestataireNom": "Ricard"
   },
   {
+    "username": "jbl",
     "email": "jbl@prestataire.fr",
     "password": "jbl12",
     "role": "prestataire",
     "prestataireNom": "JBL"
   },
   {
+    "username": "pepsi",
     "email": "pepsi@prestataire.fr",
     "password": "pepsi12",
     "role": "prestataire",
     "prestataireNom": "Pepsi"
   },
   {
+    "username": "lipton",
     "email": "lipton@prestataire.fr",
     "password": "lipton12",
     "role": "prestataire",
     "prestataireNom": "Lipton"
   },
   {
+    "username": "bagels",
     "email": "bagels@prestataire.fr",
     "password": "bagels12",
     "role": "prestataire",
     "prestataireNom": "Bagels"
   },
   {
+    "username": "pizza",
     "email": "pizza@prestataire.fr",
     "password": "pizza12",
     "role": "prestataire",
     "prestataireNom": "Pizza"
   },
   {
+    "username": "ailetfinesherbes",
     "email": "ailetfinesherbes@prestataire.fr",
     "password": "ailetfinesherbes12",
     "role": "prestataire",
     "prestataireNom": "Ail et fines herbes"
   },
   {
+    "username": "nouilles",
     "email": "nouilles@prestataire.fr",
     "password": "nouilles12",
     "role": "prestataire",
     "prestataireNom": "Nouilles"
   },
   {
+    "username": "coiffure",
     "email": "coiffure@prestataire.fr",
     "password": "coiffure12",
     "role": "prestataire",
     "prestataireNom": "Coiffure"
   },
   {
+    "username": "merch",
     "email": "merch@prestataire.fr",
     "password": "merch12",
     "role": "prestataire",
     "prestataireNom": "Merch"
   },
   {
+    "username": "bornedarcade",
     "email": "bornedarcade@prestataire.fr",
     "password": "bornedarcade12",
     "role": "prestataire",
     "prestataireNom": "Borne d'arcade"
   },
   {
+    "username": "terraindebasket",
     "email": "terraindebasket@prestataire.fr",
     "password": "terraindebasket12",
     "role": "prestataire",

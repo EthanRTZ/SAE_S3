@@ -178,6 +178,7 @@
     "title": "Login",
     "subtitle": "Access your space",
     "email": "Email",
+    "identifier": "Email or Username",
     "password": "Password",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
