@@ -183,6 +183,18 @@ const filtrePrestataire = ref('');
 // Charger les prestataires
 const loadPrestataires = async () => {
   try {
+    const token = localStorage.getItem('authToken');
+    const resp = await fetch('/api/prestataires', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      prestataires.value = Array.isArray(data) ? data : (data.prestataires || []);
+      return;
+    }
+  } catch (e) { /* fallback */ }
+  // Fallback JSON
+  try {
     const response = await fetch('/data/prestataires.json');
     const data = await response.json();
     prestataires.value = data.prestataires || [];
@@ -191,34 +203,58 @@ const loadPrestataires = async () => {
   }
 };
 
-// Charger les avis depuis le fichier JSON et localStorage
+// Charger les avis depuis l'API et localStorage
 const loadAvis = async () => {
   const allAvis = [];
 
-  // 1. Charger les avis depuis le fichier JSON
+  // 1. Essayer l'API
+  let apiOk = false;
   try {
-    const response = await fetch('/data/avis.json');
-    const data = await response.json();
-
-    // Convertir les avis du JSON en format compatible
-    Object.keys(data).forEach(prestataireName => {
-      const prestataireAvis = data[prestataireName].avis || [];
-      prestataireAvis.forEach(avis => {
+    const token = localStorage.getItem('authToken');
+    const resp = await fetch('/api/avis', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const list = Array.isArray(data) ? data : [];
+      list.forEach(avis => {
         allAvis.push({
-          id: `${prestataireName}-${avis.id}`,
-          prestataire: prestataireName,
+          id: `api-${avis.id_avis}`,
+          prestataire: avis.prestataire?.nom || '',
           note: avis.note,
-          nom: 'Anonyme', // Les avis JSON n'ont pas de nom
+          nom: avis.utilisateur?.nom_utilisateur || 'Anonyme',
           commentaire: avis.commentaire,
-          date: avis.date
+          date: avis.date_avis
         });
       });
-    });
-  } catch (error) {
-    console.error('Erreur chargement avis JSON:', error);
+      apiOk = true;
+    }
+  } catch (e) { /* fallback */ }
+
+  // 2. Fallback JSON si API indisponible
+  if (!apiOk) {
+    try {
+      const response = await fetch('/data/avis.json');
+      const data = await response.json();
+      Object.keys(data).forEach(prestataireName => {
+        const prestataireAvis = data[prestataireName].avis || [];
+        prestataireAvis.forEach(avis => {
+          allAvis.push({
+            id: `${prestataireName}-${avis.id}`,
+            prestataire: prestataireName,
+            note: avis.note,
+            nom: 'Anonyme',
+            commentaire: avis.commentaire,
+            date: avis.date
+          });
+        });
+      });
+    } catch (error) {
+      console.error('Erreur chargement avis JSON:', error);
+    }
   }
 
-  // 2. Charger les avis depuis localStorage
+  // 3. Avis localStorage (soumis localement)
   const stored = localStorage.getItem('festivalAvis');
   if (stored) {
     try {

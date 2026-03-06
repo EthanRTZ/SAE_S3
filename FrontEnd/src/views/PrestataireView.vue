@@ -190,71 +190,85 @@ export default {
     async loadPrestataires() {
       this.loading = true;
       try {
-        const prestatairesResp = await fetch('/data/prestataires.json', { cache: 'no-store' });
-        const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] };
-        let allPrestataires = prestatairesData.prestataires || [];
-
-        // Normaliser le format bilingue depuis prestataires.json
+        let allPrestataires = [];
         const currentLang = this.$i18n?.locale || 'fr';
-        allPrestataires = allPrestataires.map(p => {
-          const updated = { ...p };
-          // Gérer la description bilingue
-          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
-            updated.description = p.description[currentLang] || p.description.fr || '';
+
+        // 1. Essayer l'API
+        let apiOk = false;
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/prestataires', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            allPrestataires = (Array.isArray(data) ? data : []).map(p => ({
+              ...p,
+              description: currentLang === 'en' ? (p.description_en || p.description_fr || '') : (p.description_fr || ''),
+              image: p.photo_url,
+              email: p.contact_email,
+              tel: p.contact_tel,
+              site: p.site_web,
+              type: p.type_prestataire,
+              services: p.services || []
+            }));
+            apiOk = true;
           }
-          // Gérer les services bilingues
-          if (p.services && Array.isArray(p.services)) {
-            updated.services = p.services.map(s => {
-              const service = { ...s };
-              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                  ? (s.description[currentLang] || s.description.fr || '')
-                  : (s.description || '');
-              }
-              return service;
-            });
-          }
-          return updated;
-        });
+        } catch (e) { /* fallback */ }
 
-        // Appliquer les modifications locales si elles existent (avec support bilingue)
-        const custom = JSON.parse(localStorage.getItem('customPrestataires') || '{}');
-        allPrestataires = allPrestataires.map(p => {
-          const local = custom[p.nom];
-          if (!local) return p;
-
-          const updated = { ...p };
-
-          // Présentation / description personnalisée
-          if (local.presentationHtml) {
-            if (typeof local.presentationHtml === 'object' && local.presentationHtml.fr !== undefined) {
-              updated.description = local.presentationHtml[currentLang] || local.presentationHtml.fr || p.description || '';
-            } else if (typeof local.presentationHtml === 'string') {
-              updated.description = local.presentationHtml;
+        // 2. Fallback JSON
+        if (!apiOk) {
+          const prestatairesResp = await fetch('/data/prestataires.json', { cache: 'no-store' });
+          const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] };
+          allPrestataires = (prestatairesData.prestataires || []).map(p => {
+            const updated = { ...p };
+            if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
+              updated.description = p.description[currentLang] || p.description.fr || '';
             }
-          }
+            if (p.services && Array.isArray(p.services)) {
+              updated.services = p.services.map(s => {
+                const service = { ...s };
+                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                  service.nom = s.nom[currentLang] || s.nom.fr || '';
+                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
+                }
+                return service;
+              });
+            }
+            return updated;
+          });
 
-          // Services personnalisés
-          if (local.services && Array.isArray(local.services)) {
-            updated.services = local.services.map(s => {
-              const service = { ...s };
-              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                  ? (s.description[currentLang] || s.description.fr || '')
-                  : (s.description || '');
+          // Appliquer les modifications localStorage
+          const custom = JSON.parse(localStorage.getItem('customPrestataires') || '{}');
+          allPrestataires = allPrestataires.map(p => {
+            const local = custom[p.nom];
+            if (!local) return p;
+            const updated = { ...p };
+            if (local.presentationHtml) {
+              if (typeof local.presentationHtml === 'object' && local.presentationHtml.fr !== undefined) {
+                updated.description = local.presentationHtml[currentLang] || local.presentationHtml.fr || p.description || '';
+              } else if (typeof local.presentationHtml === 'string') {
+                updated.description = local.presentationHtml;
               }
-              return service;
-            });
-          }
-
-          if (local.email) updated.email = local.email;
-          if (local.tel) updated.tel = local.tel;
-          if (local.site) updated.site = local.site;
-
-          return updated;
-        });
+            }
+            if (local.services && Array.isArray(local.services)) {
+              updated.services = local.services.map(s => {
+                const service = { ...s };
+                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                  service.nom = s.nom[currentLang] || s.nom.fr || '';
+                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
+                }
+                return service;
+              });
+            }
+            if (local.email) updated.email = local.email;
+            if (local.tel) updated.tel = local.tel;
+            if (local.site) updated.site = local.site;
+            return updated;
+          });
+        }
 
         this.prestataires = allPrestataires;
         this.types = [...new Set(this.prestataires.map(p => p.type))];

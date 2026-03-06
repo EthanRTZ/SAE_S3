@@ -28,12 +28,31 @@ const getEmplacementInfo = (nomPrestataire) =>
 // ─── Chargement des données (même logique que CarteView) ────────────────────
 const loadAllData = async () => {
   try {
-    // 1. JSON emplacements
-    const emplacementsRes = await fetch('/data/emplacements.json', { cache: 'no-store' })
-    const emplacementsData = await emplacementsRes.json()
-    let emps = emplacementsData.emplacements || []
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    // 2. emplacementsInfo localStorage (infos détaillées des stands)
+    // 1. Emplacements via API puis fallback JSON
+    let emps = []
+    try {
+      const resp = await fetch('/api/emplacements', { headers })
+      if (resp.ok) {
+        const list = await resp.json()
+        emps = (Array.isArray(list) ? list : []).map(e => ({
+          ...e,
+          coordonnees: e.coordonnees_completes || e.coordonnees,
+          id: e.id_emplacement,
+          statut: e.statut || 'libre'
+        }))
+      }
+    } catch (e) { /* fallback */ }
+
+    if (!emps.length) {
+      const emplacementsRes = await fetch('/data/emplacements.json', { cache: 'no-store' })
+      const emplacementsData = await emplacementsRes.json()
+      emps = emplacementsData.emplacements || []
+    }
+
+    // 2. emplacementsInfo localStorage
     try {
       const infoRaw = localStorage.getItem('emplacementsInfo')
       if (infoRaw) {
@@ -42,7 +61,7 @@ const loadAllData = async () => {
       }
     } catch (e) { /* ignore */ }
 
-    // 3. emplacementsAttribues localStorage (prioritaire sur le statut JSON)
+    // 3. emplacementsAttribues localStorage (prioritaire)
     let attribues = {}
     try {
       const attribuesRaw = localStorage.getItem('emplacementsAttribues')
@@ -56,15 +75,13 @@ const loadAllData = async () => {
       return e
     })
 
-    // 4. demandesEmplacement localStorage + emplacements JSON avec statut 'en_attente'
+    // 4. demandesEmplacement localStorage + emplacements avec statut 'en_attente'
     let demandes = []
     try {
       const demandesRaw = localStorage.getItem('demandesEmplacement')
       demandes = demandesRaw ? JSON.parse(demandesRaw) : []
     } catch (e) { /* ignore */ }
 
-    // Synthétiser les emplacements du JSON qui ont directement statut 'en_attente'
-    // comme des demandes virtuelles (si elles ne sont pas déjà dans le localStorage)
     emps.forEach(e => {
       if (e.statut === 'en_attente' && e.prestataireNom) {
         const dejaPresente = demandes.find(d => d.coordonnees === e.coordonnees && d.statut === 'en_attente')
@@ -92,10 +109,26 @@ const loadAllData = async () => {
 
     emplacements.value = emps
 
-    // 5. JSON prestataires + customPrestataires localStorage
-    const prestRes = await fetch('/data/prestataires.json', { cache: 'no-store' })
-    const prestData = await prestRes.json()
-    let prets = prestData.prestataires || []
+    // 5. Prestataires via API puis fallback JSON
+    let prets = []
+    try {
+      const resp = await fetch('/api/prestataires', { headers })
+      if (resp.ok) {
+        const list = await resp.json()
+        prets = (Array.isArray(list) ? list : []).map(p => ({
+          ...p,
+          description: p.description_fr || '',
+          email: p.contact_email, tel: p.contact_tel, site: p.site_web,
+          image: p.photo_url, type: p.type_prestataire
+        }))
+      }
+    } catch (e) { /* fallback */ }
+
+    if (!prets.length) {
+      const prestRes = await fetch('/data/prestataires.json', { cache: 'no-store' })
+      const prestData = await prestRes.json()
+      prets = prestData.prestataires || []
+    }
 
     try {
       const customRaw = localStorage.getItem('customPrestataires')

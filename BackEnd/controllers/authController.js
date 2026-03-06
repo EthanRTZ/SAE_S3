@@ -65,12 +65,14 @@ exports.register = async (req, res) => {
  */
 exports.login = async (req, res) => {
     try {
-        const { email, identifier, mot_de_passe } = req.body;
+        const { email, identifier, login, mot_de_passe, password } = req.body;
 
-        // Accepter soit 'identifier' (pour email OU username) soit 'email' (rétrocompatibilité)
-        const loginIdentifier = identifier || email;
+        // Accepter 'login', 'identifier', ou 'email' (rétrocompatibilité)
+        const loginIdentifier = login || identifier || email;
+        // Accepter 'password' ou 'mot_de_passe'
+        const motDePasse = mot_de_passe || password;
 
-        if (!loginIdentifier || !mot_de_passe) {
+        if (!loginIdentifier || !motDePasse) {
             return res.status(400).json({ error: 'Email/Username and password are required' });
         }
 
@@ -94,7 +96,7 @@ exports.login = async (req, res) => {
         }
 
         // Vérifier le mot de passe
-        const isPasswordValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+        const isPasswordValid = await bcrypt.compare(motDePasse, user.mot_de_passe);
 
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid credentials' });

@@ -210,49 +210,70 @@ const noteStats = ref({
 // --------- AVIS : chargement / sauvegarde / calcul ---------
 const loadAvisFromStorage = async (prestataireNom) => {
   try {
-    // 1. Charger les avis depuis avis.json
-    let jsonAvis = []
+    // 1. Essayer l'API
+    let apiOk = false
     try {
-      const resp = await fetch('/data/avis.json', { cache: 'no-store' })
+      const token = localStorage.getItem('authToken')
+      const resp = await fetch(`/api/avis/prestataire/${encodeURIComponent(prestataireNom)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
       if (resp.ok) {
         const data = await resp.json()
-        const prestataireData = data[prestataireNom]
-        if (prestataireData && prestataireData.avis) {
-          jsonAvis = prestataireData.avis.map(a => ({
-            ...a,
-            id: `json-${a.id}`,
-            source: 'json'
-          }))
-        }
+        const list = data.avis || []
+        avisList.value = list.map(a => ({
+          id: `api-${a.id_avis}`,
+          note: a.note,
+          nom: a.utilisateur?.nom_utilisateur || 'Anonyme',
+          commentaire: a.commentaire,
+          date: a.date_avis,
+          source: 'api'
+        }))
+        apiOk = true
       }
-    } catch (e) {
-      console.error('Erreur chargement avis.json', e)
+    } catch (e) { /* fallback */ }
+
+    if (!apiOk) {
+      // Fallback JSON
+      let jsonAvis = []
+      try {
+        const resp = await fetch('/data/avis.json', { cache: 'no-store' })
+        if (resp.ok) {
+          const data = await resp.json()
+          const prestataireData = data[prestataireNom]
+          if (prestataireData && prestataireData.avis) {
+            jsonAvis = prestataireData.avis.map(a => ({
+              ...a, id: `json-${a.id}`, source: 'json'
+            }))
+          }
+        }
+      } catch (e) { /* ignore */ }
+
+      // localStorage
+      let localAvis = []
+      try {
+        const stored = localStorage.getItem('festivalAvis')
+        if (stored) {
+          localAvis = JSON.parse(stored)
+            .filter(a => a.prestataire === prestataireNom)
+            .map(a => ({ ...a, source: 'local' }))
+        }
+      } catch (e) { /* ignore */ }
+
+      avisList.value = [...localAvis, ...jsonAvis]
     }
 
-    // 2. Charger les avis depuis localStorage (ajoutés via AvisView)
-    let localAvis = []
+    // Ajouter les avis localStorage dans tous les cas
     try {
       const stored = localStorage.getItem('festivalAvis')
       if (stored) {
-        const allLocalAvis = JSON.parse(stored)
-        // Filtrer uniquement les avis pour ce prestataire
-        localAvis = allLocalAvis
-          .filter(a => a.prestataire === prestataireNom)
-          .map(a => ({
-            ...a,
-            source: 'local'
-          }))
+        const localAvis = JSON.parse(stored)
+          .filter(a => a.prestataire === prestataireNom && !avisList.value.find(x => x.id === a.id))
+          .map(a => ({ ...a, source: 'local' }))
+        avisList.value = [...localAvis, ...avisList.value]
       }
-    } catch (e) {
-      console.error('Erreur chargement localStorage avis', e)
-    }
+    } catch (e) { /* ignore */ }
 
-    // 3. Fusionner les deux sources (localStorage en premier = plus récent)
-    avisList.value = [...localAvis, ...jsonAvis]
-
-    // 4. Trier par date décroissante
-    avisList.value.sort((a, b) => new Date(b.date) - new Date(a.date))
-
+    avisList.value.sort((a, b) => new Date(b.date || b.date_avis) - new Date(a.date || a.date_avis))
     computeNoteStats()
   } catch (e) {
     console.error('Erreur chargement avis', e)
@@ -290,94 +311,98 @@ const loadPrestataire = async () => {
   loading.value = true
   try {
     const prestataireNom = decodeURIComponent(route.params.nom)
-    
-    // Charger les modifications locales
-    const customRaw = localStorage.getItem('customPrestataires')
-    let customPrestataires = null
-    if (customRaw) {
-      try {
-        customPrestataires = JSON.parse(customRaw)
-      } catch (e) {
-        // ignore
+    const currentLang = locale.value || 'fr'
+
+    let found = null
+
+    // 1. Essayer l'API
+    try {
+      const token = localStorage.getItem('authToken')
+      const resp = await fetch('/api/prestataires', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if (resp.ok) {
+        const list = await resp.json()
+        const p = Array.isArray(list) ? list.find(p => p.nom === prestataireNom) : null
+        if (p) {
+          found = {
+            ...p,
+            description: p.description_fr ? (currentLang === 'en' ? (p.description_en || p.description_fr) : p.description_fr) : '',
+            image: p.photo_url,
+            email: p.contact_email,
+            tel: p.contact_tel,
+            site: p.site_web,
+            type: p.type_prestataire,
+            services: p.services || []
+          }
+        }
+      }
+    } catch (e) { /* fallback */ }
+
+    // 2. Fallback JSON
+    if (!found) {
+      const customRaw = localStorage.getItem('customPrestataires')
+      let customPrestataires = null
+      if (customRaw) { try { customPrestataires = JSON.parse(customRaw) } catch (e) { /* ignore */ } }
+
+      const response = await fetch('/data/prestataires.json', { cache: 'no-store' })
+      if (!response.ok) throw new Error('fetch failed')
+      const data = await response.json()
+      found = (data.prestataires || []).find(p => p.nom === prestataireNom)
+
+      if (found) {
+        // Normaliser le format bilingue
+        if (found.description && typeof found.description === 'object' && found.description.fr !== undefined) {
+          found.description = found.description[currentLang] || found.description.fr || ''
+        }
+        if (found.services && Array.isArray(found.services)) {
+          found.services = found.services.map(s => {
+            const service = { ...s }
+            if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+              service.nom = s.nom[currentLang] || s.nom.fr || ''
+              service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                ? (s.description[currentLang] || s.description.fr || '') : (s.description || '')
+            }
+            return service
+          })
+        }
+        // Appliquer les modifications locales
+        if (customPrestataires && customPrestataires[prestataireNom]) {
+          const customData = customPrestataires[prestataireNom]
+          const descSource = customData.description || customData.presentationHtml
+          if (descSource) {
+            if (typeof descSource === 'object' && descSource.fr !== undefined) {
+              found.description = descSource[currentLang] || descSource.fr || found.description || ''
+            } else if (typeof descSource === 'string') {
+              found.description = descSource
+            }
+          }
+          if (customData.services && Array.isArray(customData.services)) {
+            found.services = customData.services.map(s => {
+              const service = { ...s }
+              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                service.nom = s.nom[currentLang] || s.nom.fr || ''
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                  ? (s.description[currentLang] || s.description.fr || '') : (s.description || '')
+              }
+              return service
+            })
+          }
+          if (customData.email) found.email = customData.email
+          if (customData.tel) found.tel = customData.tel
+          if (customData.site) found.site = customData.site
+        }
       }
     }
 
-    // Charger depuis le fichier JSON
-    const response = await fetch('/data/prestataires.json', { cache: 'no-store' })
-    if (!response.ok) throw new Error('fetch failed')
-    const data = await response.json()
-    const prestataires = data.prestataires || []
-    
-    // Trouver le prestataire
-    let found = prestataires.find(p => p.nom === prestataireNom)
-    
     if (!found) {
       prestataire.value = null
       loading.value = false
       return
     }
-    
-    const currentLang = locale.value || 'fr'
-    
-    // Normaliser le format bilingue depuis prestataires.json
-    // Gérer la description bilingue depuis prestataires.json
-    if (found.description && typeof found.description === 'object' && found.description.fr !== undefined) {
-      found.description = found.description[currentLang] || found.description.fr || ''
-    }
-    
-    // Gérer les services bilingues depuis prestataires.json
-    if (found.services && Array.isArray(found.services)) {
-      found.services = found.services.map(s => {
-        const service = { ...s }
-        // Si c'est le format bilingue
-        if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-          service.nom = s.nom[currentLang] || s.nom.fr || ''
-          service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
-            ? (s.description[currentLang] || s.description.fr || '')
-            : (s.description || '')
-        }
-        return service
-      })
-    }
-    
-    // Appliquer les modifications locales si elles existent
-    if (customPrestataires && customPrestataires[prestataireNom]) {
-      const customData = customPrestataires[prestataireNom]
 
-      // Gérer la description sauvegardée par l'admin (clé "description")
-      const descSource = customData.description || customData.presentationHtml
-      if (descSource) {
-        if (typeof descSource === 'object' && descSource.fr !== undefined) {
-          // Format bilingue { fr: '...', en: '...' }
-          found.description = descSource[currentLang] || descSource.fr || found.description || ''
-        } else if (typeof descSource === 'string') {
-          found.description = descSource
-        }
-      }
+    prestataire.value = found
 
-      // Gérer les services bilingues
-      if (customData.services && Array.isArray(customData.services)) {
-        found.services = customData.services.map(s => {
-          const service = { ...s }
-          if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-            service.nom = s.nom[currentLang] || s.nom.fr || ''
-            service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-              ? (s.description[currentLang] || s.description.fr || '')
-              : (s.description || '')
-          }
-          return service
-        })
-      }
-
-      // Copier les autres champs (email, tel, site)
-      if (customData.email) found.email = customData.email
-      if (customData.tel) found.tel = customData.tel
-      if (customData.site) found.site = customData.site
-    }
-
-    prestataire.value = found || null
-
-    // Charger les avis si le prestataire est trouvé
     if (prestataire.value?.nom) {
       await loadAvisFromStorage(prestataire.value.nom)
     }

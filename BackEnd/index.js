@@ -18,6 +18,11 @@ const routesServ = require('./routes/services');
 const routesEmplacements = require('./routes/emplacements');
 const routesStats = require('./routes/stats');
 const routesManifestations = require('./routes/manifestations');
+const routesZones = require('./routes/zones');
+const routesEquipements = require('./routes/equipements');
+const routesAvis = require('./routes/avis');
+const routesProgrammation = require('./routes/programmation');
+const routesBillets = require('./routes/billets');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,19 +49,26 @@ app.use('/api/services', simpleAuth, routesServ);
 app.use('/api/emplacements', simpleAuth, routesEmplacements);
 app.use('/api/stats', simpleAuth, routesStats);
 app.use('/api/manifestations', simpleAuth, routesManifestations);
+app.use('/api/zones', simpleAuth, routesZones);
+app.use('/api/equipements', simpleAuth, routesEquipements);
+app.use('/api/avis', simpleAuth, routesAvis);
+app.use('/api/programmation', simpleAuth, routesProgrammation);
+app.use('/api/billets', simpleAuth, routesBillets);
 
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Synchroniser Sequelize et démarrer le serveur
-sequelize.sync({ alter: false }) // alter: false pour ne pas modifier la structure existante
-  .then(() => {
+// Démarrer le serveur, tenter la synchro BDD mais ne pas bloquer si elle échoue
+const startServer = async () => {
+  try {
+    await sequelize.sync({ alter: false });
     console.log('✅ Sequelize models synchronized');
-    app.listen(PORT, () => console.log(`API listening on port ${PORT}`));
-  })
-  .catch(err => {
-    console.error('❌ Failed to sync Sequelize:', err);
-    process.exit(1);
-  });
+  } catch (err) {
+    console.error('⚠️  BDD indisponible – le serveur démarre en mode dégradé (JSON fallback actif):', err.message);
+  }
+  app.listen(PORT, () => console.log(`🚀 API listening on port ${PORT}`));
+};
+
+startServer();

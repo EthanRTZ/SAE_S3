@@ -277,32 +277,53 @@ const basketLocationValue = ref('')
 // CORRECTION: Initialiser comme tableau vide
 const festivalDates = ref([])
 
-// Charger les informations du festival depuis festival.json
+// Charger les informations du festival depuis l'API ou festival.json
 const loadFestivalInfo = async () => {
   try {
-    const response = await fetch('/data/festival.json', { cache: 'no-store' })
-    const data = await response.json()
     const currentLang = locale.value || 'fr'
-    
+    let data = null
+
+    // Essayer l'API
+    try {
+      const token = localStorage.getItem('authToken')
+      const resp = await fetch('/api/manifestations', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if (resp.ok) {
+        const list = await resp.json()
+        const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
+        if (festival) {
+          festivalDatesText.value = `Du ${festival.date_debut} au ${festival.date_fin}`
+          festivalLocation.value = festival.lieu_nom || ''
+          // Dates fixes depuis la BDD
+          const debut = new Date(festival.date_debut)
+          const fin = new Date(festival.date_fin)
+          const dates = []
+          const dayNames = { fr: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'], en: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] }
+          const monthNames = { fr: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'], en: ['January','February','March','April','May','June','July','August','September','October','November','December'] }
+          for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) {
+            dates.push({
+              dateStr: d.toISOString().split('T')[0],
+              dayName: dayNames[currentLang][d.getDay()],
+              dayNumber: d.getDate(),
+              monthName: monthNames[currentLang][d.getMonth()],
+              label: t(`basketReservation.day${dates.length + 1}`)
+            })
+          }
+          if (dates.length) { festivalDates.value = dates; return; }
+        }
+      }
+    } catch (e) { /* fallback */ }
+
+    // Fallback JSON
+    const response = await fetch('/data/festival.json', { cache: 'no-store' })
+    data = await response.json()
+
     if (data.info) {
       const info = data.info
-      
-      // Dates formatées
-      if (info.dates) {
-        festivalDatesText.value = info.dates[currentLang] || info.dates.fr || ''
-      }
-      
-      // Lieu
-      if (info.location) {
-        festivalLocation.value = info.location[currentLang] || info.location.fr || ''
-      }
-      
-      // Lieu du terrain de basket
-      if (info.basketLocation) {
-        basketLocationValue.value = info.basketLocation[currentLang] || info.basketLocation.fr || ''
-      }
-      
-      // Dates détaillées pour le calendrier
+      if (info.dates) festivalDatesText.value = info.dates[currentLang] || info.dates.fr || ''
+      if (info.location) festivalLocation.value = info.location[currentLang] || info.location.fr || ''
+      if (info.basketLocation) basketLocationValue.value = info.basketLocation[currentLang] || info.basketLocation.fr || ''
       if (info.festivalDates && Array.isArray(info.festivalDates)) {
         festivalDates.value = info.festivalDates.map(date => ({
           dateStr: date.dateStr,

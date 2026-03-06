@@ -455,57 +455,54 @@ const deleteUser = () => {
 // AJOUT: Fonction pour recharger les utilisateurs
 const reloadUsers = async () => {
   try {
-    const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    if (usersResp.ok) {
-      const usersData = await usersResp.json()
-      users.value = []
-      await nextTick()
-
-      // Charger depuis localStorage (qui contient les utilisateurs créés via RegisterView)
-      const customUsersRaw = localStorage.getItem('customUsers')
-      const localStorageUsersRaw = localStorage.getItem('users')
-
-      let allUsers = [...usersData]
-
-      // Ajouter les utilisateurs de customUsers (créés via RegisterView)
-      if (customUsersRaw) {
-        try {
-          const customUsers = JSON.parse(customUsersRaw)
-          allUsers = [...allUsers, ...customUsers]
-        } catch (e) {
-          console.error('Erreur parsing customUsers', e)
-        }
+    // Essayer l'API d'abord
+    let usedApi = false
+    try {
+      const resp = await fetch('/api/utilisateurs', { headers })
+      if (resp.ok) {
+        const data = await resp.json()
+        users.value = Array.isArray(data) ? data.map(u => ({
+          ...u,
+          username: u.nom_utilisateur,
+          role: u.role?.nom_rôle || u.id_rôle
+        })) : []
+        usedApi = true
       }
+    } catch (e) { /* fallback */ }
 
-      // Ajouter les utilisateurs de users (créés via AdminView)
-      if (localStorageUsersRaw) {
-        try {
-          const localUsers = JSON.parse(localStorageUsersRaw)
-          // Fusionner en évitant les doublons par email
-          localUsers.forEach(localUser => {
-            if (!allUsers.some(u => u.email === localUser.email)) {
-              allUsers.push(localUser)
-            }
-          })
-        } catch (e) {
-          console.error('Erreur parsing users', e)
+    if (!usedApi) {
+      // Fallback JSON + localStorage
+      const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
+      if (usersResp.ok) {
+        const usersData = await usersResp.json()
+        users.value = []
+        await nextTick()
+
+        const customUsersRaw = localStorage.getItem('customUsers')
+        const localStorageUsersRaw = localStorage.getItem('users')
+        let allUsers = [...usersData]
+
+        if (customUsersRaw) {
+          try { allUsers = [...allUsers, ...JSON.parse(customUsersRaw)] } catch (e) { /* ignore */ }
         }
+        if (localStorageUsersRaw) {
+          try {
+            JSON.parse(localStorageUsersRaw).forEach(localUser => {
+              if (!allUsers.some(u => u.email === localUser.email)) allUsers.push(localUser)
+            })
+          } catch (e) { /* ignore */ }
+        }
+
+        users.value = allUsers.reduce((acc, user) => {
+          if (!acc.some(u => u.email === user.email)) acc.push(user)
+          return acc
+        }, [])
       }
-
-      // Supprimer les doublons basés sur l'email
-      const uniqueUsers = allUsers.reduce((acc, user) => {
-        if (!acc.some(u => u.email === user.email)) {
-          acc.push(user)
-        }
-        return acc
-      }, [])
-
-      users.value = uniqueUsers
-      await nextTick()
-
-      console.log('✅ Utilisateurs rechargés:', users.value.length)
     }
+    console.log('✅ Utilisateurs rechargés:', users.value.length)
   } catch (e) {
     console.error('Erreur rechargement utilisateurs', e)
   }
@@ -522,18 +519,66 @@ const loadData = async () => {
     // Utiliser reloadUsers au lieu de dupliquer le code
     await reloadUsers()
 
-    // Charger les autres données
-    const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
-      fetch('/data/prestataires.json', { cache: 'no-store' }),
-      fetch('/data/zones.json', { cache: 'no-store' }),
-      fetch('/data/emplacements.json', { cache: 'no-store' }),
-      fetch('/data/avis.json', { cache: 'no-store' })
-    ])
+    // Charger les autres données via API puis fallback JSON
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    const prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
-    const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
-    const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
-    const avisData = avisResp.ok ? await avisResp.json() : {}
+    let prestataireData = { prestataires: [] }
+    let zonesData = { zones: [] }
+    let emplacementsData = { emplacements: [] }
+    let avisDataRaw = {}
+
+    // Essayer l'API
+    try {
+      const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
+        fetch('/api/prestataires', { headers }),
+        fetch('/api/zones', { headers }),
+        fetch('/api/emplacements', { headers }),
+        fetch('/api/avis', { headers })
+      ])
+      if (prestatairesResp.ok) {
+        const list = await prestatairesResp.json()
+        prestataireData = {
+          prestataires: (Array.isArray(list) ? list : []).map(p => ({
+            ...p,
+            description: { fr: p.description_fr || '', en: p.description_en || '' },
+            email: p.contact_email, tel: p.contact_tel, site: p.site_web, image: p.photo_url,
+            type: p.type_prestataire
+          }))
+        }
+      }
+      if (zonesResp.ok) { const list = await zonesResp.json(); zonesData = { zones: Array.isArray(list) ? list : [] } }
+      if (emplacementsResp.ok) {
+        const list = await emplacementsResp.json()
+        emplacementsData = { emplacements: (Array.isArray(list) ? list : []).map(e => ({
+          ...e, coordonnees: e.coordonnees_completes || e.coordonnees, id: e.id_emplacement
+        })) }
+      }
+      if (avisResp.ok) {
+        const list = await avisResp.json()
+        // Convertir format API → format JSON { prestataireNom: { avis: [] } }
+        ;(Array.isArray(list) ? list : []).forEach(a => {
+          const nom = a.prestataire?.nom
+          if (!nom) return
+          if (!avisDataRaw[nom]) avisDataRaw[nom] = { avis: [] }
+          avisDataRaw[nom].avis.push({ id: a.id_avis, note: a.note, commentaire: a.commentaire, date: a.date_avis })
+        })
+      }
+    } catch (e) { /* fallback JSON */ }
+
+    // Fallback JSON si API vide
+    if (!prestataireData.prestataires.length) {
+      const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
+        fetch('/data/prestataires.json', { cache: 'no-store' }),
+        fetch('/data/zones.json', { cache: 'no-store' }),
+        fetch('/data/emplacements.json', { cache: 'no-store' }),
+        fetch('/data/avis.json', { cache: 'no-store' })
+      ])
+      prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+      zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
+      emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
+      avisDataRaw = avisResp.ok ? await avisResp.json() : {}
+    }
 
     zones.value = zonesData.zones || []
     emplacementsForMap.value = emplacementsData.emplacements || []
@@ -654,16 +699,14 @@ const loadData = async () => {
     const totalTickets = Object.values(ticketsStats).reduce((sum, val) => sum + val, 0)
 
     // Calculer les stats globales des avis prestataires
-    let allAvis = {}
+    let allAvis = { ...avisDataRaw }
 
-    // Charger depuis JSON
-    try {
-      const resp = await fetch('/data/avis.json', { cache: 'no-store' })
-      if (resp.ok) {
-        allAvis = await resp.json()
-      }
-    } catch (e) {
-      console.error('Erreur avis.json', e)
+    // Ajouter les avis depuis JSON si allAvis vide (double fallback)
+    if (!Object.keys(allAvis).length) {
+      try {
+        const resp = await fetch('/data/avis.json', { cache: 'no-store' })
+        if (resp.ok) allAvis = await resp.json()
+      } catch (e) { /* ignore */ }
     }
 
     // Ajouter les avis localStorage
@@ -751,42 +794,48 @@ const loadData = async () => {
       dernierAvisFestival // AJOUT
     }
 
-    // Charger présentation depuis festival.json (BDD)
+    // Charger présentation depuis l'API ou festival.json (BDD)
     try {
-      const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
-      if (festivalResp.ok) {
-        const festivalData = await festivalResp.json()
-        if (festivalData.presentation) {
-          // Charger depuis festival.json
-          festivalPresentation.value = festivalData.presentation
-        } else {
-          // Si pas de présentation dans festival.json, utiliser les valeurs par défaut
-          festivalPresentation.value = {
-            fr: { ...defaultPresentationFR },
-            en: { ...defaultPresentationEN }
+      let festivalData = null
+
+      // Essayer l'API
+      try {
+        const resp = await fetch('/api/manifestations', { headers })
+        if (resp.ok) {
+          const list = await resp.json()
+          const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
+          if (festival && festival.description_fr) {
+            festivalData = {
+              presentation: {
+                fr: { ...defaultPresentationFR, description: festival.description_fr },
+                en: { ...defaultPresentationEN, description: festival.description_en }
+              }
+            }
           }
         }
-      } else {
-        // En cas d'erreur, utiliser les valeurs par défaut
-        festivalPresentation.value = {
-          fr: { ...defaultPresentationFR },
-          en: { ...defaultPresentationEN }
-        }
+      } catch (e) { /* fallback JSON */ }
+
+      // Fallback JSON si API vide
+      if (!festivalData) {
+        const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
+        if (festivalResp.ok) festivalData = await festivalResp.json()
       }
 
-      // Charger depuis localStorage (prioritaire sur festival.json)
+      if (festivalData?.presentation) {
+        festivalPresentation.value = festivalData.presentation
+      } else {
+        festivalPresentation.value = { fr: { ...defaultPresentationFR }, en: { ...defaultPresentationEN } }
+      }
+
+      // localStorage prioritaire sur tout le reste
       const storedPresentation = localStorage.getItem('festivalPresentation')
       if (storedPresentation) {
         try {
-          const parsed = JSON.parse(storedPresentation)
-          festivalPresentation.value = parsed
-        } catch (e) {
-          console.error('Erreur lors du parsing de festivalPresentation depuis localStorage:', e)
-        }
+          festivalPresentation.value = JSON.parse(storedPresentation)
+        } catch (e) { /* ignore */ }
       }
     } catch (e) {
-      console.error('Erreur chargement présentation depuis festival.json:', e)
-      // En cas d'erreur, utiliser les valeurs par défaut
+      console.error('Erreur chargement présentation festival:', e)
       festivalPresentation.value = {
         fr: { ...defaultPresentationFR },
         en: { ...defaultPresentationEN }
@@ -812,10 +861,25 @@ const loadData = async () => {
 // GARDER CETTE VERSION UNIQUEMENT
 const loadEmplacements = async () => {
   try {
-    const resp = await fetch('/data/emplacements.json', { cache: 'no-store' })
-    if (resp.ok) {
-      const data = await resp.json()
-      emplacements.value = data.emplacements || []
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    let usedApi = false
+    try {
+      const resp = await fetch('/api/emplacements', { headers })
+      if (resp.ok) {
+        const list = await resp.json()
+        emplacements.value = (Array.isArray(list) ? list : []).map(e => ({
+          ...e, coordonnees: e.coordonnees_completes || e.coordonnees, id: e.id_emplacement
+        }))
+        usedApi = true
+      }
+    } catch (e) { /* fallback */ }
+    if (!usedApi) {
+      const resp = await fetch('/data/emplacements.json', { cache: 'no-store' })
+      if (resp.ok) {
+        const data = await resp.json()
+        emplacements.value = data.emplacements || []
+      }
     }
   } catch (e) {
     emplacements.value = []
@@ -824,27 +888,37 @@ const loadEmplacements = async () => {
 
 const loadProgrammation = async () => {
   try {
-    const resp = await fetch('/data/programmation.json', { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
-    programmationOriginaux.value = JSON.parse(JSON.stringify(data)) // Copie profonde
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    let data = null
 
-    // Charger les modifications locales
-    const customRaw = localStorage.getItem('customProgrammation')
-    if (customRaw) {
-      try {
-        const custom = JSON.parse(customRaw)
-        // Fusionner avec les données originales
-        programmation.value = {
-          stages: custom.stages || data.stages || [],
-          schedules: custom.schedules || data.schedules || []
+    // Essayer l'API
+    try {
+      const resp = await fetch('/api/programmation', { headers })
+      if (resp.ok) {
+        const apiData = await resp.json()
+        if (apiData.stages && apiData.schedules) {
+          data = apiData
         }
-      } catch (e) {
-        programmation.value = { ...data }
       }
-    } else {
-      programmation.value = { ...data }
+    } catch (e) { /* fallback */ }
+
+    if (!data) {
+      // Fallback JSON + localStorage
+      const resp = await fetch('/data/programmation.json', { cache: 'no-store' })
+      if (!resp.ok) throw new Error('fetch failed')
+      data = await resp.json()
+      const customRaw = localStorage.getItem('customProgrammation')
+      if (customRaw) {
+        try {
+          const custom = JSON.parse(customRaw)
+          data = { stages: custom.stages || data.stages || [], schedules: custom.schedules || data.schedules || [] }
+        } catch (e) { /* ignore */ }
+      }
     }
+
+    programmationOriginaux.value = JSON.parse(JSON.stringify(data))
+    programmation.value = { stages: data.stages || [], schedules: data.schedules || [] }
 
     if (programmation.value.stages.length > 0 && !selectedStage.value) {
       selectedStage.value = programmation.value.stages[0].name
@@ -1244,34 +1318,47 @@ const saveProgrammation = () => {
 // AJOUT: Fonction computeAvisStatsForPrestataires manquante
 const computeAvisStatsForPrestataires = async () => {
   const statsArray = []
+  const token = localStorage.getItem('authToken')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-  for (const prestataire of prestataires.value) {
-    let avisArray = []
+  // Charger tous les avis en une fois (API puis fallback JSON)
+  let allAvisMap = {}
+  try {
+    const resp = await fetch('/api/avis', { headers })
+    if (resp.ok) {
+      const list = await resp.json()
+      ;(Array.isArray(list) ? list : []).forEach(a => {
+        const nom = a.prestataire?.nom
+        if (!nom) return
+        if (!allAvisMap[nom]) allAvisMap[nom] = []
+        allAvisMap[nom].push({ note: a.note, commentaire: a.commentaire, date: a.date_avis })
+      })
+    }
+  } catch (e) { /* fallback */ }
 
-    // Charger depuis avis.json
+  if (!Object.keys(allAvisMap).length) {
     try {
       const resp = await fetch('/data/avis.json', { cache: 'no-store' })
       if (resp.ok) {
         const data = await resp.json()
-        if (data[prestataire.nom]?.avis) {
-          avisArray = [...data[prestataire.nom].avis]
-        }
+        Object.keys(data).forEach(nom => {
+          allAvisMap[nom] = data[nom]?.avis || []
+        })
       }
-    } catch (e) {
-      // Silencieux
-    }
+    } catch (e) { /* ignore */ }
+  }
+
+  for (const prestataire of prestataires.value) {
+    let avisArray = [...(allAvisMap[prestataire.nom] || [])]
 
     // Ajouter les avis localStorage
     try {
       const stored = localStorage.getItem('festivalAvis')
       if (stored) {
         const localAvis = JSON.parse(stored)
-        const prestataireAvis = localAvis.filter(a => a.prestataire === prestataire.nom)
-        avisArray = [...avisArray, ...prestataireAvis]
+        avisArray = [...avisArray, ...localAvis.filter(a => a.prestataire === prestataire.nom)]
       }
-    } catch (e) {
-      // Silencieux
-    }
+    } catch (e) { /* ignore */ }
 
     const nbAvis = avisArray.length
     let moyenne = 0

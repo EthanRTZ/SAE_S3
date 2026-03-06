@@ -75,87 +75,90 @@ const loadPrestataireInfo = async () => {
   }
 
   try {
-    // Charger emplacements / zones / avis
-    const [emplacementsResp, zonesResp, avisResp, prestatairesResp] = await Promise.all([
-      fetch('/data/emplacements.json', { cache: 'no-store' }),
-      fetch('/data/zones.json', { cache: 'no-store' }),
-      fetch('/data/avis.json', { cache: 'no-store' }),
-      fetch('/data/prestataires.json', { cache: 'no-store' })
-    ])
-    const emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
-    const zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
-    const avisData = avisResp.ok ? await avisResp.json() : {}
-    const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const currentLang = locale.value || 'fr'
 
-    emplacements.value = emplacementsData.emplacements || []
-    zones.value = zonesData.zones || []
+    // Charger emplacements + zones + prestataires via API puis fallback JSON
+    let rawEmplacements = []
+    let rawZones = []
+    let allPrestataires = []
 
-    // Charger les emplacements attribués
+    try {
+      const [emplacementsResp, zonesResp, prestatairesResp] = await Promise.all([
+        fetch('/api/emplacements', { headers }),
+        fetch('/api/zones', { headers }),
+        fetch('/api/prestataires', { headers })
+      ])
+      if (emplacementsResp.ok) {
+        const list = await emplacementsResp.json()
+        rawEmplacements = (Array.isArray(list) ? list : []).map(e => ({
+          ...e, coordonnees: e.coordonnees_completes || e.coordonnees, id: e.id_emplacement
+        }))
+      }
+      if (zonesResp.ok) { const list = await zonesResp.json(); rawZones = Array.isArray(list) ? list : [] }
+      if (prestatairesResp.ok) { const list = await prestatairesResp.json(); allPrestataires = Array.isArray(list) ? list : [] }
+    } catch (e) { /* fallback JSON */ }
+
+    if (!rawEmplacements.length) {
+      const [emplacementsResp, zonesResp, prestatairesResp] = await Promise.all([
+        fetch('/data/emplacements.json', { cache: 'no-store' }),
+        fetch('/data/zones.json', { cache: 'no-store' }),
+        fetch('/data/prestataires.json', { cache: 'no-store' })
+      ])
+      const ed = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
+      const zd = zonesResp.ok ? await zonesResp.json() : { zones: [] }
+      const pd = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
+      rawEmplacements = ed.emplacements || []
+      rawZones = zd.zones || []
+      allPrestataires = pd.prestataires || []
+    }
+
+    emplacements.value = rawEmplacements
+    zones.value = rawZones
+
+    // Emplacement attribué
     try {
       const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
       const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
       const coordActuel = emplacementsAttribues[prestataireNom.value]
       if (coordActuel) {
-        const emplacement = emplacementsData.emplacements?.find(e => e.coordonnees === coordActuel)
-        if (emplacement) {
-          emplacementActuel.value = {
-            ...emplacement,
-            dateAttribution: new Date().toISOString()
-          }
-        }
+        const emplacement = rawEmplacements.find(e => e.coordonnees === coordActuel)
+        emplacementActuel.value = emplacement ? { ...emplacement, dateAttribution: new Date().toISOString() } : null
       } else {
         emplacementActuel.value = null
       }
-    } catch (e) {
-      emplacementActuel.value = null
-    }
+    } catch (e) { emplacementActuel.value = null }
 
-    // Charger la demande en attente
+    // Demande en attente
     try {
       const demandesRaw = localStorage.getItem('demandesEmplacement')
       const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-      demandePendante.value = demandes.find(d =>
-        d.prestataireNom === prestataireNom.value && d.statut === 'en_attente'
-      ) || null
-    } catch (e) {
-      demandePendante.value = null
-    }
+      demandePendante.value = demandes.find(d => d.prestataireNom === prestataireNom.value && d.statut === 'en_attente') || null
+    } catch (e) { demandePendante.value = null }
 
-    // SUPPRESSION: ne plus bloquer si le prestataire n’a pas d’avis
-    // const prestatairesValides = Object.keys(avisData)
-    // if (!prestatairesValides.includes(prestataireNom.value)) {
-    //   prestataireInfo.value = null
-    //   loading.value = false
-    //   return
-    // }
-
-    // Charger les custom
+    // Custom localStorage
     const customRaw = localStorage.getItem('customPrestataires')
     let customPrestataires = null
-    if (customRaw) {
-      try {
-        customPrestataires = JSON.parse(customRaw)
-      } catch (e) {
-        customPrestataires = null
-      }
-    }
+    if (customRaw) { try { customPrestataires = JSON.parse(customRaw) } catch (e) { customPrestataires = null } }
 
-    // Trouver le prestataire dans prestataires.json
-    const allPrestataires = prestatairesData.prestataires || []
-    const currentLang = locale.value || 'fr'
+    // Trouver le prestataire
     let prestataire = allPrestataires.find(p => p.nom === prestataireNom.value) || null
+    if (!prestataire) { prestataireInfo.value = null; loading.value = false; return }
 
-    if (!prestataire) {
-      prestataireInfo.value = null
-      loading.value = false
-      return
-    }
-
-    // Normaliser description/services bilingues depuis prestataires.json
-    const base = { ...prestataire }
-
-    if (prestataire.description && typeof prestataire.description === 'object' && prestataire.description.fr !== undefined) {
-      base.description = prestataire.description[currentLang] || prestataire.description.fr || ''
+    // Normaliser format BDD ou JSON
+    const base = {
+      ...prestataire,
+      description: prestataire.description_fr
+        ? (currentLang === 'en' ? (prestataire.description_en || prestataire.description_fr) : prestataire.description_fr)
+        : (prestataire.description && typeof prestataire.description === 'object'
+            ? (prestataire.description[currentLang] || prestataire.description.fr || '')
+            : (prestataire.description || '')),
+      email: prestataire.contact_email || prestataire.email || '',
+      tel: prestataire.contact_tel || prestataire.tel || '',
+      site: prestataire.site_web || prestataire.site || '',
+      image: prestataire.photo_url || prestataire.image || '',
+      type: prestataire.type_prestataire || prestataire.type || '',
     }
 
     if (prestataire.services && Array.isArray(prestataire.services)) {
@@ -164,53 +167,40 @@ const loadPrestataireInfo = async () => {
         if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
           svc.nom = s.nom[currentLang] || s.nom.fr || ''
           svc.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-            ? (s.description[currentLang] || s.description.fr || '')
-            : (s.description || '')
+            ? (s.description[currentLang] || s.description.fr || '') : (s.description || '')
         }
         return svc
       })
     }
 
-    // Appliquer les custom éventuels
+    // Appliquer custom
     const customData = customPrestataires && customPrestataires[prestataireNom.value]
-      ? customPrestataires[prestataireNom.value]
-      : {}
+      ? customPrestataires[prestataireNom.value] : {}
 
-    // Présentation bilingue (utilise 'description' pour uniformiser avec admin)
     let descriptionBilingue = customData.description || customData.presentationHtml || {}
-    if (typeof descriptionBilingue === 'string') {
-      descriptionBilingue = { fr: descriptionBilingue, en: '' }
-    }
-    presentationText.value =
-      descriptionBilingue[editingLang.value] ||
-      descriptionBilingue.fr ||
-      base.description ||
-      ''
+    if (typeof descriptionBilingue === 'string') descriptionBilingue = { fr: descriptionBilingue, en: '' }
+    presentationText.value = descriptionBilingue[editingLang.value] || descriptionBilingue.fr || base.description || ''
 
-    // Popup bilingue
     if (customData.popupText && typeof customData.popupText === 'object' && customData.popupText.fr !== undefined) {
       popupText.value = { fr: customData.popupText.fr || '', en: customData.popupText.en || '' }
     } else {
       popupText.value = { fr: customData.popupText || '', en: '' }
     }
 
-    // Services bilingues (base + custom)
     if (customData.services && Array.isArray(customData.services) && customData.services.length > 0) {
       const firstService = customData.services[0]
       if (firstService.nom && typeof firstService.nom === 'object' && firstService.nom.fr !== undefined) {
         services.value = customData.services.map(s => ({
           nom: { fr: s.nom?.fr || '', en: s.nom?.en || '' },
           description: { fr: s.description?.fr || '', en: s.description?.en || '' },
-          prix: s.prix !== undefined ? s.prix : 0,
-          enabled: s.enabled !== undefined ? s.enabled : true,
+          prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
           public: s.public !== undefined ? s.public : true,
         }))
       } else {
         services.value = customData.services.map(s => ({
           nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
           description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
-          prix: s.prix !== undefined ? s.prix : 0,
-          enabled: s.enabled !== undefined ? s.enabled : true,
+          prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
           public: s.public !== undefined ? s.public : true,
         }))
       }
@@ -218,8 +208,7 @@ const loadPrestataireInfo = async () => {
       services.value = (base.services || []).map(s => ({
         nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
         description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
-        prix: s.prix !== undefined ? s.prix : 0,
-        enabled: s.enabled !== undefined ? s.enabled : true,
+        prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
         public: s.public !== undefined ? s.public : true,
       }))
     }

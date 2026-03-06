@@ -153,29 +153,33 @@ export default {
     async loadProgrammation() {
       try {
         this.loading = true;
-        const response = await fetch('/data/programmation.json');
-        const data = await response.json();
-        
-        // Charger les modifications locales si elles existent
-        const customRaw = localStorage.getItem('customProgrammation');
-        let customData = null;
-        if (customRaw) {
-          try {
-            customData = JSON.parse(customRaw);
-          } catch (e) {
-            // ignore
+
+        // Essayer l'API d'abord, fallback sur le JSON
+        let data = null;
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/programmation', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            data = await resp.json();
+          }
+        } catch (e) { /* ignore, fallback JSON */ }
+
+        if (!data || (!data.stages && !data.schedules)) {
+          // Fallback : JSON statique
+          const customRaw = localStorage.getItem('customProgrammation');
+          if (customRaw) {
+            try { data = JSON.parse(customRaw); } catch (e) { /* ignore */ }
+          }
+          if (!data) {
+            const response = await fetch('/data/programmation.json');
+            data = await response.json();
           }
         }
-        
-        // Utiliser les données modifiées si disponibles, sinon les données originales
-        if (customData) {
-          this.stages = customData.stages || data.stages || [];
-          this.schedules = customData.schedules || data.schedules || [];
-        } else {
-          this.stages = data.stages || [];
-          this.schedules = data.schedules || [];
-        }
-        
+
+        this.stages = data.stages || [];
+        this.schedules = data.schedules || [];
         this.loading = false;
       } catch (error) {
         console.error('Erreur lors du chargement des données de programmation:', error);

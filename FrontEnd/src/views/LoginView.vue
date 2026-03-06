@@ -126,7 +126,7 @@ onMounted(() => {
   console.log('LoginView monté')
 })
 
-// Remplace la simulation par la vérification sur le JSON
+// Remplace la simulation par la vérification sur l'API ou le JSON
 const onSubmit = async () => {
   error.value = ''
   if (!email.value || !password.value) {
@@ -135,35 +135,73 @@ const onSubmit = async () => {
   }
   loading.value = true
   try {
-    const [baseUsers, customUsers] = await Promise.all([
-      fetchUsers(),
-      Promise.resolve(readCustomUsers())
-    ])
-    const allUsers = [...customUsers, ...baseUsers]
-    const identifier = email.value.toLowerCase()
-    const user = allUsers.find(
-      (u) =>
-        (
-          (u.email || '').toLowerCase() === identifier ||
-          (u.username || '').toLowerCase() === identifier
-        ) &&
-        u.password === password.value
-    )
+    // 1. Essayer l'API
+    let apiSuccess = false
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login: email.value, password: password.value })
+      })
+      if (resp.ok) {
+        const data = await resp.json()
+        const token = data.token || data.accessToken
+        if (token) localStorage.setItem('authToken', token)
+        const user = data.user || data
+        persistAuthUser({
+          email: user.email,
+          username: user.nom_utilisateur || user.username,
+          role: user.role?.nom_rôle || user.role || 'public',
+          prestataireNom: user.prestataireNom || null
+        })
+        apiSuccess = true
+        if ((user.role?.nom_rôle || user.role) === 'organisateur' || (user.role?.nom_rôle || user.role) === 'admin') {
+          router.push({ path: '/admin' })
+        } else if ((user.role?.nom_rôle || user.role) === 'prestataire') {
+          router.push({ path: '/prestataire-espace' })
+        } else {
+          router.push({ path: '/' })
+        }
+      } else {
+        const errData = await resp.json().catch(() => ({}))
+        if (resp.status === 401 || resp.status === 400) {
+          error.value = t('login.invalidCredentials')
+          return
+        }
+      }
+    } catch (apiErr) { /* fallback JSON si API non dispo */ }
 
-    if (!user) {
-      error.value = t('login.invalidCredentials')
-      return
-    }
+    if (!apiSuccess) {
+      // 2. Fallback JSON + localStorage
+      const [baseUsers, customUsers] = await Promise.all([
+        fetchUsers(),
+        Promise.resolve(readCustomUsers())
+      ])
+      const allUsers = [...customUsers, ...baseUsers]
+      const identifier = email.value.toLowerCase()
+      const user = allUsers.find(
+        (u) =>
+          (
+            (u.email || '').toLowerCase() === identifier ||
+            (u.username || '').toLowerCase() === identifier
+          ) &&
+          u.password === password.value
+      )
 
-    persistAuthUser(user)
+      if (!user) {
+        error.value = t('login.invalidCredentials')
+        return
+      }
 
-    // CHANGED: redirection selon le rôle
-    if (user.role === 'admin') {
-      router.push({ path: '/admin' })
-    } else if (user.role === 'prestataire') {
-      router.push({ path: '/prestataire-espace' })
-    } else {
-      router.push({ path: '/' })
+      persistAuthUser(user)
+
+      if (user.role === 'admin' || user.role === 'organisateur') {
+        router.push({ path: '/admin' })
+      } else if (user.role === 'prestataire') {
+        router.push({ path: '/prestataire-espace' })
+      } else {
+        router.push({ path: '/' })
+      }
     }
   } catch (e) {
     error.value = t('login.accessError')

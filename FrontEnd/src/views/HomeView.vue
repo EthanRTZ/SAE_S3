@@ -375,7 +375,7 @@ export default {
       en: {}
     });
 
-    // Charger la présentation depuis festival.json
+    // Charger la présentation depuis l'API ou festival.json
     const loadFestivalPresentation = async () => {
       try {
         const localPresentation = localStorage.getItem('festivalPresentation');
@@ -383,11 +383,30 @@ export default {
           try {
             festivalPresentation.value = JSON.parse(localPresentation);
             return;
-          } catch (e) {
-            // Silencieux
-          }
+          } catch (e) { /* ignore */ }
         }
 
+        // Essayer l'API
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/manifestations', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            const list = await resp.json();
+            const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null;
+            if (festival && festival.description_fr) {
+              // La BDD stocke la présentation dans description_fr/description_en
+              // On construit un objet compatible avec le format festival.json
+              festivalPresentation.value = {
+                fr: { ...(festivalPresentation.value.fr || {}), description: festival.description_fr },
+                en: { ...(festivalPresentation.value.en || {}), description: festival.description_en }
+              };
+            }
+          }
+        } catch (e) { /* fallback JSON */ }
+
+        // Fallback JSON pour la présentation complète
         const response = await fetch('/data/festival.json', { cache: 'no-store' });
         const data = await response.json();
         if (data.presentation) {
@@ -435,12 +454,30 @@ export default {
     // Description du footer (depuis festival.json)
     const footerDescription = ref('');
 
-    // Charger la description du footer depuis festival.json
+    // Charger la description du footer (API puis fallback JSON)
     const loadFooterDescription = async () => {
       try {
+        const currentLang = locale.value || 'fr';
+        // Essayer l'API
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/manifestations', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            const list = await resp.json();
+            const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null;
+            if (festival) {
+              footerDescription.value = currentLang === 'en'
+                ? (festival.description_en || festival.description_fr || '')
+                : (festival.description_fr || '');
+              if (footerDescription.value) return;
+            }
+          }
+        } catch (e) { /* fallback */ }
+        // Fallback JSON
         const response = await fetch('/data/festival.json');
         const data = await response.json();
-        const currentLang = locale.value || 'fr';
         if (data.footerDescription) {
           footerDescription.value = data.footerDescription[currentLang] || data.footerDescription.fr || '';
         }
@@ -461,82 +498,63 @@ export default {
     // Charger les prestataires
     const loadPrestataires = async () => {
       try {
+        const currentLang = locale.value || 'fr';
+        let prestatairesData = [];
+
+        // 1. Essayer l'API
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/prestataires', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            const list = await resp.json();
+            prestatairesData = (Array.isArray(list) ? list : []).map(p => ({
+              ...p,
+              description: currentLang === 'en' ? (p.description_en || p.description_fr || '') : (p.description_fr || ''),
+              image: p.photo_url,
+              email: p.contact_email,
+              tel: p.contact_tel,
+              site: p.site_web,
+              type: p.type_prestataire,
+              services: p.services || []
+            }));
+            prestataires.value = prestatairesData;
+            return;
+          }
+        } catch (e) { /* fallback */ }
+
+        // 2. Fallback JSON
         const customRaw = localStorage.getItem('customPrestataires');
         let customPrestataires = null;
-        if (customRaw) {
-          try {
-            customPrestataires = JSON.parse(customRaw);
-          } catch (e) {
-            // Silencieux
-          }
-        }
+        if (customRaw) { try { customPrestataires = JSON.parse(customRaw); } catch (e) { /* ignore */ } }
 
         const response = await fetch('/data/prestataires.json');
         const data = await response.json();
-        let prestatairesData = data.prestataires || [];
-        const currentLang = locale.value || 'fr';
-
-        // Normaliser le format bilingue depuis prestataires.json
-        prestatairesData = prestatairesData.map(p => {
+        prestatairesData = (data.prestataires || []).map(p => {
           const updated = { ...p };
-          
-          // Gérer la description bilingue depuis prestataires.json
           if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
             updated.description = p.description[currentLang] || p.description.fr || '';
           }
-          
-          // Gérer les services bilingues depuis prestataires.json
           if (p.services && Array.isArray(p.services)) {
             updated.services = p.services.map(s => {
               const service = { ...s };
-              // Si c'est le format bilingue
               if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
                 service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
-                  ? (s.description[currentLang] || s.description.fr || '')
-                  : (s.description || '');
+                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                  ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
               }
               return service;
             });
           }
-          
-          return updated;
-        });
-
-        // Appliquer les modifications locales si elles existent (avec support bilingue)
-        if (customPrestataires) {
-          prestatairesData = prestatairesData.map(p => {
+          if (customPrestataires && customPrestataires[p.nom]) {
             const local = customPrestataires[p.nom];
-            if (!local) return p;
-            
-            const updated = { ...p };
-            
-            // Gérer la présentation bilingue (pour l'affichage, on n'affiche pas la description dans HomeView)
-            // Mais on garde les autres champs
-            
-            // Gérer les services bilingues (si nécessaire pour l'affichage)
-            if (local.services && Array.isArray(local.services)) {
-              updated.services = local.services.map(s => {
-                const service = { ...s };
-                // Si c'est le format bilingue
-                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                  service.nom = s.nom[currentLang] || s.nom.fr || '';
-                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
-                    ? (s.description[currentLang] || s.description.fr || '')
-                    : (s.description || '');
-                }
-                return service;
-              });
-            }
-            
-            // Copier les autres champs
             if (local.email) updated.email = local.email;
             if (local.tel) updated.tel = local.tel;
             if (local.site) updated.site = local.site;
-            
-            return updated;
-          });
-        }
+          }
+          return updated;
+        });
 
         prestataires.value = prestatairesData;
       } catch (error) {

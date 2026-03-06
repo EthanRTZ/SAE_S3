@@ -250,149 +250,148 @@ export default {
     // MODIFICATION: Charger les emplacements avec statut
     async loadPrestataires() {
       try {
-        const [emplacementsRes, zonesRes] = await Promise.all([
-          fetch('/data/emplacements.json'),
-          fetch('/data/zones.json')
-        ]);
-        const emplacementsData = await emplacementsRes.json();
-        const zonesData = await zonesRes.json();
+        const token = localStorage.getItem('authToken');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Charger les emplacements avec statut
+        // Charger emplacements et zones (API puis fallback JSON)
+        let emplacementsData = { emplacements: [] };
+        let zonesData = { zones: [] };
+
+        try {
+          const [emplacementsRes, zonesRes] = await Promise.all([
+            fetch('/api/emplacements', { headers }),
+            fetch('/api/zones', { headers })
+          ]);
+          if (emplacementsRes.ok) {
+            const list = await emplacementsRes.json();
+            emplacementsData = { emplacements: Array.isArray(list) ? list.map(e => ({
+              ...e,
+              coordonnees: e.coordonnees_completes || e.coordonnees,
+              id: e.id_emplacement
+            })) : [] };
+          }
+          if (zonesRes.ok) {
+            const list = await zonesRes.json();
+            zonesData = { zones: Array.isArray(list) ? list : [] };
+          }
+        } catch (e) { /* fallback JSON */ }
+
+        if (!emplacementsData.emplacements.length) {
+          const [emplacementsRes, zonesRes] = await Promise.all([
+            fetch('/data/emplacements.json'),
+            fetch('/data/zones.json')
+          ]);
+          emplacementsData = await emplacementsRes.json();
+          zonesData = await zonesRes.json();
+        }
+
         this.emplacements = emplacementsData.emplacements || [];
         this.zones = zonesData.zones || [];
-        
-        // AJOUT: Charger les informations d'emplacement depuis localStorage
+
+        // Infos emplacements localStorage
         try {
           const emplacementsInfoRaw = localStorage.getItem('emplacementsInfo');
           if (emplacementsInfoRaw) {
             const emplacementsInfo = JSON.parse(emplacementsInfoRaw);
             this.emplacements = this.emplacements.map(e => {
               const info = emplacementsInfo[e.id];
-              if (info) {
-                return { ...e, ...info };
-              }
-              return e;
+              return info ? { ...e, ...info } : e;
             });
           }
-        } catch (e) {
-          console.error('Erreur chargement informations emplacements', e);
-        }
+        } catch (e) { /* ignore */ }
 
-        // AJOUT: Charger les personnalisations des prestataires
+        // Personnalisations prestataires localStorage
         let customPrestataires = {};
         try {
           const customRaw = localStorage.getItem('customPrestataires');
           customPrestataires = customRaw ? JSON.parse(customRaw) : {};
-        } catch (e) {
-          console.error('Erreur chargement custom prestataires', e);
-        }
+        } catch (e) { /* ignore */ }
 
-        // Charger les emplacements attribués depuis localStorage
+        // Emplacements attribués localStorage
         try {
-          const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-          const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
-
-          // Mettre à jour le statut des emplacements
+          const emplacementsRaw = localStorage.getItem('emplacementsAttribues');
+          const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {};
           this.emplacements = this.emplacements.map(e => {
-            const prestataireAttribue = Object.entries(emplacementsAttribues).find(
-              ([, coords]) => coords === e.coordonnees
-            )
+            const prestataireAttribue = Object.entries(emplacementsAttribues).find(([, coords]) => coords === e.coordonnees);
+            if (prestataireAttribue) return { ...e, statut: 'pris', prestataireNom: prestataireAttribue[0] };
+            return e;
+          });
+        } catch (e) { /* ignore */ }
 
-            if (prestataireAttribue) {
-              return {
-                ...e,
-                statut: 'pris',
-                prestataireNom: prestataireAttribue[0]
-              }
-            }
-            return e
-          })
-        } catch (e) {
-          console.error('Erreur chargement emplacements attribués', e)
-        }
-
-        // Charger les demandes en attente
+        // Demandes en attente localStorage
         try {
-          const demandesRaw = localStorage.getItem('demandesEmplacement')
-          const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-
-          // Mettre à jour le statut des emplacements avec demande en attente
+          const demandesRaw = localStorage.getItem('demandesEmplacement');
+          const demandes = demandesRaw ? JSON.parse(demandesRaw) : [];
           this.emplacements = this.emplacements.map(e => {
-            const demandePendante = demandes.find(
-              d => d.coordonnees === e.coordonnees && d.statut === 'en_attente'
-            )
+            const demandePendante = demandes.find(d => d.coordonnees === e.coordonnees && d.statut === 'en_attente');
+            if (demandePendante && e.statut !== 'pris') return { ...e, statut: 'en_attente', prestataireNom: demandePendante.prestataireNom };
+            return e;
+          });
+        } catch (e) { /* ignore */ }
 
-            if (demandePendante && e.statut !== 'pris') {
-              return {
-                ...e,
-                statut: 'en_attente',
-                prestataireNom: demandePendante.prestataireNom
-              }
+        // Charger prestataires (API puis fallback JSON)
+        let allPrestataires = [];
+        try {
+          const resp = await fetch('/api/prestataires', { headers });
+          if (resp.ok) {
+            const list = await resp.json();
+            const currentLang = this.$i18n?.locale || 'fr';
+            allPrestataires = (Array.isArray(list) ? list : []).map(p => ({
+              ...p,
+              description: currentLang === 'en' ? (p.description_en || p.description_fr || '') : (p.description_fr || ''),
+              image: p.photo_url,
+              email: p.contact_email,
+              tel: p.contact_tel,
+              site: p.site_web,
+              type: p.type_prestataire,
+              services: p.services || []
+            }));
+          }
+        } catch (e) { /* fallback */ }
+
+        if (!allPrestataires.length) {
+          const prestatairesRes = await fetch('/data/prestataires.json');
+          const prestatairesData = await prestatairesRes.json();
+          const currentLang = this.$i18n?.locale || 'fr';
+          allPrestataires = (prestatairesData.prestataires || []).map(p => {
+            let prestataire = { ...p };
+            if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
+              prestataire.description = p.description[currentLang] || p.description.fr || '';
             }
-            return e
-          })
-        } catch (e) {
-          console.error('Erreur chargement demandes', e)
+            if (p.services && Array.isArray(p.services)) {
+              prestataire.services = p.services.map(s => {
+                const service = { ...s };
+                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
+                  service.nom = s.nom[currentLang] || s.nom.fr || '';
+                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
+                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
+                }
+                return service;
+              });
+            }
+            return prestataire;
+          });
         }
 
-        // Charger les prestataires (avec support bilingue)
-        const prestatairesRes = await fetch('/data/prestataires.json');
-        const prestatairesData = await prestatairesRes.json();
         const currentLang = this.$i18n?.locale || 'fr';
-        this.prestataires = (prestatairesData.prestataires || []).map(p => {
-          // Chercher l'emplacement attribué au prestataire
+        this.prestataires = allPrestataires.map(p => {
           const emplacement = this.emplacements.find(e =>
-            (e.statut === 'pris' || e.statut === 'en_attente') &&
-            e.prestataireNom === p.nom
+            (e.statut === 'pris' || e.statut === 'en_attente') && e.prestataireNom === p.nom
           );
-
-          // Normaliser le format bilingue depuis prestataires.json
-          let prestataire = { ...p };
-          
-          // Gérer la description bilingue depuis prestataires.json
-          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
-            prestataire.description = p.description[currentLang] || p.description.fr || '';
-          }
-          
-          // Gérer les services bilingues depuis prestataires.json
-          if (p.services && Array.isArray(p.services)) {
-            prestataire.services = p.services.map(s => {
-              const service = { ...s };
-              // Si c'est le format bilingue
-              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined) 
-                  ? (s.description[currentLang] || s.description.fr || '')
-                  : (s.description || '');
-              }
-              return service;
-            });
-          }
-
-          // AJOUT: Appliquer les personnalisations (avec support bilingue)
           const custom = customPrestataires[p.nom] || {};
-          
-          // Gérer popupText bilingue
+          let prestataire = { ...p };
           if (custom.popupText) {
-            if (typeof custom.popupText === 'object' && custom.popupText.fr !== undefined) {
-              prestataire.popupText = custom.popupText[currentLang] || custom.popupText.fr || '';
-            } else if (typeof custom.popupText === 'string') {
-              prestataire.popupText = custom.popupText;
-            }
+            prestataire.popupText = typeof custom.popupText === 'object' && custom.popupText.fr !== undefined
+              ? (custom.popupText[currentLang] || custom.popupText.fr || '')
+              : (typeof custom.popupText === 'string' ? custom.popupText : '');
           }
-          
-          // Copier les autres champs
           if (custom.email) prestataire.email = custom.email;
           if (custom.tel) prestataire.tel = custom.tel;
           if (custom.site) prestataire.site = custom.site;
-
-          if (emplacement) {
-            return { ...prestataire, coordone: emplacement.coordonnees };
-          }
+          if (emplacement) return { ...prestataire, coordone: emplacement.coordonnees };
           return prestataire;
         });
 
-        // Construit l'ensemble des types
         const typeSet = new Set(this.prestataires.map(a => a.type).filter(Boolean));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
@@ -408,11 +407,20 @@ export default {
     // Ajout: chargement des zones
     async loadZones() {
       try {
-        const res = await fetch('/data/zones.json');
-        const data = await res.json();
-        // Afficher toutes les zones
-        this.zones = data.zones || [];
-        // Construire les filtres sans la zone festival et les scènes (toujours visibles)
+        let zonesData = null;
+        const token = localStorage.getItem('authToken');
+        try {
+          const resp = await fetch('/api/zones', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          if (resp.ok) {
+            const list = await resp.json();
+            zonesData = { zones: Array.isArray(list) ? list : [] };
+          }
+        } catch (e) { /* fallback */ }
+        if (!zonesData) {
+          const res = await fetch('/data/zones.json');
+          zonesData = await res.json();
+        }
+        this.zones = zonesData.zones || [];
         const typeSet = new Set(this.zones.map(z => z.type).filter(t => t !== 'festival' && t !== 'scène'));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
@@ -426,8 +434,23 @@ export default {
     // Ajout: chargement des équipements (toilettes, points d'eau)
     async loadEquipements() {
       try {
-        const res = await fetch('/data/equipements.json');
-        const data = await res.json();
+        const token = localStorage.getItem('authToken');
+        let data = null;
+        try {
+          const resp = await fetch('/api/equipements', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          if (resp.ok) {
+            const list = await resp.json();
+            data = { equipements: Array.isArray(list) ? list.map(e => ({
+              ...e,
+              coordonnees: e.coordonnees_completes || e.coordonnees,
+              type: e.type_equipement
+            })) : [] };
+          }
+        } catch (e) { /* fallback */ }
+        if (!data) {
+          const res = await fetch('/data/equipements.json');
+          data = await res.json();
+        }
         this.equipements = data.equipements || [];
         this.initEquipements();
       } catch (e) {

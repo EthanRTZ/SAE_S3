@@ -320,21 +320,50 @@ export default {
     async loadForfaits() {
       try {
         this.loading = true
-        const response = await fetch('/data/forfaits.json')
-        const data = await response.json()
 
-        // Copier les données et calculer les stocks totaux si nécessaire
-        this.forfaits = JSON.parse(JSON.stringify(data))
-        Object.keys(this.forfaits).forEach((key) => {
-          if (Array.isArray(this.forfaits[key].days)) {
-            this.forfaits[key].stock = this.forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
+        // Essayer l'API d'abord
+        let usedApi = false;
+        try {
+          const token = localStorage.getItem('authToken');
+          const resp = await fetch('/api/billets', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (resp.ok) {
+            const billets = await resp.json();
+            if (Array.isArray(billets) && billets.length) {
+              // Convertir le format BDD vers le format attendu par la vue
+              this.forfaits = {};
+              billets.forEach(b => {
+                const key = b.type_billet;
+                this.forfaits[key] = {
+                  label: b.label_fr,
+                  labelEn: b.label_en,
+                  price: parseFloat(b.prix),
+                  stock: b.stock_disponible,
+                  stockTotal: b.stock_total,
+                  days: b.jours_associes || [],
+                  description: b.description,
+                  id: b.id_billet
+                };
+              });
+              usedApi = true;
+            }
           }
-        })
+        } catch (e) { /* fallback */ }
 
-        // Déduire TOUTES les réservations payées (de tous les utilisateurs)
+        if (!usedApi) {
+          // Fallback JSON
+          const response = await fetch('/data/forfaits.json')
+          const data = await response.json()
+          this.forfaits = JSON.parse(JSON.stringify(data))
+          Object.keys(this.forfaits).forEach((key) => {
+            if (Array.isArray(this.forfaits[key].days)) {
+              this.forfaits[key].stock = this.forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
+            }
+          })
+        }
+
         this.applyPaidReservationsToStock()
-
-        // Déduire les articles déjà dans le panier (réservations temporaires)
         this.applyPanierToStock()
 
         this.loading = false
