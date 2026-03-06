@@ -642,8 +642,8 @@ export default {
         } else {
           // Emplacement occupé ou en attente - afficher les infos du prestataire + infos emplacement
           const prestataire = this.prestataires.find(p => p.nom === emplacement.prestataireNom);
-          const prestataireNom = encodeURIComponent(emplacement.prestataireNom || '');
-          
+          const prestataireNomEncoded = encodeURIComponent(emplacement.prestataireNom || '');
+
           // AJOUT: Vérifier si l'emplacement a des informations
           const hasEmplacementInfo = emplacement.nom_emplacement || 
                                     emplacement.moyens_logistiques || 
@@ -671,8 +671,8 @@ export default {
           }
 
           // AJOUT: Vérifier si l'utilisateur peut modifier les informations
-          // Les admins peuvent tout modifier, les prestataires peuvent modifier leur propre emplacement
-          const canEditEmplacement = isAdmin || 
+          // Les admins peuvent tout modifier, les prestataires ne peuvent modifier QUE leur propre emplacement
+          const canEditEmplacement = isAdmin ||
             (isPrestataire && emplacement.prestataireNom === prestataireNom);
           
           if (prestataire) {
@@ -688,7 +688,7 @@ export default {
                 ${descriptionCourte ? `<p class="prestataire-desc">${descriptionCourte}</p>` : ''}
                 ${emplacementInfoParts.length > 0 ? `<div class="emplacement-infos-section">${emplacementInfoParts.join('')}</div>` : ''}
                 <p class="status-badge status-${emplacement.statut}">${label}</p>
-                <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
+                <a href="/prestataire/${prestataireNomEncoded}" class="popup-link-btn">
                   ${this.$t('carte.seeDetails')}
                 </a>
                 ${canEditEmplacement ? (hasEmplacementInfo ? `
@@ -708,7 +708,7 @@ export default {
                 <h3 class="prestataire-nom">${emplacement.prestataireNom}</h3>
                 ${emplacementInfoParts.length > 0 ? `<div class="emplacement-infos-section">${emplacementInfoParts.join('')}</div>` : ''}
                 <p class="status-badge status-${emplacement.statut}">${label}</p>
-                <a href="/prestataire/${prestataireNom}" class="popup-link-btn">
+                <a href="/prestataire/${prestataireNomEncoded}" class="popup-link-btn">
                   ${this.$t('carte.seeDetails')}
                 </a>
                 ${canEditEmplacement ? (hasEmplacementInfo ? `
