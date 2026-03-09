@@ -30,7 +30,7 @@
               :key="resa.id"
               class="reservation-item"
             >
-              <label class="reservation-row">
+              <div class="reservation-row">
                 <input
                   type="checkbox"
                   :value="resa.id"
@@ -47,7 +47,46 @@
                     </span>
                   </div>
                 </div>
-              </label>
+              </div>
+
+              <div v-if="canChangeReservationDay(resa)" class="change-day-panel">
+                <label :for="`change-day-${resa.id}`" class="change-day-label">
+                  {{ $t('mesReservations.changeDayLabel') }}
+                </label>
+                <div class="change-day-controls">
+                  <select
+                    :id="`change-day-${resa.id}`"
+                    v-model="dayChangeSelections[resa.id]"
+                    class="change-day-select"
+                  >
+                    <option
+                      v-for="option in getEditableDayOptions(resa)"
+                      :key="`${resa.id}-${option.label}`"
+                      :value="option.label"
+                    >
+                      {{ option.label }} ({{ option.available }} {{ $t('mesReservations.availablePlaces') }})
+                    </option>
+                  </select>
+
+                  <button
+                    type="button"
+                    class="btn-change-day"
+                    :disabled="Boolean(dayChangeLoadingById[resa.id])"
+                    @click="onChangeReservationDay(resa)"
+                  >
+                    {{ dayChangeLoadingById[resa.id]
+                      ? $t('mesReservations.changingDay')
+                      : $t('mesReservations.changeDay') }}
+                  </button>
+                </div>
+
+                <p v-if="dayChangeErrorById[resa.id]" class="change-day-error">
+                  {{ dayChangeErrorById[resa.id] }}
+                </p>
+                <p v-if="dayChangeSuccessById[resa.id]" class="change-day-success">
+                  {{ dayChangeSuccessById[resa.id] }}
+                </p>
+              </div>
             </li>
           </ul>
 
@@ -88,6 +127,11 @@ const reservationsLoading = ref(false)
 const reservationsError = ref('')
 const deletingReservations = ref(false)
 const selectedReservationIds = ref([])
+const oneDayStockByLabel = ref({})
+const dayChangeSelections = ref({})
+const dayChangeLoadingById = ref({})
+const dayChangeErrorById = ref({})
+const dayChangeSuccessById = ref({})
 
 const loadCurrentUser = () => {
   try {
@@ -101,24 +145,131 @@ const loadCurrentUser = () => {
   }
 }
 
+const normalizeDayLabel = (value) => String(value || '').trim().toLowerCase()
+
+const buildOneDayStockIndex = (forfaits) => {
+  const days = forfaits?.oneDay?.days
+  if (!Array.isArray(days)) return {}
+
+  return days.reduce((acc, day) => {
+    const key = normalizeDayLabel(day.label)
+    if (!key) return acc
+    acc[key] = {
+      label: String(day.label || '').trim(),
+      stock: Number(day.stock) || 0
+    }
+    return acc
+  }, {})
+}
+
+const loadOneDayStocks = async () => {
+  try {
+    const token = localStorage.getItem('authToken')
+    const response = await fetch('/api/billets', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+
+    if (response.ok) {
+      const billets = await response.json()
+      const oneDayBillet = Array.isArray(billets)
+        ? billets.find((item) => item?.type_billet === 'oneDay')
+        : null
+
+      if (oneDayBillet && Array.isArray(oneDayBillet.jours_associes)) {
+        oneDayStockByLabel.value = oneDayBillet.jours_associes.reduce((acc, day) => {
+          const key = normalizeDayLabel(day.label)
+          if (!key) return acc
+          acc[key] = {
+            label: String(day.label || '').trim(),
+            stock: Number(day.stock) || 0
+          }
+          return acc
+        }, {})
+        return
+      }
+    }
+  } catch (e) {
+    // Fallback JSON si l'API n'est pas disponible
+  }
+
+  try {
+    const fallback = await fetch('/data/forfaits.json')
+    const forfaits = await fallback.json()
+    oneDayStockByLabel.value = buildOneDayStockIndex(forfaits)
+  } catch (e) {
+    oneDayStockByLabel.value = {}
+  }
+}
+
+const getAllReservations = () => {
+  try {
+    const raw = localStorage.getItem(RESERVATIONS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch (e) {
+    return []
+  }
+}
+
+const getUsedPlacesByDay = (excludedReservationId = null) => {
+  const used = {}
+  const allReservations = getAllReservations()
+
+  allReservations.forEach((reservation) => {
+    if (reservation.type !== 'oneDay') return
+    if (excludedReservationId && reservation.id === excludedReservationId) return
+
+    const dayKey = normalizeDayLabel(reservation.optionLabel)
+    if (!dayKey) return
+
+    used[dayKey] = (used[dayKey] || 0) + (Number(reservation.quantity) || 0)
+  })
+
+  return used
+}
+
+const canChangeReservationDay = (reservation) => {
+  return reservation.type === 'oneDay' && Object.keys(oneDayStockByLabel.value).length > 0
+}
+
+const getEditableDayOptions = (reservation) => {
+  const usedByDay = getUsedPlacesByDay(reservation.id)
+
+  return Object.values(oneDayStockByLabel.value)
+    .map((day) => {
+      const dayKey = normalizeDayLabel(day.label)
+      const available = Math.max(0, (day.stock || 0) - (usedByDay[dayKey] || 0))
+      return {
+        label: day.label,
+        available
+      }
+    })
+    .filter((option) => option.available > 0 || option.label === reservation.optionLabel)
+}
+
+const initDaySelections = () => {
+  const nextSelections = { ...dayChangeSelections.value }
+  reservations.value.forEach((reservation) => {
+    if (canChangeReservationDay(reservation) && !nextSelections[reservation.id]) {
+      nextSelections[reservation.id] = reservation.optionLabel || ''
+    }
+  })
+  dayChangeSelections.value = nextSelections
+}
+
 const loadReservations = () => {
   reservationsError.value = ''
   reservationsLoading.value = true
   try {
-    const raw = localStorage.getItem(RESERVATIONS_KEY)
-    if (!raw) {
-      reservations.value = []
-      return
-    }
-    const parsed = JSON.parse(raw)
-    const list = Array.isArray(parsed) ? parsed : []
+    const list = getAllReservations()
     const email = (currentUserEmail.value || '').toLowerCase()
     reservations.value = list.filter(
       (r) => (r.userEmail || '').toLowerCase() === email
     )
+    initDaySelections()
   } catch (e) {
     reservations.value = []
-      reservationsError.value = t('mesReservations.loadError')
+    reservationsError.value = t('mesReservations.loadError')
   } finally {
     reservationsLoading.value = false
   }
@@ -253,11 +404,98 @@ const onDeleteSelectedReservations = () => {
   }
 }
 
-onMounted(() => {
+const onChangeReservationDay = (reservation) => {
+  const reservationId = reservation.id
+  const selectedDay = dayChangeSelections.value[reservationId]
+
+  dayChangeErrorById.value = {
+    ...dayChangeErrorById.value,
+    [reservationId]: ''
+  }
+  dayChangeSuccessById.value = {
+    ...dayChangeSuccessById.value,
+    [reservationId]: ''
+  }
+
+  if (!selectedDay) {
+    dayChangeErrorById.value = {
+      ...dayChangeErrorById.value,
+      [reservationId]: t('mesReservations.selectDayToChange')
+    }
+    return
+  }
+
+  if (selectedDay === reservation.optionLabel) {
+    dayChangeErrorById.value = {
+      ...dayChangeErrorById.value,
+      [reservationId]: t('mesReservations.dayUnchanged')
+    }
+    return
+  }
+
+  const selectedOption = getEditableDayOptions(reservation).find((option) => option.label === selectedDay)
+  if (!selectedOption || selectedOption.available < (Number(reservation.quantity) || 0)) {
+    dayChangeErrorById.value = {
+      ...dayChangeErrorById.value,
+      [reservationId]: t('mesReservations.notEnoughPlacesForDay')
+    }
+    return
+  }
+
+  dayChangeLoadingById.value = {
+    ...dayChangeLoadingById.value,
+    [reservationId]: true
+  }
+
+  try {
+    const allReservations = getAllReservations()
+    const currentEmail = (currentUserEmail.value || '').toLowerCase()
+
+    const updatedReservations = allReservations.map((item) => {
+      if (item.id !== reservationId) return item
+      if ((item.userEmail || '').toLowerCase() !== currentEmail) return item
+
+      return {
+        ...item,
+        optionLabel: selectedDay,
+        displayLabel: `Forfait 1 jour - ${selectedDay}`
+      }
+    })
+
+    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(updatedReservations))
+
+    reservations.value = reservations.value.map((item) => {
+      if (item.id !== reservationId) return item
+      return {
+        ...item,
+        optionLabel: selectedDay,
+        displayLabel: `Forfait 1 jour - ${selectedDay}`
+      }
+    })
+
+    dayChangeSuccessById.value = {
+      ...dayChangeSuccessById.value,
+      [reservationId]: t('mesReservations.dayUpdated')
+    }
+  } catch (e) {
+    dayChangeErrorById.value = {
+      ...dayChangeErrorById.value,
+      [reservationId]: t('mesReservations.dayUpdateError')
+    }
+  } finally {
+    dayChangeLoadingById.value = {
+      ...dayChangeLoadingById.value,
+      [reservationId]: false
+    }
+  }
+}
+
+onMounted(async () => {
   loadCurrentUser()
   if (!currentUserEmail.value) {
     router.push('/login')
   } else {
+    await loadOneDayStocks()
     loadReservations()
   }
 })
@@ -450,6 +688,60 @@ h1 {
   font-size: 0.95rem;
   text-align: center;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.change-day-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.change-day-label {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 6px;
+}
+
+.change-day-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.change-day-select {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 8px;
+}
+
+.btn-change-day {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #fcdc1e 0%, #ffe676 100%);
+  color: #0a0a0a;
+}
+
+.btn-change-day:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.change-day-error {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #ff9b9b;
+}
+
+.change-day-success {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #8fffba;
 }
 
 @media (max-width: 420px) {

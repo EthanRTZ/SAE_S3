@@ -262,7 +262,16 @@
     "reservation": "Réservation",
     "players": "joueurs",
     "places": "place(s)",
-    "reservedOn": "Réservé le"
+    "reservedOn": "Réservé le",
+    "changeDayLabel": "Modifier le jour",
+    "changeDay": "Changer",
+    "changingDay": "Modification...",
+    "availablePlaces": "places dispo",
+    "selectDayToChange": "Choisissez un jour pour modifier cette réservation.",
+    "dayUnchanged": "Ce jour est déjà sélectionné.",
+    "notEnoughPlacesForDay": "Il n'y a plus assez de places sur ce jour.",
+    "dayUpdated": "Jour de réservation mis à jour.",
+    "dayUpdateError": "Impossible de modifier le jour de cette réservation."
   },
   "home": {
     "buyTickets": "BILLETTERIE",

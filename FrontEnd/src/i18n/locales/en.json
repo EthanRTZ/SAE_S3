@@ -262,7 +262,16 @@
     "reservation": "Reservation",
     "players": "players",
     "places": "place(s)",
-    "reservedOn": "Reserved on"
+    "reservedOn": "Reserved on",
+    "changeDayLabel": "Change day",
+    "changeDay": "Update",
+    "changingDay": "Updating...",
+    "availablePlaces": "places left",
+    "selectDayToChange": "Please select a day for this reservation.",
+    "dayUnchanged": "This day is already selected.",
+    "notEnoughPlacesForDay": "Not enough places available for this day.",
+    "dayUpdated": "Reservation day updated.",
+    "dayUpdateError": "Unable to update the reservation day."
   },
   "home": {
     "buyTickets": "TICKETS",
