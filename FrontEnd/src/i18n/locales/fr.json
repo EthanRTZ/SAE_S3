@@ -271,7 +271,15 @@
     "dayUnchanged": "Ce jour est déjà sélectionné.",
     "notEnoughPlacesForDay": "Il n'y a plus assez de places sur ce jour.",
     "dayUpdated": "Jour de réservation mis à jour.",
-    "dayUpdateError": "Impossible de modifier le jour de cette réservation."
+    "dayUpdateError": "Impossible de modifier le jour de cette réservation.",
+    "changeBasketDateTime": "Modifier la date et le créneau",
+    "newDate": "Nouvelle date",
+    "newSlot": "Nouveau créneau",
+    "slotTaken": "Créneau déjà pris",
+    "selectDateSlot": "Veuillez sélectionner une date et un créneau.",
+    "dateSlotUnchanged": "La date et le créneau sont identiques à l'actuel.",
+    "dateSlotUpdated": "Date et créneau mis à jour avec succès.",
+    "dateSlotUpdateError": "Impossible de modifier la date et le créneau."
   },
   "home": {
     "buyTickets": "BILLETTERIE",

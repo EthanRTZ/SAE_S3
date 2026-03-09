@@ -271,7 +271,15 @@
     "dayUnchanged": "This day is already selected.",
     "notEnoughPlacesForDay": "Not enough places available for this day.",
     "dayUpdated": "Reservation day updated.",
-    "dayUpdateError": "Unable to update the reservation day."
+    "dayUpdateError": "Unable to update the reservation day.",
+    "changeBasketDateTime": "Change date and time slot",
+    "newDate": "New date",
+    "newSlot": "New time slot",
+    "slotTaken": "Slot already taken",
+    "selectDateSlot": "Please select a date and a time slot.",
+    "dateSlotUnchanged": "The date and time slot are the same as current.",
+    "dateSlotUpdated": "Date and time slot updated successfully.",
+    "dateSlotUpdateError": "Unable to update the date and time slot."
   },
   "home": {
     "buyTickets": "TICKETS",

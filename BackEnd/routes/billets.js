@@ -90,5 +90,32 @@ router.put('/reservations/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PATCH /api/billets/reservations/:id/date - Modifier le jour d'une réservation
+router.patch('/reservations/:id/date', async (req, res, next) => {
+  try {
+    const resa = await ReservationBillet.findByPk(req.params.id, {
+      include: [{ model: Billet, as: 'billet' }]
+    });
+    if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
+
+    if (resa.statut === 'annulé' || resa.statut === 'utilisé') {
+      return res.status(400).json({ error: 'Impossible de modifier une réservation annulée ou déjà utilisée.' });
+    }
+
+    const { date_utilisation } = req.body;
+    if (!date_utilisation) {
+      return res.status(400).json({ error: 'Le champ date_utilisation est requis.' });
+    }
+
+    await resa.update({ date_utilisation });
+
+    // Recharger avec l'association
+    const updated = await ReservationBillet.findByPk(req.params.id, {
+      include: [{ model: Billet, as: 'billet' }]
+    });
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 

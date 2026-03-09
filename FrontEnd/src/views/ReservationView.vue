@@ -317,6 +317,34 @@ export default {
     }
   },
   methods: {
+    // Normaliser le type de billet vers le format frontend
+    normalizeTypeBillet(type) {
+      const mapping = {
+        '1jour': 'oneDay',
+        '2jours': 'twoDays',
+        '3jours': 'threeDays',
+        'oneDay': 'oneDay',
+        'twoDays': 'twoDays',
+        'threeDays': 'threeDays',
+        'parking': 'parking',
+        'camping': 'camping'
+      };
+      return mapping[type] || type;
+    },
+    // Normaliser les jours_associes (format chaîne ou objet)
+    normalizeJoursAssocies(jours, defaultStock = 40) {
+      if (!Array.isArray(jours)) return [];
+      return jours.map(day => {
+        if (typeof day === 'string') {
+          return { label: day, stock: defaultStock };
+        }
+        return {
+          label: day.label || '',
+          stock: Number(day.stock) || defaultStock,
+          linkedDays: day.linkedDays || []
+        };
+      });
+    },
     async loadForfaits() {
       try {
         this.loading = true
@@ -334,14 +362,15 @@ export default {
               // Convertir le format BDD vers le format attendu par la vue
               this.forfaits = {};
               billets.forEach(b => {
-                const key = b.type_billet;
+                const key = this.normalizeTypeBillet(b.type_billet);
+                const normalizedDays = this.normalizeJoursAssocies(b.jours_associes || [], 40);
                 this.forfaits[key] = {
                   label: b.label_fr,
                   labelEn: b.label_en,
                   price: parseFloat(b.prix),
                   stock: b.stock_disponible,
                   stockTotal: b.stock_total,
-                  days: b.jours_associes || [],
+                  days: normalizedDays,
                   description: b.description,
                   id: b.id_billet
                 };
