@@ -297,24 +297,7 @@ const loadOneDayStocks = async () => {
       }
     }
   } catch (e) {
-    // Fallback JSON si l'API n'est pas disponible
-  }
-
-  try {
-    const fallback = await fetch('/data/forfaits.json')
-    const forfaits = await fallback.json()
-    oneDayStockByLabel.value = buildOneDayStockIndex(forfaits)
-    // twoDays fallback
-    const twoDays = forfaits?.twoDays?.days
-    if (Array.isArray(twoDays)) {
-      twoDaysStockByLabel.value = twoDays.reduce((acc, day) => {
-        const key = normalizeDayLabel(day.label)
-        if (!key) return acc
-        acc[key] = { label: String(day.label || '').trim(), stock: Number(day.stock) || 0 }
-        return acc
-      }, {})
-    }
-  } catch (e) {
+    console.error('Erreur chargement forfaits API:', e)
     oneDayStockByLabel.value = {}
     twoDaysStockByLabel.value = {}
   }
@@ -348,25 +331,22 @@ const loadFestivalDates = async () => {
         }
       }
     }
-  } catch (_) { /* fallback */ }
-
-  try {
-    const resp = await fetch('/data/festival.json', { cache: 'no-store' })
-    const data = await resp.json()
-    if (data?.info?.festivalDates && Array.isArray(data.info.festivalDates)) {
-      festivalDateOptions.value = data.info.festivalDates.map(d => ({
-        dateStr: d.dateStr,
-        label: `${typeof d.dayName === 'object' ? d.dayName.fr : d.dayName} ${d.dayNumber} ${typeof d.monthName === 'object' ? d.monthName.fr : d.monthName}`
-      }))
-    }
-  } catch (_) { /* garder les valeurs par défaut */ }
+  } catch (_) {
+    console.error('Erreur chargement dates festival:', _)
+  }
 }
 
-const getAllReservations = () => {
+const getAllReservations = async () => {
   try {
-    const raw = localStorage.getItem(RESERVATIONS_KEY)
-    const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed : []
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/billets/mes-reservations', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const data = await resp.json()
+      return Array.isArray(data) ? data : []
+    }
+    return []
   } catch (e) {
     return []
   }
@@ -422,11 +402,11 @@ const initDaySelections = () => {
   dayChangeSelections.value = nextSelections
 }
 
-const loadReservations = () => {
+const loadReservations = async () => {
   reservationsError.value = ''
   reservationsLoading.value = true
   try {
-    const list = getAllReservations()
+    const list = await getAllReservations()
     const email = (currentUserEmail.value || '').toLowerCase()
     reservations.value = list.filter(
       (r) => (r.userEmail || '').toLowerCase() === email
@@ -537,30 +517,22 @@ const formatReservationMeta = (resa) => {
   return parts.join(' • ')
 }
 
-const onDeleteSelectedReservations = () => {
+const onDeleteSelectedReservations = async () => {
   if (!selectedReservationIds.value.length || deletingReservations.value) {
     return
   }
   deletingReservations.value = true
   reservationsError.value = ''
   try {
-    const raw = localStorage.getItem(RESERVATIONS_KEY)
-    const all = raw ? JSON.parse(raw) : []
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
     const idsToDelete = new Set(selectedReservationIds.value)
-    const email = (currentUserEmail.value || '').toLowerCase()
-    const remaining = Array.isArray(all)
-      ? all.filter(
-          (r) =>
-            !(
-              (r.userEmail || '').toLowerCase() === email &&
-              idsToDelete.has(r.id)
-            )
-        )
-      : []
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(remaining))
-    reservations.value = reservations.value.filter(
-      (r) => !idsToDelete.has(r.id)
-    )
+
+    for (const id of idsToDelete) {
+      await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+    }
+
+    reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
     selectedReservationIds.value = []
   } catch (e) {
     reservationsError.value = t('mesReservations.deleteError')
@@ -569,7 +541,7 @@ const onDeleteSelectedReservations = () => {
   }
 }
 
-const onChangeReservationDay = (reservation) => {
+const onChangeReservationDay = async (reservation) => {
   const reservationId = reservation.id
   const selectedDay = dayChangeSelections.value[reservationId]
 
@@ -613,22 +585,14 @@ const onChangeReservationDay = (reservation) => {
   }
 
   try {
-    const allReservations = getAllReservations()
-    const currentEmail = (currentUserEmail.value || '').toLowerCase()
+    const token = localStorage.getItem('authToken')
     const typeLabel = reservation.type === 'twoDays' ? 'Forfait 2 jours' : 'Forfait 1 jour'
 
-    const updatedReservations = allReservations.map((item) => {
-      if (item.id !== reservationId) return item
-      if ((item.userEmail || '').toLowerCase() !== currentEmail) return item
-
-      return {
-        ...item,
-        optionLabel: selectedDay,
-        displayLabel: `${typeLabel} - ${selectedDay}`
-      }
+    await fetch(`/api/billets/reservations/${reservationId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ optionLabel: selectedDay, displayLabel: `${typeLabel} - ${selectedDay}` })
     })
-
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(updatedReservations))
 
     reservations.value = reservations.value.map((item) => {
       if (item.id !== reservationId) return item
@@ -673,13 +637,10 @@ const getOtherBasketReservations = (excludedId = null) => {
   try {
     const fromMain = getAllReservations()
       .filter(r => r.type === 'basket' && r.id !== excludedId)
-    const raw = localStorage.getItem(BASKET_RESERVATIONS_KEY)
-    const fromBasket = raw ? JSON.parse(raw) : []
-    // Éviter les doublons : ne garder de fromBasket que ceux absents de fromMain
+    // Les réservations basket sont dans reservations.value (chargées depuis l'API)
+    const fromBasket = reservations.value.filter(r => r.type === 'service')
     const mainDates = new Set(fromMain.map(r => `${r.date}|${r.slot}`))
-    const uniqueBasket = Array.isArray(fromBasket)
-      ? fromBasket.filter(r => !mainDates.has(`${r.date}|${r.slot}`))
-      : []
+    const uniqueBasket = fromBasket.filter(r => !mainDates.has(`${r.date}|${r.slot}`))
     return [...fromMain, ...uniqueBasket]
   } catch (_) {
     return []
@@ -716,7 +677,7 @@ const initBasketSelections = () => {
   basketSlotSelections.value = nextSlot
 }
 
-const onChangeBasketDateTime = (reservation) => {
+const onChangeBasketDateTime = async (reservation) => {
   const id = reservation.id
   const newDate = basketDateSelections.value[id]
   const newSlot = basketSlotSelections.value[id]
@@ -757,30 +718,15 @@ const onChangeBasketDateTime = (reservation) => {
     const endHour = parseInt(newSlot.split(':')[0]) + 1
     const newEndTime = `${endHour.toString().padStart(2, '0')}:${newSlot.split(':')[1]}`
 
-    // 1) Mettre à jour dans userReservations (localStorage)
-    const allResas = getAllReservations()
-    const email = (currentUserEmail.value || '').toLowerCase()
-    const updatedAll = allResas.map(item => {
-      if (item.id !== id || (item.userEmail || '').toLowerCase() !== email) return item
-      return { ...item, date: newDate, slot: newSlot, endTime: newEndTime }
+    // Mettre à jour via l'API
+    const token = localStorage.getItem('authToken')
+    await fetch(`/api/billets/reservations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ date: newDate, slot: newSlot, endTime: newEndTime })
     })
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(updatedAll))
 
-    // 2) Mettre à jour aussi dans basketReservations (localStorage) si présent
-    try {
-      const rawBasket = localStorage.getItem(BASKET_RESERVATIONS_KEY)
-      const basketResas = rawBasket ? JSON.parse(rawBasket) : []
-      const updatedBasket = basketResas.map(item => {
-        if (String(item.date).trim() === String(reservation.date).trim() &&
-            String(item.slot || '').trim() === String(reservation.slot || '').trim()) {
-          return { ...item, date: newDate, slot: newSlot }
-        }
-        return item
-      })
-      localStorage.setItem(BASKET_RESERVATIONS_KEY, JSON.stringify(updatedBasket))
-    } catch (_) { /* pas bloquant */ }
-
-    // 3) Mettre à jour le state local
+    // Mettre à jour le state local
     reservations.value = reservations.value.map(item => {
       if (item.id !== id) return item
       return { ...item, date: newDate, slot: newSlot, endTime: newEndTime }

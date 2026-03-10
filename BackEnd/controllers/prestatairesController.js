@@ -1,4 +1,4 @@
-const { Prestataire, Service, Emplacement, PrestataireEmplacement } = require('../models');
+const { Prestataire, Service, Emplacement, PrestataireEmplacement, TypeService } = require('../models');
 
 /**
  * GET /api/prestataires - Récupérer tous les prestataires
@@ -6,6 +6,15 @@ const { Prestataire, Service, Emplacement, PrestataireEmplacement } = require('.
 exports.getAllPrestataires = async (req, res) => {
     try {
         const prestataires = await Prestataire.findAll({
+            include: [{
+                model: Service,
+                as: 'services',
+                include: [{
+                    model: TypeService,
+                    as: 'typeService',
+                    attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+                }]
+            }],
             order: [['id_prestataire', 'ASC']]
         });
         res.json(prestataires);
@@ -149,7 +158,12 @@ exports.getPrestataireServices = async (req, res) => {
         const prestataire = await Prestataire.findByPk(id, {
             include: [{
                 model: Service,
-                as: 'services'
+                as: 'services',
+                include: [{
+                    model: TypeService,
+                    as: 'typeService',
+                    attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+                }]
             }]
         });
 

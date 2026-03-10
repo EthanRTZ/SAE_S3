@@ -1,4 +1,4 @@
-const { Service, Prestataire } = require('../models');
+const { Service, Prestataire, TypeService } = require('../models');
 
 /**
  * GET /api/services - Récupérer tous les services
@@ -6,6 +6,11 @@ const { Service, Prestataire } = require('../models');
 exports.getAllServices = async (req, res) => {
     try {
         const services = await Service.findAll({
+            include: [{
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+            }],
             order: [['id_service', 'ASC']]
         });
         res.json(services);
@@ -26,6 +31,10 @@ exports.getAllServicesWithPrestataires = async (req, res) => {
                 model: Prestataire,
                 as: 'prestataire',
                 attributes: ['id_prestataire', 'nom', 'type_prestataire', 'description_fr', 'description_en', 'contact_email', 'contact_tel', 'site_web', 'photo_url']
+            }, {
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
             }],
             order: [['id_service', 'ASC']]
         });
@@ -42,7 +51,13 @@ exports.getAllServicesWithPrestataires = async (req, res) => {
 exports.getServiceById = async (req, res) => {
     try {
         const { id } = req.params;
-        const service = await Service.findByPk(id);
+        const service = await Service.findByPk(id, {
+            include: [{
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+            }]
+        });
 
         if (!service) {
             return res.status(404).json({ error: 'Service not found' });
@@ -60,7 +75,7 @@ exports.getServiceById = async (req, res) => {
  */
 exports.createService = async (req, res) => {
     try {
-        const { id_prestataire, nom_service_fr, nom_service_en, nom_service, description_fr, description_en, description, prix_estime } = req.body;
+        const { id_prestataire, id_type_service, nom_service_fr, nom_service_en, nom_service, description_fr, description_en, description, prix_estime, champs_specifiques } = req.body;
 
         if (!id_prestataire || (!nom_service_fr && !nom_service)) {
             return res.status(400).json({ error: 'id_prestataire and nom_service_fr (or nom_service) are required' });
@@ -88,14 +103,25 @@ exports.createService = async (req, res) => {
 
         const service = await Service.create({
             id_prestataire,
+            id_type_service: id_type_service || null,
             nom_service_fr: nomFr,
             nom_service_en: nomEn,
             description_fr: descFr,
             description_en: descEn,
-            prix_estime
+            prix_estime,
+            champs_specifiques: champs_specifiques || {}
         });
 
-        res.status(201).json(service);
+        // Recharger avec l'association TypeService
+        const serviceWithType = await Service.findByPk(service.id_service, {
+            include: [{
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+            }]
+        });
+
+        res.status(201).json(serviceWithType);
     } catch (error) {
         console.error('Error creating service:', error);
         res.status(500).json({ error: 'Failed to create service' });
@@ -108,7 +134,7 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
     try {
         const { id } = req.params;
-        const { id_prestataire, nom_service_fr, nom_service_en, nom_service, description_fr, description_en, description, prix_estime } = req.body;
+        const { id_prestataire, id_type_service, nom_service_fr, nom_service_en, nom_service, description_fr, description_en, description, prix_estime, champs_specifiques } = req.body;
 
         const service = await Service.findByPk(id);
 
@@ -138,14 +164,25 @@ exports.updateService = async (req, res) => {
 
         await service.update({
             id_prestataire: id_prestataire !== undefined ? id_prestataire : service.id_prestataire,
+            id_type_service: id_type_service !== undefined ? id_type_service : service.id_type_service,
             nom_service_fr: nomFr,
             nom_service_en: nomEn,
             description_fr: descFr,
             description_en: descEn,
-            prix_estime: prix_estime !== undefined ? prix_estime : service.prix_estime
+            prix_estime: prix_estime !== undefined ? prix_estime : service.prix_estime,
+            champs_specifiques: champs_specifiques !== undefined ? champs_specifiques : service.champs_specifiques
         });
 
-        res.json(service);
+        // Recharger avec l'association TypeService
+        const serviceWithType = await Service.findByPk(service.id_service, {
+            include: [{
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+            }]
+        });
+
+        res.json(serviceWithType);
     } catch (error) {
         console.error('Error updating service:', error);
         res.status(500).json({ error: 'Failed to update service' });

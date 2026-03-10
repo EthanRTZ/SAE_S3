@@ -237,7 +237,7 @@ export default {
       return this.authUser?.role || 'user';
     },
     isAdmin() {
-      return this.userRole === 'admin';
+      return this.userRole === 'admin' || this.userRole === 'organisateur';
     },
     isPrestataire() {
       return this.userRole === 'prestataire';
@@ -247,89 +247,32 @@ export default {
     },
   },
   methods: {
-    // MODIFICATION: Charger les emplacements avec statut
+    // MODIFICATION: Charger les emplacements avec statut depuis la BDD
     async loadPrestataires() {
       try {
         const token = localStorage.getItem('authToken');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Charger emplacements et zones (API puis fallback JSON)
-        let emplacementsData = { emplacements: [] };
-        let zonesData = { zones: [] };
+        // Charger emplacements depuis l'API (BDD)
+        let emplacementsData = [];
 
         try {
-          const [emplacementsRes, zonesRes] = await Promise.all([
-            fetch('/api/emplacements', { headers }),
-            fetch('/api/zones', { headers })
-          ]);
+          const emplacementsRes = await fetch('/api/emplacements', { headers });
           if (emplacementsRes.ok) {
             const list = await emplacementsRes.json();
-            emplacementsData = { emplacements: Array.isArray(list) ? list.map(e => ({
+            emplacementsData = (Array.isArray(list) ? list : []).map(e => ({
               ...e,
-              coordonnees: e.coordonnees_completes || e.coordonnees,
+              coordonnees: e.coordonnees_completes || `${e.coord_y},${e.coord_x}`,
               id: e.id_emplacement
-            })) : [] };
+            }));
           }
-          if (zonesRes.ok) {
-            const list = await zonesRes.json();
-            zonesData = { zones: Array.isArray(list) ? list : [] };
-          }
-        } catch (e) { /* fallback JSON */ }
-
-        if (!emplacementsData.emplacements.length) {
-          const [emplacementsRes, zonesRes] = await Promise.all([
-            fetch('/data/emplacements.json'),
-            fetch('/data/zones.json')
-          ]);
-          emplacementsData = await emplacementsRes.json();
-          zonesData = await zonesRes.json();
+        } catch (e) {
+          console.error('Erreur chargement emplacements API:', e);
         }
 
-        this.emplacements = emplacementsData.emplacements || [];
-        this.zones = zonesData.zones || [];
+        this.emplacements = emplacementsData;
 
-        // Infos emplacements localStorage
-        try {
-          const emplacementsInfoRaw = localStorage.getItem('emplacementsInfo');
-          if (emplacementsInfoRaw) {
-            const emplacementsInfo = JSON.parse(emplacementsInfoRaw);
-            this.emplacements = this.emplacements.map(e => {
-              const info = emplacementsInfo[e.id];
-              return info ? { ...e, ...info } : e;
-            });
-          }
-        } catch (e) { /* ignore */ }
-
-        // Personnalisations prestataires localStorage
-        let customPrestataires = {};
-        try {
-          const customRaw = localStorage.getItem('customPrestataires');
-          customPrestataires = customRaw ? JSON.parse(customRaw) : {};
-        } catch (e) { /* ignore */ }
-
-        // Emplacements attribués localStorage
-        try {
-          const emplacementsRaw = localStorage.getItem('emplacementsAttribues');
-          const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {};
-          this.emplacements = this.emplacements.map(e => {
-            const prestataireAttribue = Object.entries(emplacementsAttribues).find(([, coords]) => coords === e.coordonnees);
-            if (prestataireAttribue) return { ...e, statut: 'pris', prestataireNom: prestataireAttribue[0] };
-            return e;
-          });
-        } catch (e) { /* ignore */ }
-
-        // Demandes en attente localStorage
-        try {
-          const demandesRaw = localStorage.getItem('demandesEmplacement');
-          const demandes = demandesRaw ? JSON.parse(demandesRaw) : [];
-          this.emplacements = this.emplacements.map(e => {
-            const demandePendante = demandes.find(d => d.coordonnees === e.coordonnees && d.statut === 'en_attente');
-            if (demandePendante && e.statut !== 'pris') return { ...e, statut: 'en_attente', prestataireNom: demandePendante.prestataireNom };
-            return e;
-          });
-        } catch (e) { /* ignore */ }
-
-        // Charger prestataires (API puis fallback JSON)
+        // Charger prestataires depuis l'API (BDD)
         let allPrestataires = [];
         try {
           const resp = await fetch('/api/prestataires', { headers });
@@ -347,49 +290,16 @@ export default {
               services: p.services || []
             }));
           }
-        } catch (e) { /* fallback */ }
-
-        if (!allPrestataires.length) {
-          const prestatairesRes = await fetch('/data/prestataires.json');
-          const prestatairesData = await prestatairesRes.json();
-          const currentLang = this.$i18n?.locale || 'fr';
-          allPrestataires = (prestatairesData.prestataires || []).map(p => {
-            let prestataire = { ...p };
-            if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
-              prestataire.description = p.description[currentLang] || p.description.fr || '';
-            }
-            if (p.services && Array.isArray(p.services)) {
-              prestataire.services = p.services.map(s => {
-                const service = { ...s };
-                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                  service.nom = s.nom[currentLang] || s.nom.fr || '';
-                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
-                }
-                return service;
-              });
-            }
-            return prestataire;
-          });
+        } catch (e) {
+          console.error('Erreur chargement prestataires:', e);
         }
 
-        const currentLang = this.$i18n?.locale || 'fr';
         this.prestataires = allPrestataires.map(p => {
           const emplacement = this.emplacements.find(e =>
             (e.statut === 'pris' || e.statut === 'en_attente') && e.prestataireNom === p.nom
           );
-          const custom = customPrestataires[p.nom] || {};
-          let prestataire = { ...p };
-          if (custom.popupText) {
-            prestataire.popupText = typeof custom.popupText === 'object' && custom.popupText.fr !== undefined
-              ? (custom.popupText[currentLang] || custom.popupText.fr || '')
-              : (typeof custom.popupText === 'string' ? custom.popupText : '');
-          }
-          if (custom.email) prestataire.email = custom.email;
-          if (custom.tel) prestataire.tel = custom.tel;
-          if (custom.site) prestataire.site = custom.site;
-          if (emplacement) return { ...prestataire, coordone: emplacement.coordonnees };
-          return prestataire;
+          if (emplacement) return { ...p, coordone: emplacement.coordonnees };
+          return p;
         });
 
         const typeSet = new Set(this.prestataires.map(a => a.type).filter(Boolean));
@@ -404,23 +314,46 @@ export default {
         console.error('Erreur chargement activités', e);
       }
     },
-    // Ajout: chargement des zones
+    // Ajout: chargement des zones + scènes depuis la BDD
     async loadZones() {
       try {
-        let zonesData = null;
+        let zonesData = [];
+        let scenesData = [];
         const token = localStorage.getItem('authToken');
-        try {
-          const resp = await fetch('/api/zones', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-          if (resp.ok) {
-            const list = await resp.json();
-            zonesData = { zones: Array.isArray(list) ? list : [] };
-          }
-        } catch (e) { /* fallback */ }
-        if (!zonesData) {
-          const res = await fetch('/data/zones.json');
-          zonesData = await res.json();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Charger zones et scènes en parallèle depuis l'API (BDD)
+        const [zonesResp, scenesResp] = await Promise.all([
+          fetch('/api/zones', { headers }).catch(() => null),
+          fetch('/api/scenes', { headers }).catch(() => null)
+        ]);
+
+        if (zonesResp && zonesResp.ok) {
+          const list = await zonesResp.json();
+          zonesData = (Array.isArray(list) ? list : []).map(z => ({
+            nom: z.nom,
+            type: z.type_zone,
+            coords: z.coordonnees || [],
+            description: z.description,
+            actif: z.actif
+          }));
         }
-        this.zones = zonesData.zones || [];
+
+        if (scenesResp && scenesResp.ok) {
+          const list = await scenesResp.json();
+          scenesData = (Array.isArray(list) ? list : []).map(s => ({
+            nom: s.nom,
+            type: 'scène',
+            coords: s.coordonnees || [],
+            description: s.description,
+            sponsor: s.sponsor ? s.sponsor.nom : null,
+            actif: s.actif
+          }));
+        }
+
+        // Fusionner zones et scènes
+        this.zones = [...zonesData, ...scenesData];
+
         const typeSet = new Set(this.zones.map(z => z.type).filter(t => t !== 'festival' && t !== 'scène'));
         const obj = {};
         typeSet.forEach(t => { obj[t] = true; });
@@ -431,27 +364,28 @@ export default {
         console.error('Erreur chargement zones', e);
       }
     },
-    // Ajout: chargement des équipements (toilettes, points d'eau)
+    // Ajout: chargement des équipements (toilettes, points d'eau) depuis la BDD
     async loadEquipements() {
       try {
         const token = localStorage.getItem('authToken');
-        let data = null;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        let data = [];
+
         try {
-          const resp = await fetch('/api/equipements', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          const resp = await fetch('/api/equipements', { headers });
           if (resp.ok) {
             const list = await resp.json();
-            data = { equipements: Array.isArray(list) ? list.map(e => ({
+            data = (Array.isArray(list) ? list : []).map(e => ({
               ...e,
-              coordonnees: e.coordonnees_completes || e.coordonnees,
+              coordone: e.coordonnees_completes || `${e.coord_y},${e.coord_x}`,
               type: e.type_equipement
-            })) : [] };
+            }));
           }
-        } catch (e) { /* fallback */ }
-        if (!data) {
-          const res = await fetch('/data/equipements.json');
-          data = await res.json();
+        } catch (e) {
+          console.error('Erreur chargement équipements API:', e);
         }
-        this.equipements = data.equipements || [];
+
+        this.equipements = data;
         this.initEquipements();
       } catch (e) {
         console.error('Erreur chargement équipements', e);
@@ -548,7 +482,7 @@ export default {
         authUser = null;
       }
       const userRole = authUser?.role || 'user';
-      const isAdmin = userRole === 'admin';
+      const isAdmin = userRole === 'admin' || userRole === 'organisateur';
       const isPrestataire = userRole === 'prestataire';
       const prestataireNom = authUser?.prestataireNom || '';
 
@@ -1117,7 +1051,7 @@ export default {
         authUser = null;
       }
       const userRole = authUser?.role || 'user';
-      const isAdmin = userRole === 'admin';
+      const isAdmin = userRole === 'admin' || userRole === 'organisateur';
       const isPrestataire = userRole === 'prestataire';
       const prestataireNom = authUser?.prestataireNom || '';
       
@@ -1154,23 +1088,31 @@ export default {
     // AJOUT: Sauvegarder les informations d'emplacement
     async saveEmplacementInfo(emplacementData) {
       try {
-        // Sauvegarder dans localStorage
-        const emplacementsInfoRaw = localStorage.getItem('emplacementsInfo') || '{}';
-        const emplacementsInfo = JSON.parse(emplacementsInfoRaw);
-        emplacementsInfo[emplacementData.id] = {
-          nom_emplacement: emplacementData.nom_emplacement,
-          moyens_logistiques: emplacementData.moyens_logistiques,
-          surface_volume: emplacementData.surface_volume,
-          nombre_prises: emplacementData.nombre_prises,
-          acces_eau: emplacementData.acces_eau,
-          description: emplacementData.description
-        };
-        localStorage.setItem('emplacementsInfo', JSON.stringify(emplacementsInfo));
-        
+        // Sauvegarder via l'API
+        const token = localStorage.getItem('authToken');
+        const empId = emplacementData.id_emplacement || emplacementData.id;
+        if (empId) {
+          await fetch(`/api/emplacements/${empId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              nom_emplacement: emplacementData.nom_emplacement,
+              moyens_logistiques: emplacementData.moyens_logistiques,
+              surface_volume: emplacementData.surface_volume,
+              nombre_prises: emplacementData.nombre_prises,
+              acces_eau: emplacementData.acces_eau,
+              description: emplacementData.description
+            })
+          });
+        }
+
         // Mettre à jour l'emplacement local
         const index = this.emplacements.findIndex(e => e.id === emplacementData.id);
         if (index !== -1) {
-          this.emplacements[index] = { ...this.emplacements[index], ...emplacementsInfo[emplacementData.id] };
+          this.emplacements[index] = { ...this.emplacements[index], ...emplacementData };
         }
         
         // Recharger les marqueurs

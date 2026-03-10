@@ -43,7 +43,7 @@ const startCreateUser = () => {
         <div class="users-stat-box">
           <div class="users-stat-icon">👑</div>
           <div class="users-stat-details">
-            <div class="users-stat-number">{{ users.filter(u => u.role === 'admin').length }}</div>
+            <div class="users-stat-number">{{ users.filter(u => u.role === 'admin' || u.role === 'organisateur').length }}</div>
             <div class="users-stat-label">Admins</div>
           </div>
         </div>
@@ -57,7 +57,7 @@ const startCreateUser = () => {
         <div class="users-stat-box">
           <div class="users-stat-icon">👤</div>
           <div class="users-stat-details">
-            <div class="users-stat-number">{{ users.filter(u => u.role === 'user').length }}</div>
+            <div class="users-stat-number">{{ users.filter(u => u.role === 'user' || u.role === 'public').length }}</div>
             <div class="users-stat-label">Utilisateurs</div>
           </div>
         </div>
@@ -73,7 +73,7 @@ const startCreateUser = () => {
             @click="selectUser(user)"
           >
             <div class="user-icon">
-              <span v-if="user.role === 'admin'">👑</span>
+              <span v-if="user.role === 'admin' || user.role === 'organisateur'">👑</span>
               <span v-else-if="user.role === 'prestataire'">🏢</span>
               <span v-else>👤</span>
             </div>

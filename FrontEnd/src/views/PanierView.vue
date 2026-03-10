@@ -32,10 +32,24 @@
           <ul class="panier-list">
             <li v-for="item in panierStore.items" :key="item.id" class="panier-item">
               <div class="item-details">
-                <h3 class="item-title">{{ item.displayLabel || formatItemTitle(item) }}</h3>
+                <h3 class="item-title">{{ item.displayLabel || item.label || formatItemTitle(item) }}</h3>
                 <p v-if="item.optionLabel" class="item-option">{{ item.optionLabel }}</p>
                 <p v-if="item.type === 'basket'" class="item-basket-info">
                   📅 {{ formatBasketDate(item.date) }} • ⏰ {{ item.slot }} - {{ item.endTime }} • 👥 {{ item.nbPlayers }} {{ $t('panier.players') }}
+                </p>
+                <p v-else-if="item.type === 'service'" class="item-service-info">
+                  <span v-if="item.prestataire">🏪 {{ item.prestataire }}</span>
+                  <span v-if="item.serviceType === 'reservation' && item.details">
+                    • 📅 {{ item.details.date }} • ⏰ {{ item.details.heure_debut }} - {{ item.details.heure_fin }}
+                    <span v-if="item.details.nombre_personnes"> • 👥 {{ item.details.nombre_personnes }}</span>
+                  </span>
+                  <span v-if="item.serviceType === 'commande' && item.details">
+                    • 📦 × {{ item.details.quantite }}
+                  </span>
+                  <span v-if="item.serviceType === 'location' && item.details">
+                    • ⏳ {{ item.details.duree }}h • 📅 {{ item.details.date }}
+                    <span v-if="item.details.caution"> • 💳 Caution {{ item.details.caution }}€</span>
+                  </span>
                 </p>
                 <p v-else class="item-quantity">{{ $t('panier.quantity') }} {{ item.quantity }}</p>
               </div>
@@ -118,6 +132,8 @@ const formatItemTitle = (item) => {
       return t('panier.camping')
     case 'basket':
       return t('panier.basket')
+    case 'service':
+      return item.nom || item.label || t('panier.service')
     default:
       return t('panier.item')
   }
@@ -410,5 +426,19 @@ h1 {
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid rgba(252, 220, 30, 0.25);
+}
+
+.item-service-info {
+  margin: 8px 0 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  background: rgba(100, 150, 255, 0.1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 150, 255, 0.25);
+}
+
+.item-service-info span {
+  white-space: nowrap;
 }
 </style>

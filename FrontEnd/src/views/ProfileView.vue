@@ -269,10 +269,6 @@ const showCurrentPwd = ref(false)
 const showNewPwd = ref(false)
 const showConfirmPwd = ref(false)
 
-const USERS_JSON_URL = '/data/users.json'
-const PRESTATAIRES_JSON_URL = '/data/prestataires.json'
-const LOCAL_USERS_KEY = 'customUsers'
-const LOCAL_PRESTATAIRES_KEY = 'customPrestataires'
 const RESERVATIONS_KEY = 'userReservations'
 
 const reservations = ref([])
@@ -313,38 +309,22 @@ const loadPrestataireInfo = async () => {
     return
   }
   try {
-    // Charger depuis localStorage d'abord (modifications locales)
-    const customRaw = localStorage.getItem(LOCAL_PRESTATAIRES_KEY)
-    let customPrestataires = null
-    if (customRaw) {
-      try {
-        customPrestataires = JSON.parse(customRaw)
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // Charger depuis le fichier JSON
-    const resp = await fetch(PRESTATAIRES_JSON_URL, { cache: 'no-store' })
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/prestataires', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
     if (!resp.ok) throw new Error('fetch failed')
     const data = await resp.json()
-    const prestataires = data.prestataires || []
-    
-    // Trouver le prestataire
-    let prestataire = prestataires.find(p => p.nom === prestataireNom.value)
-    
-    // Si des modifications locales existent, les appliquer
-    if (customPrestataires && customPrestataires[prestataireNom.value]) {
-      prestataire = { ...prestataire, ...customPrestataires[prestataireNom.value] }
-    }
+    const prestataires = Array.isArray(data) ? data : (data.prestataires || [])
+    const prestataire = prestataires.find(p => p.nom === prestataireNom.value)
 
     if (prestataire) {
       prestataireInfo.value = prestataire
       prestataireForm.value = {
-        description: prestataire.description || '',
-        email: prestataire.email || '',
-        tel: prestataire.tel || '',
-        site: prestataire.site || ''
+        description: prestataire.description_fr || prestataire.description || '',
+        email: prestataire.contact_email || prestataire.email || '',
+        tel: prestataire.contact_tel || prestataire.tel || '',
+        site: prestataire.site_web || prestataire.site || ''
       }
     }
   } catch (e) {
@@ -375,31 +355,7 @@ const loadReservations = () => {
   }
 }
 
-const fetchUsers = async () => {
-  try {
-    const resp = await fetch(USERS_JSON_URL, { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
-    return Array.isArray(data) ? data : []
-  } catch (e) {
-    return []
-  }
-}
-
-const readCustomUsers = () => {
-  try {
-    const raw = localStorage.getItem(LOCAL_USERS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (e) {
-    return []
-  }
-}
-
-const saveCustomUsers = (users) => {
-  localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users))
-}
+// Fonctions utilitaires (auth via API uniquement)
 
 const persistAuthUser = (user) => {
   const payload = {
@@ -443,37 +399,43 @@ const onUpdatePrestataire = async () => {
 
   loadingPrestataire.value = true
   try {
-    // Charger les modifications existantes
-    const customRaw = localStorage.getItem(LOCAL_PRESTATAIRES_KEY)
-    let customPrestataires = {}
-    if (customRaw) {
-      try {
-        customPrestataires = JSON.parse(customRaw)
-      } catch (e) {
-        // ignore
-      }
-    }
+    // Trouver l'ID du prestataire via l'API
+    const token = localStorage.getItem('authToken')
+    const listResp = await fetch('/api/prestataires', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (!listResp.ok) throw new Error('Impossible de charger les prestataires')
+    const list = await listResp.json()
+    const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
+    if (!prest) throw new Error('Prestataire introuvable')
 
-    // Mettre à jour les informations du prestataire
-    customPrestataires[prestataireNom.value] = {
+    // Mettre à jour via l'API
+    const resp = await fetch(`/api/prestataires/${prest.id_prestataire}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        description_fr: prestataireForm.value.description,
+        contact_email: prestataireForm.value.email,
+        contact_tel: prestataireForm.value.tel,
+        site_web: prestataireForm.value.site
+      })
+    })
+    if (!resp.ok) throw new Error('Erreur lors de la mise à jour')
+
+    // Mettre à jour l'objet prestataireInfo pour l'affichage
+    prestataireInfo.value = {
+      ...prestataireInfo.value,
       description: prestataireForm.value.description,
       email: prestataireForm.value.email,
       tel: prestataireForm.value.tel,
       site: prestataireForm.value.site
     }
 
-    // Sauvegarder dans localStorage
-    localStorage.setItem(LOCAL_PRESTATAIRES_KEY, JSON.stringify(customPrestataires))
-
-    // Mettre à jour l'objet prestataireInfo pour l'affichage
-    prestataireInfo.value = {
-      ...prestataireInfo.value,
-      ...customPrestataires[prestataireNom.value]
-    }
-
     prestataireSuccess.value = 'Informations modifiées avec succès !'
     
-    // Notifier App.vue pour mettre à jour l'affichage
     window.dispatchEvent(new Event('prestataire-updated'))
   } catch (e) {
     prestataireError.value = 'Impossible de modifier les informations pour le moment.'
@@ -508,76 +470,27 @@ const onUpdateEmail = async () => {
 
   loadingEmail.value = true
   try {
-    const previousEmail = currentUserEmail.value
-    const [baseUsers, customUsers] = await Promise.all([
-      fetchUsers(),
-      Promise.resolve(readCustomUsers())
-    ])
-    const allUsers = [...customUsers, ...baseUsers]
-    const lowerNewEmail = newEmail.value.toLowerCase()
-    
-    // Vérifier si le nouvel email existe déjà
-    const emailExists = allUsers.some(
-      (u) => (u.email || '').toLowerCase() === lowerNewEmail
-    )
-    if (emailExists) {
-      emailError.value = 'Un compte existe déjà avec cet email.'
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/auth/update-email', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        currentPassword: emailPassword.value,
+        newEmail: newEmail.value
+      })
+    })
+
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}))
+      emailError.value = data.error || 'Impossible de modifier l\'email.'
       return
     }
 
-    // Trouver l'utilisateur actuel et vérifier le mot de passe
-    const currentUser = allUsers.find(
-      (u) =>
-        (u.email || '').toLowerCase() === currentUserEmail.value.toLowerCase() &&
-        u.password === emailPassword.value
-    )
-
-    if (!currentUser) {
-      emailError.value = 'Mot de passe incorrect.'
-      return
-    }
-
-    // Mettre à jour l'email dans customUsers si c'est un utilisateur personnalisé
-    const customUserIndex = customUsers.findIndex(
-      (u) => (u.email || '').toLowerCase() === currentUserEmail.value.toLowerCase()
-    )
-
-    if (customUserIndex !== -1) {
-      customUsers[customUserIndex].email = newEmail.value
-      saveCustomUsers(customUsers)
-    } else {
-      // Si c'est un utilisateur de base, créer une entrée dans customUsers
-      const updatedUser = {
-        ...currentUser,
-        email: newEmail.value
-      }
-      customUsers.push(updatedUser)
-      saveCustomUsers(customUsers)
-    }
-
-    // Mettre à jour l'auth
-    persistAuthUser({ ...currentUser, email: newEmail.value })
-
-    // Mettre à jour l'email actuel et les réservations associées
-    try {
-      const raw = localStorage.getItem(RESERVATIONS_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) {
-          const prevLower = (previousEmail || '').toLowerCase()
-          const updatedReservations = parsed.map((r) => {
-            if ((r.userEmail || '').toLowerCase() === prevLower) {
-              return { ...r, userEmail: newEmail.value }
-            }
-            return r
-          })
-          localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(updatedReservations))
-        }
-      }
-    } catch (e) {
-      // Ignorer les erreurs de migration des réservations
-    }
-
+    // Mettre à jour l'auth locale
+    persistAuthUser({ email: newEmail.value, role: currentUserRole.value, prestataireNom: prestataireNom.value })
     currentUserEmail.value = newEmail.value
     newEmail.value = ''
     emailPassword.value = ''
@@ -611,41 +524,25 @@ const onUpdatePassword = async () => {
 
   loadingPassword.value = true
   try {
-    const [baseUsers, customUsers] = await Promise.all([
-      fetchUsers(),
-      Promise.resolve(readCustomUsers())
-    ])
-    const allUsers = [...customUsers, ...baseUsers]
-    
-    // Trouver l'utilisateur actuel et vérifier le mot de passe actuel
-    const currentUser = allUsers.find(
-      (u) =>
-        (u.email || '').toLowerCase() === currentUserEmail.value.toLowerCase() &&
-        u.password === currentPassword.value
-    )
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/auth/update-password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        currentPassword: currentPassword.value,
+        newPassword: newPassword.value
+      })
+    })
 
-    if (!currentUser) {
-      passwordError.value = 'Mot de passe actuel incorrect.'
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}))
+      passwordError.value = data.error || 'Mot de passe actuel incorrect.'
       return
     }
 
-    // Mettre à jour le mot de passe dans customUsers si c'est un utilisateur personnalisé
-    const customUserIndex = customUsers.findIndex(
-      (u) => (u.email || '').toLowerCase() === currentUserEmail.value.toLowerCase()
-    )
-
-    if (customUserIndex !== -1) {
-      customUsers[customUserIndex].password = newPassword.value
-      saveCustomUsers(customUsers)
-    } else {
-      // Si c'est un utilisateur de base, créer une entrée dans customUsers
-      const updatedUser = {
-        ...currentUser,
-        password: newPassword.value
-      }
-      customUsers.push(updatedUser)
-      saveCustomUsers(customUsers)
-    }
 
     currentPassword.value = ''
     newPassword.value = ''
@@ -700,28 +597,21 @@ const formatReservationMeta = (resa) => {
   return parts.join(' • ')
 }
 
-const onDeleteSelectedReservations = () => {
+const onDeleteSelectedReservations = async () => {
   if (!selectedReservationIds.value.length || deletingReservations.value) {
     return
   }
   deletingReservations.value = true
   reservationsError.value = ''
   try {
-    const raw = localStorage.getItem(RESERVATIONS_KEY)
-    const all = raw ? JSON.parse(raw) : []
-    const idsToDelete = new Set(selectedReservationIds.value)
-    const email = (currentUserEmail.value || '').toLowerCase()
-    const remaining = Array.isArray(all)
-      ? all.filter(
-          (r) =>
-            !(
-              (r.userEmail || '').toLowerCase() === email &&
-              idsToDelete.has(r.id)
-            )
-        )
-      : []
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(remaining))
-    reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+
+    for (const id of selectedReservationIds.value) {
+      await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+    }
+
+    reservations.value = reservations.value.filter((r) => !new Set(selectedReservationIds.value).has(r.id))
     selectedReservationIds.value = []
   } catch (e) {
     reservationsError.value = t('profile.deleteError')

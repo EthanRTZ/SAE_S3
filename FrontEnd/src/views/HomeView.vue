@@ -42,6 +42,7 @@
       <div class="about-container">
         <div class="about-content">
           <h2 class="section-title">{{ $t('home.festival') }}</h2>
+          <!-- Les cartes ci-dessous utilisent exclusivement les données de la BDD (table festival, champ presentation_fr / presentation_en) -->
           <div class="about-grid">
             <div class="about-card">
               <div class="card-icon">🎤</div>
@@ -234,10 +235,10 @@
         <!-- Section Logo & Description -->
         <div class="footer-section footer-about">
           <div class="footer-logo">
-            <h3>Golden Coast</h3>
+            <h3>{{ festivalData.nom || 'Golden Coast' }}</h3>
           </div>
           <p class="footer-description">
-            {{ footerDescription }}
+            {{ translatedPresentation.footerDescription || translatedPresentation.description || '' }}
           </p>
           <div class="footer-social">
             <a href="https://www.facebook.com/goldencoast.festival" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
@@ -312,7 +313,7 @@
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
-              <span>Combe à la Serpent<br/>Corcelles-lès-Monts, France</span>
+              <span>{{ festivalData.lieu_nom || 'Combe à la Serpent, Corcelles-lès-Monts' }}, France</span>
             </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -334,7 +335,7 @@
       <!-- Bottom Bar -->
       <div class="footer-bottom">
         <div class="footer-bottom-container">
-          <p>&copy; {{ new Date().getFullYear() }} Golden Coast Festival. {{ $t('home.allRightsReserved') }}.</p>
+          <p>&copy; {{ new Date().getFullYear() }} {{ festivalData.nom || 'Golden Coast Festival' }}. {{ $t('home.allRightsReserved') }}.</p>
           <p class="footer-credits">{{ $t('home.madeWithPassion') }} 🎤</p>
         </div>
       </div>
@@ -369,81 +370,96 @@ export default {
       { name: 'Gims', img: normalizePublicPath('/media/artistes/Gims.jpg') },
     ];
 
-    // Présentation du festival (depuis festival.json)
+    // Présentation du festival (depuis la BDD, table festival)
     const festivalPresentation = ref({
       fr: {},
       en: {}
     });
 
-    // Charger la présentation depuis l'API ou festival.json
+    // Données brutes du festival depuis la BDD (table festival)
+    const festivalData = ref({
+      nom: '',
+      lieu_nom: '',
+      lieu_coordonnees: '',
+      description_fr: '',
+      description_en: ''
+    });
+
+    // Charger la présentation depuis l'API (BDD - table festival)
     const loadFestivalPresentation = async () => {
       try {
-        const localPresentation = localStorage.getItem('festivalPresentation');
-        if (localPresentation) {
-          try {
-            festivalPresentation.value = JSON.parse(localPresentation);
-            return;
-          } catch (e) { /* ignore */ }
-        }
+        const token = localStorage.getItem('authToken');
+        const resp = await fetch('/api/manifestations', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (resp.ok) {
+          const list = await resp.json();
+          const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null;
+          if (festival) {
+            // Stocker les données brutes du festival
+            festivalData.value = {
+              nom: festival.nom || '',
+              lieu_nom: festival.lieu_nom || '',
+              lieu_coordonnees: festival.lieu_coordonnees || '',
+              description_fr: festival.description_fr || '',
+              description_en: festival.description_en || ''
+            };
 
-        // Essayer l'API
-        try {
-          const token = localStorage.getItem('authToken');
-          const resp = await fetch('/api/manifestations', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          });
-          if (resp.ok) {
-            const list = await resp.json();
-            const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null;
-            if (festival && festival.description_fr) {
-              // La BDD stocke la présentation dans description_fr/description_en
-              // On construit un objet compatible avec le format festival.json
+            const presFr = festival.presentation_fr || {};
+            const presEn = festival.presentation_en || {};
+            if (Object.keys(presFr).length > 0 || Object.keys(presEn).length > 0) {
               festivalPresentation.value = {
-                fr: { ...(festivalPresentation.value.fr || {}), description: festival.description_fr },
-                en: { ...(festivalPresentation.value.en || {}), description: festival.description_en }
+                fr: { ...presFr, description: presFr.footerDescription || festival.description_fr || '' },
+                en: { ...presEn, description: presEn.footerDescription || festival.description_en || '' }
+              };
+            } else if (festival.description_fr) {
+              festivalPresentation.value = {
+                fr: { description: festival.description_fr },
+                en: { description: festival.description_en || '' }
               };
             }
           }
-        } catch (e) { /* fallback JSON */ }
-
-        // Fallback JSON pour la présentation complète
-        const response = await fetch('/data/festival.json', { cache: 'no-store' });
-        const data = await response.json();
-        if (data.presentation) {
-          festivalPresentation.value = data.presentation;
         }
       } catch (error) {
-        // Silencieux
+        console.error('Erreur chargement présentation festival:', error);
       }
     };
 
     // Computed pour obtenir la version traduite du contenu selon la langue
-    // Les données viennent de festival.json (BDD)
+    // Les données viennent exclusivement de la BDD (table festival, champs presentation_fr / presentation_en)
+    const defaultPresentation = {
+      titre: '',
+      date: '',
+      lieu: '',
+      aboutCard1Titre: '',
+      aboutCard1Texte: '',
+      aboutCard2Titre: '',
+      aboutCard2Texte: '',
+      aboutCard3Titre: '',
+      aboutCard3Texte: '',
+      desc1Titre: '',
+      desc1Texte: '',
+      desc1Chip1: '',
+      desc1Chip2: '',
+      desc2Titre: '',
+      desc2Texte: '',
+      ctaTitre: '',
+      ctaTexte: '',
+      ctaBouton: '',
+      mapTitre: '',
+      mapIntro: '',
+      footerDescription: ''
+    };
+
     const translatedPresentation = computed(() => {
       const currentLang = locale.value || 'fr';
-      return festivalPresentation.value[currentLang] || festivalPresentation.value.fr || {
-        titre: '',
-        date: '',
-        lieu: '',
-        aboutCard1Titre: '',
-        aboutCard1Texte: '',
-        aboutCard2Titre: '',
-        aboutCard2Texte: '',
-        aboutCard3Titre: '',
-        aboutCard3Texte: '',
-        desc1Titre: '',
-        desc1Texte: '',
-        desc1Chip1: '',
-        desc1Chip2: '',
-        desc2Titre: '',
-        desc2Texte: '',
-        ctaTitre: '',
-        ctaTexte: '',
-        ctaBouton: '',
-        mapTitre: '',
-        mapIntro: '',
-        footerDescription: '' // AJOUT: Propriété pour la description du footer
-      };
+      const langData = festivalPresentation.value[currentLang];
+      const frData = festivalPresentation.value.fr;
+
+      // Vérifier que l'objet a vraiment du contenu (pas juste {})
+      if (langData && Object.keys(langData).length > 0) return { ...defaultPresentation, ...langData };
+      if (frData && Object.keys(frData).length > 0) return { ...defaultPresentation, ...frData };
+      return defaultPresentation;
     });
 
     // Watch sur locale pour recharger si nécessaire
@@ -451,45 +467,6 @@ export default {
       // La présentation est déjà chargée, juste besoin de réévaluer le computed
     });
 
-    // Description du footer (depuis festival.json)
-    const footerDescription = ref('');
-
-    // Charger la description du footer (API puis fallback JSON)
-    const loadFooterDescription = async () => {
-      try {
-        const currentLang = locale.value || 'fr';
-        // Essayer l'API
-        try {
-          const token = localStorage.getItem('authToken');
-          const resp = await fetch('/api/manifestations', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          });
-          if (resp.ok) {
-            const list = await resp.json();
-            const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null;
-            if (festival) {
-              footerDescription.value = currentLang === 'en'
-                ? (festival.description_en || festival.description_fr || '')
-                : (festival.description_fr || '');
-              if (footerDescription.value) return;
-            }
-          }
-        } catch (e) { /* fallback */ }
-        // Fallback JSON
-        const response = await fetch('/data/festival.json');
-        const data = await response.json();
-        if (data.footerDescription) {
-          footerDescription.value = data.footerDescription[currentLang] || data.footerDescription.fr || '';
-        }
-      } catch (error) {
-        // Silencieux
-      }
-    };
-
-    // Watch sur locale pour recharger la description quand la langue change
-    watch(locale, () => {
-      loadFooterDescription();
-    });
 
     // Données prestataires
     const prestataires = ref([]);
@@ -522,43 +499,13 @@ export default {
             prestataires.value = prestatairesData;
             return;
           }
-        } catch (e) { /* fallback */ }
+        } catch (e) {
+          console.error('Erreur chargement prestataires:', e);
+        }
 
-        // 2. Fallback JSON
-        const customRaw = localStorage.getItem('customPrestataires');
-        let customPrestataires = null;
-        if (customRaw) { try { customPrestataires = JSON.parse(customRaw); } catch (e) { /* ignore */ } }
-
-        const response = await fetch('/data/prestataires.json');
-        const data = await response.json();
-        prestatairesData = (data.prestataires || []).map(p => {
-          const updated = { ...p };
-          if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
-            updated.description = p.description[currentLang] || p.description.fr || '';
-          }
-          if (p.services && Array.isArray(p.services)) {
-            updated.services = p.services.map(s => {
-              const service = { ...s };
-              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                service.nom = s.nom[currentLang] || s.nom.fr || '';
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                  ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
-              }
-              return service;
-            });
-          }
-          if (customPrestataires && customPrestataires[p.nom]) {
-            const local = customPrestataires[p.nom];
-            if (local.email) updated.email = local.email;
-            if (local.tel) updated.tel = local.tel;
-            if (local.site) updated.site = local.site;
-          }
-          return updated;
-        });
-
-        prestataires.value = prestatairesData;
+        prestataires.value = [];
       } catch (error) {
-        // Silencieux
+        console.error('Erreur chargement prestataires:', error);
       }
     };
 
@@ -644,15 +591,6 @@ export default {
     const presentationUpdateHandler = () => {
       loadFestivalPresentation();
     };
-    
-    const storageChangeHandler = (e) => {
-      if (e.key === 'customPrestataires' || !e.key) {
-        loadPrestataires();
-      }
-      if (e.key === 'festivalPresentation' || !e.key) {
-        loadFestivalPresentation();
-      }
-    };
 
     // Watch pour recharger quand la langue change
     watch(() => locale.value, () => {
@@ -660,18 +598,15 @@ export default {
     });
 
     onMounted(() => {
-      loadFooterDescription();
       loadFestivalPresentation();
       loadPrestataires();
       window.addEventListener('prestataire-updated', prestataireUpdateHandler);
       window.addEventListener('festival-presentation-updated', presentationUpdateHandler);
-      window.addEventListener('storage', storageChangeHandler);
     });
 
     onBeforeUnmount(() => {
       window.removeEventListener('prestataire-updated', prestataireUpdateHandler);
       window.removeEventListener('festival-presentation-updated', presentationUpdateHandler);
-      window.removeEventListener('storage', storageChangeHandler);
     });
 
       return {
@@ -686,7 +621,8 @@ export default {
       normalizePublicPath,
       goToPrestataire,
       getPrestatairePriceRange,
-      translatedPresentation
+      translatedPresentation,
+      festivalData
     };
   },
 };

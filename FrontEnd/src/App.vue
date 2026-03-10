@@ -67,7 +67,7 @@ const showAccueilLink = computed(() => {
 })
 
 const showAdminLink = computed(() => {
-  return userRole.value === 'admin'
+  return userRole.value === 'admin' || userRole.value === 'organisateur'
 })
 
 const loadPrestataireInfo = async () => {
@@ -272,7 +272,7 @@ const changeLanguage = (lang) => {
                   <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                   <div class="user-info">
                     <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
-                    <div class="user-role">{{ userRole === 'user' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : userRole === 'admin' ? $t('nav.adminRole') : $t('nav.user') }}</div>
+                    <div class="user-role">{{ userRole === 'user' || userRole === 'public' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : (userRole === 'admin' || userRole === 'organisateur') ? $t('nav.adminRole') : $t('nav.user') }}</div>
                   </div>
                 </div>
               </router-link>
@@ -385,7 +385,7 @@ const changeLanguage = (lang) => {
                 <div class="user-avatar">{{ prestataireInfo?.nom ? prestataireInfo.nom.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase() }}</div>
                 <div class="user-info">
                   <div class="user-email">{{ prestataireInfo?.nom || userEmail }}</div>
-                  <div class="user-role">{{ userRole === 'user' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : userRole === 'admin' ? $t('nav.adminRole') : $t('nav.user') }}</div>
+                  <div class="user-role">{{ userRole === 'user' || userRole === 'public' ? $t('nav.user') : userRole === 'prestataire' ? (prestataireInfo?.type || $t('nav.prestataireRole')) : (userRole === 'admin' || userRole === 'organisateur') ? $t('nav.adminRole') : $t('nav.user') }}</div>
                 </div>
               </div>
             </router-link>

@@ -17,6 +17,15 @@ const Service = sequelize.define('Service', {
       key: 'id_prestataire'
     }
   },
+  id_type_service: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'id_type_service',
+    references: {
+      model: 'type_service',
+      key: 'id_type_service'
+    }
+  },
   nom_service_fr: {
     type: DataTypes.STRING(100),
     allowNull: false,
@@ -41,6 +50,12 @@ const Service = sequelize.define('Service', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
     field: 'prix_estime'
+  },
+  champs_specifiques: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    field: 'champs_specifiques'
   }
 }, {
   tableName: 'services',

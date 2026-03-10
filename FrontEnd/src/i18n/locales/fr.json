@@ -97,7 +97,27 @@
     "lastReviews": "Derniers avis",
     "reserveSlot": "Réservez votre créneau",
     "reserveDesc": "Profitez de notre terrain de basket pendant le festival du",
-    "reserveNow": "Réserver maintenant"
+    "reserveNow": "Réserver maintenant",
+    "bookNow": "Réserver",
+    "orderNow": "Commander",
+    "rentNow": "Louer",
+    "modal": {
+      "date": "Date",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "nbPersons": "Nombre de personnes",
+      "location": "Lieu",
+      "maxSeats": "Places disponibles",
+      "quantity": "Quantité",
+      "prepTime": "Délai de préparation",
+      "unavailable": "Ce service est actuellement indisponible.",
+      "duration": "Durée de location",
+      "hours": "heures",
+      "deposit": "Caution",
+      "total": "Total",
+      "addToCart": "Ajouter au panier",
+      "addedToCart": "✅ Service ajouté au panier !"
+    }
   },
   "reservation": {
     "title": "Réserver un forfait",
@@ -172,7 +192,8 @@
     "parking": "Place de parking",
     "camping": "Emplacement de camping",
     "basket": "🏀 Terrain de Basket",
-    "item": "Article"
+    "item": "Article",
+    "service": "Service"
   },
   "login": {
     "title": "Connexion",
@@ -473,7 +494,33 @@
     "userInfoSaved": "Informations utilisateur sauvegardées.",
     "editingLanguage": "Langue d'édition :",
     "french": "Français",
-    "english": "Anglais"
+    "english": "Anglais",
+    "serviceType": "Type de service",
+    "selectServiceType": "-- Sélectionnez un type --",
+    "noType": "Aucun (service libre)",
+    "specificFields": "Informations spécifiques",
+    "fieldRequired": "(requis)"
+  },
+  "servicesByType": {
+    "loading": "Chargement des services...",
+    "errorTitle": "Erreur",
+    "loadError": "Impossible de charger les services.",
+    "backHome": "Retour à l'accueil",
+    "searchPlaceholder": "Rechercher un service...",
+    "results": "résultat(s)",
+    "noServices": "Aucun service disponible pour cette catégorie.",
+    "free": "Gratuit",
+    "fields": {
+      "seats": "Places",
+      "location": "Lieu",
+      "date": "Date",
+      "prepTime": "Préparation",
+      "available": "Disponible",
+      "unavailable": "Indisponible",
+      "minQty": "Quantité min",
+      "duration": "Durée",
+      "deposit": "Caution"
+    }
   },
   "merch": {
     "title": "Boutique officielle",

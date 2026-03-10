@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS zones CASCADE;
 DROP TABLE IF EXISTS prestataire_emplacement CASCADE;
 DROP TABLE IF EXISTS emplacements CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
+DROP TABLE IF EXISTS type_service CASCADE;
 DROP TABLE IF EXISTS prestataire_zone CASCADE;
 DROP TABLE IF EXISTS session_authentification CASCADE;
 DROP TABLE IF EXISTS utilisateur_prestataire CASCADE;
@@ -75,16 +76,33 @@ CREATE TABLE utilisateur_prestataire (
 );
 
 -- ============================================
+-- TABLE : type_service
+-- Types de services prédéfinis (réservation, commande, location)
+-- ============================================
+CREATE TABLE type_service (
+                              id_type_service SERIAL PRIMARY KEY,
+                              nom VARCHAR(50) NOT NULL UNIQUE,
+                              label_fr VARCHAR(100) NOT NULL,
+                              label_en VARCHAR(100),
+                              description_fr TEXT,
+                              description_en TEXT,
+                              icone VARCHAR(10),
+                              champs_requis JSONB NOT NULL DEFAULT '[]'
+);
+
+-- ============================================
 -- TABLE : services
 -- ============================================
 CREATE TABLE services (
                           id_service SERIAL PRIMARY KEY,
                           id_prestataire INT NOT NULL REFERENCES prestataire(id_prestataire) ON DELETE CASCADE,
+                          id_type_service INT REFERENCES type_service(id_type_service) ON DELETE SET NULL,
                           nom_service_fr VARCHAR(100) NOT NULL,
                           nom_service_en VARCHAR(100),
                           description_fr TEXT,
                           description_en TEXT,
-                          prix_estime NUMERIC(10,2)
+                          prix_estime NUMERIC(10,2),
+                          champs_specifiques JSONB DEFAULT '{}'
 );
 
 -- ============================================
@@ -232,6 +250,8 @@ CREATE TABLE festival (
                           lieu_coordonnees VARCHAR(50), -- Format "lat,lng"
                           description_fr TEXT,
                           description_en TEXT,
+                          presentation_fr JSONB, -- Tous les textes de la page d'accueil en français
+                          presentation_en JSONB, -- Tous les textes de la page d'accueil en anglais
                           nombre_festivaliers INT,
                           version VARCHAR(20), -- V3, etc.
                           actif BOOLEAN DEFAULT TRUE
@@ -293,6 +313,7 @@ CREATE INDEX idx_utilisateur_role ON utilisateurs(id_rôle);
 CREATE INDEX idx_prestataire_nom ON prestataire(nom);
 CREATE INDEX idx_prestataire_type ON prestataire(type_prestataire);
 CREATE INDEX idx_services_prestataire ON services(id_prestataire);
+CREATE INDEX idx_services_type ON services(id_type_service);
 CREATE INDEX idx_programmation_scene ON programmation(id_scene);
 CREATE INDEX idx_programmation_artiste ON programmation(id_artiste);
 CREATE INDEX idx_programmation_date ON programmation(date_concert);
@@ -316,10 +337,56 @@ INSERT INTO rôles (nom_rôle, description) VALUES
                                               ('organisateur', 'Organisateur/administrateur du festival');
 
 -- Festival
-INSERT INTO festival (nom, annee, date_debut, date_fin, lieu_nom, lieu_coordonnees, description_fr, description_en, nombre_festivaliers, version, actif) VALUES
+INSERT INTO festival (nom, annee, date_debut, date_fin, lieu_nom, lieu_coordonnees, description_fr, description_en, presentation_fr, presentation_en, nombre_festivaliers, version, actif) VALUES
     ('Golden Coast Festival', 2026, '2026-08-28', '2026-08-30', 'Combe à la Serpent, Corcelles-lès-Monts', '47.305,4.964',
      'Le plus grand festival de rap français sur la Côte dorée. Trois jours d''exception où musique, culture urbaine et convivialité se rencontrent dans un cadre naturel unique.',
      'The biggest French rap festival on the Golden Coast. Three exceptional days where music, urban culture and conviviality meet in a unique natural setting.',
+     '{
+       "titre": "GOLDEN COAST<br>FESTIVAL",
+       "date": "28 - 30 Août 2026",
+       "lieu": "Combe à la Serpent, Corcelles-lès-Monts",
+       "aboutCard1Titre": "🎤 Artistes",
+       "aboutCard1Texte": "Plus de 40 artistes sur 3 scènes pendant 3 jours de festival.",
+       "aboutCard2Titre": "🎶 Musique",
+       "aboutCard2Texte": "Rap, Hip-Hop, R&B, Afrobeats et bien plus encore.",
+       "aboutCard3Titre": "🌍 Communauté",
+       "aboutCard3Texte": "52 000 festivaliers réunis pour célébrer la culture urbaine.",
+       "desc1Titre": "L''expérience Golden Coast",
+       "desc1Texte": "Le Golden Coast Festival est bien plus qu''un simple événement musical. C''est une immersion totale dans la culture urbaine française, au cœur d''un cadre naturel exceptionnel. Pendant trois jours, la Combe à la Serpent se transforme en un village éphémère où la musique, la gastronomie et l''art se rencontrent.",
+       "desc1Chip1": "🎵 3 scènes",
+       "desc1Chip2": "🍔 Village Food & Merch",
+       "desc2Titre": "Un cadre naturel unique",
+       "desc2Texte": "Niché au cœur de la forêt bourguignonne, le site de la Combe à la Serpent offre un écrin de verdure idéal pour profiter de la musique en plein air. Entre les arbres centenaires et les clairières naturelles, vivez une expérience festival inédite, loin du béton et du bitume.",
+       "ctaTitre": "Prêt à vivre l''expérience ?",
+       "ctaTexte": "Réserve ta place dès maintenant pour le Golden Coast Festival 2026.",
+       "ctaBouton": "Réserver mes billets 🎫",
+       "mapTitre": "📍 Où nous trouver",
+       "mapIntro": "Le festival se déroule à la Combe à la Serpent, Corcelles-lès-Monts (21), à quelques minutes de Dijon.",
+       "footerDescription": "Le plus grand festival de rap français sur la Côte dorée."
+     }'::jsonb,
+     '{
+       "titre": "GOLDEN COAST<br>FESTIVAL",
+       "date": "August 28 - 30, 2026",
+       "lieu": "Combe à la Serpent, Corcelles-lès-Monts",
+       "aboutCard1Titre": "🎤 Artists",
+       "aboutCard1Texte": "More than 40 artists on 3 stages during 3 festival days.",
+       "aboutCard2Titre": "🎶 Music",
+       "aboutCard2Texte": "Rap, Hip-Hop, R&B, Afrobeats and much more.",
+       "aboutCard3Titre": "🌍 Community",
+       "aboutCard3Texte": "52,000 festival-goers united to celebrate urban culture.",
+       "desc1Titre": "The Golden Coast Experience",
+       "desc1Texte": "The Golden Coast Festival is much more than just a music event. It is a total immersion in French urban culture, in the heart of an exceptional natural setting. For three days, the Combe à la Serpent becomes an ephemeral village where music, gastronomy and art come together.",
+       "desc1Chip1": "🎵 3 stages",
+       "desc1Chip2": "🍔 Food & Merch Village",
+       "desc2Titre": "A unique natural setting",
+       "desc2Texte": "Nestled in the heart of the Burgundy forest, the Combe à la Serpent site offers an ideal green haven to enjoy outdoor music. Among centuries-old trees and natural clearings, experience a unique festival, far from concrete and asphalt.",
+       "ctaTitre": "Ready for the experience?",
+       "ctaTexte": "Book your spot now for the Golden Coast Festival 2026.",
+       "ctaBouton": "Book my tickets 🎫",
+       "mapTitre": "📍 Find us",
+       "mapIntro": "The festival takes place at Combe à la Serpent, Corcelles-lès-Monts (21), just minutes from Dijon.",
+       "footerDescription": "The biggest French rap festival on the Golden Coast."
+     }'::jsonb,
      52000, 'V3', TRUE);
 
 -- Zones (basées sur zones.json)
@@ -388,34 +455,54 @@ UPDATE scenes SET id_prestataire_sponsor = (SELECT id_prestataire FROM prestatai
 -- ANTDT CLUB par ANTDT (non présent dans prestataires, à ajouter si nécessaire)
 
 -- ============================================
+-- TYPES DE SERVICE (prédéfinis)
+-- ============================================
+INSERT INTO type_service (nom, label_fr, label_en, description_fr, description_en, icone, champs_requis) VALUES
+    ('reservation', 'Réservation', 'Reservation',
+     'Service de réservation de créneaux ou places',
+     'Slot or seat reservation service',
+     '📅',
+     '[{"key": "date", "label_fr": "Date", "label_en": "Date", "type": "date", "required": true}, {"key": "heure_debut", "label_fr": "Heure de début", "label_en": "Start time", "type": "time", "required": true}, {"key": "heure_fin", "label_fr": "Heure de fin", "label_en": "End time", "type": "time", "required": true}, {"key": "nombre_places", "label_fr": "Nombre de places", "label_en": "Number of seats", "type": "number", "required": true}, {"key": "lieu", "label_fr": "Lieu", "label_en": "Location", "type": "text", "required": false}]'::jsonb),
+    ('commande', 'Commande', 'Order',
+     'Service de commande de produits ou nourriture',
+     'Product or food ordering service',
+     '🛒',
+     '[{"key": "quantite_min", "label_fr": "Quantité minimale", "label_en": "Minimum quantity", "type": "number", "required": false}, {"key": "quantite_max", "label_fr": "Quantité maximale", "label_en": "Maximum quantity", "type": "number", "required": false}, {"key": "delai_preparation", "label_fr": "Délai de préparation (min)", "label_en": "Preparation time (min)", "type": "number", "required": false}, {"key": "disponible", "label_fr": "Disponible", "label_en": "Available", "type": "boolean", "required": false}]'::jsonb),
+    ('location', 'Location', 'Rental',
+     'Service de location de matériel ou équipement',
+     'Equipment or material rental service',
+     '🔧',
+     '[{"key": "duree_min", "label_fr": "Durée minimale (heures)", "label_en": "Minimum duration (hours)", "type": "number", "required": false}, {"key": "duree_max", "label_fr": "Durée maximale (heures)", "label_en": "Maximum duration (hours)", "type": "number", "required": false}, {"key": "caution", "label_fr": "Caution (€)", "label_en": "Deposit (€)", "type": "number", "required": false}, {"key": "disponible", "label_fr": "Disponible", "label_en": "Available", "type": "boolean", "required": false}]'::jsonb);
+
+-- ============================================
 -- SERVICES (basés sur prestataires.json)
 -- ============================================
-INSERT INTO services (id_prestataire, nom_service_fr, nom_service_en, description_fr, description_en, prix_estime) VALUES
-                                                                                                                       (1, 'Tacos & Burgers', 'Tacos & Burgers', 'Restauration rapide pour festivaliers', 'Fast food for festival-goers', 10.00),
-                                                                                                                       (2, 'Réseau 5G', '5G Network', 'Connexion mobile et Wi-Fi sur site', 'Mobile connection and on-site Wi-Fi', 0.00),
-                                                                                                                       (3, 'Sécurité & prévention', 'Safety & prevention', 'Sensibilisation sécurité routière et alcool', 'Road safety and alcohol awareness', 0.00),
-                                                                                                                       (4, 'Bar principal', 'Main bar', 'Espace boisson et cocktails', 'Drinks and cocktails area', 12.00),
-                                                                                                                       (5, 'Dégustation whisky', 'Whiskey tasting', 'Espace promotion Jack Daniel''s', 'Jack Daniel''s promotional space', 15.00),
-                                                                                                                       (6, 'Bar Red Bull', 'Red Bull Bar', 'Boissons énergisantes et espace détente', 'Energy drinks and relaxation area', 8.00),
-                                                                                                                       (7, 'Transport VTC', 'VTC transport', 'Navettes et trajets vers le festival', 'Shuttles and trips to the festival', 15.00),
-                                                                                                                       (8, 'Location matériel sportif', 'Sports equipment rental', 'Location d''équipement sportif', 'Sports equipment rental', 5.00),
-                                                                                                                       (9, 'Gestion déchets', 'Waste management', 'Tri et recyclage des déchets', 'Waste sorting and recycling', 0.00),
-                                                                                                                       (10, 'Service de sécurité', 'Security service', 'Surveillance et contrôle d''accès', 'Surveillance and access control', 0.00),
-                                                                                                                       (11, 'Playlists officielles', 'Official playlists', 'Streaming musical du festival', 'Festival music streaming', 0.00),
-                                                                                                                       (12, 'Animation réseau', 'Network animation', 'Rencontres entre festivaliers', 'Meetups between festival-goers', 0.00),
-                                                                                                                       (13, 'Bar Jägermeister', 'Jägermeister bar', 'Dégustation et cocktails', 'Tasting and cocktails', 10.00),
-                                                                                                                       (14, 'Bar Ricard', 'Ricard bar', 'Pastis et cocktails anisés', 'Pastis and anise cocktails', 8.00),
-                                                                                                                       (15, 'Sonorisation', 'Sound system', 'Équipement audio premium', 'Premium audio equipment', 0.00),
-                                                                                                                       (16, 'Bar Pepsi', 'Pepsi bar', 'Boissons rafraîchissantes', 'Refreshing drinks', 5.00),
-                                                                                                                       (17, 'Bar Lipton', 'Lipton bar', 'Thés glacés et boissons', 'Iced teas and drinks', 4.00),
-                                                                                                                       (18, 'Bagels variés', 'Varied bagels', 'Sandwichs bagels garnis', 'Stuffed bagel sandwiches', 9.00),
-                                                                                                                       (19, 'Pizzas artisanales', 'Artisan pizzas', 'Pizzas cuites au feu de bois', 'Wood-fired pizzas', 12.00),
-                                                                                                                       (20, 'Plats aux herbes', 'Herb dishes', 'Cuisine gastronomique', 'Gourmet cuisine', 14.00),
-                                                                                                                       (21, 'Nouilles asiatiques', 'Asian noodles', 'Woks et nouilles sautées', 'Woks and fried noodles', 11.00),
-                                                                                                                       (22, 'Coupe et coiffure', 'Haircut and styling', 'Service de coiffure express', 'Express hairdressing service', 20.00),
-                                                                                                                       (23, 'Merchandising officiel', 'Official merchandising', 'T-shirts, casquettes et goodies', 'T-shirts, caps and goodies', 25.00),
-                                                                                                                       (24, 'Jeux d''arcade', 'Arcade games', 'Accès aux bornes d''arcade', 'Access to arcade machines', 2.00),
-                                                                                                                       (25, 'Match de basket', 'Basketball match', 'Tournoi et jeux libres', 'Tournament and free games', 0.00);
+INSERT INTO services (id_prestataire, id_type_service, nom_service_fr, nom_service_en, description_fr, description_en, prix_estime, champs_specifiques) VALUES
+                                                                                                                       (1, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Tacos & Burgers', 'Tacos & Burgers', 'Restauration rapide pour festivaliers', 'Fast food for festival-goers', 10.00, '{"delai_preparation": 10, "disponible": true}'::jsonb),
+                                                                                                                       (2, NULL, 'Réseau 5G', '5G Network', 'Connexion mobile et Wi-Fi sur site', 'Mobile connection and on-site Wi-Fi', 0.00, '{}'::jsonb),
+                                                                                                                       (3, NULL, 'Sécurité & prévention', 'Safety & prevention', 'Sensibilisation sécurité routière et alcool', 'Road safety and alcohol awareness', 0.00, '{}'::jsonb),
+                                                                                                                       (4, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar principal', 'Main bar', 'Espace boisson et cocktails', 'Drinks and cocktails area', 12.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
+                                                                                                                       (5, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Dégustation whisky', 'Whiskey tasting', 'Espace promotion Jack Daniel''s', 'Jack Daniel''s promotional space', 15.00, '{"disponible": true}'::jsonb),
+                                                                                                                       (6, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Red Bull', 'Red Bull Bar', 'Boissons énergisantes et espace détente', 'Energy drinks and relaxation area', 8.00, '{"delai_preparation": 3, "disponible": true}'::jsonb),
+                                                                                                                       (7, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Transport VTC', 'VTC transport', 'Navettes et trajets vers le festival', 'Shuttles and trips to the festival', 15.00, '{"nombre_places": 4, "lieu": "Festival"}'::jsonb),
+                                                                                                                       (8, (SELECT id_type_service FROM type_service WHERE nom = 'location'), 'Location matériel sportif', 'Sports equipment rental', 'Location d''équipement sportif', 'Sports equipment rental', 5.00, '{"duree_min": 1, "duree_max": 8, "caution": 20, "disponible": true}'::jsonb),
+                                                                                                                       (9, NULL, 'Gestion déchets', 'Waste management', 'Tri et recyclage des déchets', 'Waste sorting and recycling', 0.00, '{}'::jsonb),
+                                                                                                                       (10, NULL, 'Service de sécurité', 'Security service', 'Surveillance et contrôle d''accès', 'Surveillance and access control', 0.00, '{}'::jsonb),
+                                                                                                                       (11, NULL, 'Playlists officielles', 'Official playlists', 'Streaming musical du festival', 'Festival music streaming', 0.00, '{}'::jsonb),
+                                                                                                                       (12, NULL, 'Animation réseau', 'Network animation', 'Rencontres entre festivaliers', 'Meetups between festival-goers', 0.00, '{}'::jsonb),
+                                                                                                                       (13, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Jägermeister', 'Jägermeister bar', 'Dégustation et cocktails', 'Tasting and cocktails', 10.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
+                                                                                                                       (14, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Ricard', 'Ricard bar', 'Pastis et cocktails anisés', 'Pastis and anise cocktails', 8.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
+                                                                                                                       (15, NULL, 'Sonorisation', 'Sound system', 'Équipement audio premium', 'Premium audio equipment', 0.00, '{}'::jsonb),
+                                                                                                                       (16, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Pepsi', 'Pepsi bar', 'Boissons rafraîchissantes', 'Refreshing drinks', 5.00, '{"delai_preparation": 2, "disponible": true}'::jsonb),
+                                                                                                                       (17, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Lipton', 'Lipton bar', 'Thés glacés et boissons', 'Iced teas and drinks', 4.00, '{"delai_preparation": 2, "disponible": true}'::jsonb),
+                                                                                                                       (18, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bagels variés', 'Varied bagels', 'Sandwichs bagels garnis', 'Stuffed bagel sandwiches', 9.00, '{"delai_preparation": 8, "disponible": true}'::jsonb),
+                                                                                                                       (19, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Pizzas artisanales', 'Artisan pizzas', 'Pizzas cuites au feu de bois', 'Wood-fired pizzas', 12.00, '{"delai_preparation": 15, "disponible": true}'::jsonb),
+                                                                                                                       (20, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Plats aux herbes', 'Herb dishes', 'Cuisine gastronomique', 'Gourmet cuisine', 14.00, '{"delai_preparation": 12, "disponible": true}'::jsonb),
+                                                                                                                       (21, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Nouilles asiatiques', 'Asian noodles', 'Woks et nouilles sautées', 'Woks and fried noodles', 11.00, '{"delai_preparation": 10, "disponible": true}'::jsonb),
+                                                                                                                       (22, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Coupe et coiffure', 'Haircut and styling', 'Service de coiffure express', 'Express hairdressing service', 20.00, '{"nombre_places": 2, "lieu": "Stand coiffure"}'::jsonb),
+                                                                                                                       (23, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Merchandising officiel', 'Official merchandising', 'T-shirts, casquettes et goodies', 'T-shirts, caps and goodies', 25.00, '{"disponible": true}'::jsonb),
+                                                                                                                       (24, (SELECT id_type_service FROM type_service WHERE nom = 'location'), 'Jeux d''arcade', 'Arcade games', 'Accès aux bornes d''arcade', 'Access to arcade machines', 2.00, '{"duree_min": 0.5, "duree_max": 2, "caution": 0, "disponible": true}'::jsonb),
+                                                                                                                       (25, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Match de basket', 'Basketball match', 'Tournoi et jeux libres', 'Tournament and free games', 0.00, '{"nombre_places": 10, "lieu": "Terrain basket 3x3"}'::jsonb);
 
 -- ============================================
 -- ARTISTES (basés sur programmation.json et artistes existants)
@@ -496,7 +583,102 @@ INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heur
                                                                                                                          ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SIXTION'), '2026-08-28', '22:30', '01:00', 'Rap alternatif / Trap', 4),
                                                                                                                          ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'URUMI'), '2026-08-28', '01:00', '02:30', 'Rap / R&B', 5);
 
--- Note: Ajouter les autres jours (Samedi 29 et Dimanche 30 août) si nécessaire dans programmation.json
+
+-- ============================================
+-- ARTISTES SUPPLÉMENTAIRES pour Samedi et Dimanche
+-- ============================================
+INSERT INTO artiste (nom, style_musique, description, pays_origine, photo_url, cachet, lien_deezer) VALUES
+  ('LAYLOW', 'Rap / Trap atmosphérique', 'Artiste visionnaire du rap français, connu pour son univers unique.', 'France', 'laylow.jpg', 40000.00, NULL),
+  ('DAMSO', 'Rap / R&B', 'Rappeur belge aux textes introspectifs.', 'Belgique', 'damso.jpg', 55000.00, NULL),
+  ('PLK', 'Rap Français', 'Rappeur français en pleine ascension.', 'France', 'plk.jpg', 35000.00, NULL),
+  ('GAZO', 'Drill / Rap Français', 'Pionnier de la drill française.', 'France', 'gazo.jpg', 40000.00, NULL),
+  ('TIAKOLA', 'Afrobeat / R&B', 'Artiste afro-pop en vogue.', 'France', 'tiakola.jpg', 30000.00, NULL),
+  ('WERENOI', 'Rap Français / Trap', 'Rappeur montant de la scène française.', 'France', 'werenoi.jpg', 28000.00, NULL),
+  ('ZIAK', 'Drill / Rap', 'Artiste drill à l''identité sonore marquée.', 'France', 'ziak.jpg', 32000.00, NULL),
+  ('NISKA', 'Rap / Afrotrap', 'Créateur de l''Afrotrap, artiste majeur.', 'France', 'niska.jpg', 45000.00, NULL),
+  ('DINOS', 'Rap Français / Lyrical', 'Rappeur à textes reconnu.', 'France', 'dinos.jpg', 30000.00, NULL),
+  ('LUIDJI', 'R&B / Soul', 'Artiste R&B et soul français.', 'France', 'luidji.jpg', 22000.00, NULL),
+  ('RIMK', 'Rap Français', 'Vétéran du rap français, membre du 113.', 'France', 'rimk.jpg', 35000.00, NULL),
+  ('LETO', 'Rap Français / Trap', 'Rappeur du PSO Thug.', 'France', 'leto.jpg', 25000.00, NULL),
+  ('DA UZI', 'Rap / Trap', 'Rappeur trap français.', 'France', 'dauzi.jpg', 22000.00, NULL),
+  ('BENJAMIN EPPS', 'Rap / Underground', 'Rappeur underground prometteur.', 'France', 'benjaminepps.jpg', 18000.00, NULL),
+  ('SOPICO', 'Rap / Expérimental', 'Artiste expérimental et créatif.', 'France', 'sopico.jpg', 16000.00, NULL),
+  ('TSEW THE KID', 'R&B / Rap', 'Artiste R&B français.', 'France', 'tsewthekid.jpg', 15000.00, NULL),
+  ('NEGRITO', 'Rap / Afrobeat', 'Artiste mêlant rap et afrobeat.', 'France', 'negrito.jpg', 14000.00, NULL),
+  ('SAF', 'DJ / Electro', 'DJ et producteur reconnu.', 'France', 'saf.jpg', 12000.00, NULL),
+  ('ROUNHAA', 'Rap / Melodic Trap', 'Artiste trap mélodique émergent.', 'France', 'rounhaa.jpg', 13000.00, NULL),
+  ('FAVÉ', 'Rap / R&B', 'Artiste rap R&B en plein essor.', 'France', 'fave.jpg', 20000.00, NULL)
+ON CONFLICT DO NOTHING;
+
+-- ============================================
+-- Samedi 29 août 2026 - MOTHERSHIP
+-- ============================================
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'PLK'), '2026-08-29', '17:00', '17:50', 'Rap Français', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'GAZO'), '2026-08-29', '18:30', '19:20', 'Drill / Rap Français', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'DAMSO'), '2026-08-29', '20:00', '21:10', 'Rap / R&B', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Ninho'), '2026-08-29', '21:50', '23:00', 'Rap français', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Booba'), '2026-08-29', '00:00', '01:30', 'Rap français', 5);
+
+-- Samedi 29 août 2026 - ZERO GRAVITY
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TSEW THE KID'), '2026-08-29', '16:30', '17:15', 'R&B / Rap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TIAKOLA'), '2026-08-29', '17:50', '18:40', 'Afrobeat / R&B', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'NISKA'), '2026-08-29', '19:20', '20:20', 'Rap / Afrotrap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'LAYLOW'), '2026-08-29', '21:00', '22:00', 'Rap / Trap atmosphérique', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'WERENOI'), '2026-08-29', '22:40', '23:30', 'Rap Français / Trap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ZIAK'), '2026-08-29', '00:10', '01:00', 'Drill / Rap', 6);
+
+-- Samedi 29 août 2026 - CARGO
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'ROUNHAA'), '2026-08-29', '15:30', '16:10', 'Rap / Melodic Trap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'NEGRITO'), '2026-08-29', '16:40', '17:20', 'Rap / Afrobeat', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'FAVÉ'), '2026-08-29', '17:50', '18:30', 'Rap / R&B', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'LETO'), '2026-08-29', '19:10', '20:00', 'Rap Français / Trap', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DA UZI'), '2026-08-29', '20:40', '21:25', 'Rap / Trap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DINOS'), '2026-08-29', '22:00', '22:50', 'Rap Français / Lyrical', 6),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'BENJAMIN EPPS'), '2026-08-29', '23:20', '00:05', 'Rap / Underground', 7),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'SOPICO'), '2026-08-29', '00:40', '01:30', 'Rap / Expérimental', 8);
+
+-- Samedi 29 août 2026 - ANTDT CLUB
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LUIDJI'), '2026-08-29', '18:00', '19:00', 'R&B / Soul', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SAF'), '2026-08-29', '19:30', '21:00', 'DJ / Electro', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'ANDY4000'), '2026-08-29', '21:30', '23:00', 'DJ / Electro Rap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'RIMK'), '2026-08-29', '23:30', '01:00', 'Rap Français', 4);
+
+-- ============================================
+-- Dimanche 30 août 2026 - MOTHERSHIP
+-- ============================================
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'WERENOI'), '2026-08-30', '16:00', '16:50', 'Rap Français / Trap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'SDM'), '2026-08-30', '17:30', '18:30', 'Rap français', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Josman'), '2026-08-30', '19:10', '20:10', 'Rap français', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Gims'), '2026-08-30', '21:00', '22:15', 'Pop / Rap français', 4);
+
+-- Dimanche 30 août 2026 - ZERO GRAVITY
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'FRANGLISH'), '2026-08-30', '15:30', '16:20', 'R&B / Rap Français', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'KEBLACK'), '2026-08-30', '17:00', '17:50', 'R&B / Rap Français / Afrobeat', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TIAKOLA'), '2026-08-30', '18:30', '19:20', 'Afrobeat / R&B', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'NISKA'), '2026-08-30', '20:00', '21:00', 'Rap / Afrotrap', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ALONZO'), '2026-08-30', '21:40', '22:30', 'Rap Français', 5);
+
+-- Dimanche 30 août 2026 - CARGO
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'SWAAYVE'), '2026-08-30', '14:30', '15:10', 'Hip-hop / Cloud Rap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'NAOHS'), '2026-08-30', '15:40', '16:20', 'Rap / R&B', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'FAVÉ'), '2026-08-30', '16:50', '17:30', 'Rap / R&B', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = '1PLIKÉ140'), '2026-08-30', '18:10', '19:00', 'Drill / Rap Français', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'GAZO'), '2026-08-30', '19:40', '20:30', 'Drill / Rap Français', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'PLK'), '2026-08-30', '21:10', '22:00', 'Rap Français', 6);
+
+-- Dimanche 30 août 2026 - ANTDT CLUB
+INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LUIDJI'), '2026-08-30', '16:00', '17:00', 'R&B / Soul', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SHEIK LE FABULEUX'), '2026-08-30', '17:30', '18:30', 'Rap / Humour', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SAF'), '2026-08-30', '19:00', '20:30', 'DJ / Electro', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SWAVE'), '2026-08-30', '21:00', '22:30', 'Hip-hop / Cloud Rap', 4);
 
 -- ============================================
 -- EMPLACEMENTS (basés sur emplacements.json avec nouveaux champs)
@@ -544,37 +726,63 @@ INSERT INTO equipements (type_equipement, coord_x, coord_y, coordonnees_complete
 -- ============================================
 -- UTILISATEURS (basés sur users.json)
 -- ============================================
--- Hash par défaut: $2b$10$ (bcrypt) - À remplacer par de vrais hash en production
+-- Hash placeholder: exécuter "node seed-passwords.js" après pour mettre les vrais hash bcrypt
 INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, id_rôle) VALUES
-                                                                             ('User Public', 'user@abc.fr', '$2b$10$rQ4.ExampleHash.User1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'public')),
-                                                                             ('Admin', 'admin@abc.fr', '$2b$10$rQ4.ExampleHash.Admin1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'organisateur')),
-                                                                             ('OTacos Prestataire', 'otacos@prestataire.fr', '$2b$10$rQ4.ExampleHash.OTacos1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Free Prestataire', 'free@prestataire.fr', '$2b$10$rQ4.ExampleHash.Free1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Decathlon Prestataire', 'decathlon@prestataire.fr', '$2b$10$rQ4.ExampleHash.Decathlon1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Red Bull Prestataire', 'redbull@prestataire.fr', '$2b$10$rQ4.ExampleHash.RedBull1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Deezer Prestataire', 'deezer@prestataire.fr', '$2b$10$rQ4.ExampleHash.Deezer1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Poliakov Prestataire', 'poliakov@prestataire.fr', '$2b$10$rQ4.ExampleHash.Poliakov1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Jack Daniel''s Prestataire', 'jackdaniels@prestataire.fr', '$2b$10$rQ4.ExampleHash.JackDaniels1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Heetch Prestataire', 'heetch@prestataire.fr', '$2b$10$rQ4.ExampleHash.Heetch1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Veolia Prestataire', 'veolia@prestataire.fr', '$2b$10$rQ4.ExampleHash.Veolia1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Securitas Prestataire', 'securitas@prestataire.fr', '$2b$10$rQ4.ExampleHash.Securitas1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Happn Prestataire', 'happn@prestataire.fr', '$2b$10$rQ4.ExampleHash.Happn1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-                                                                             ('Allianz Prestataire', 'allianz@prestataire.fr', '$2b$10$rQ4.ExampleHash.Allianz1234567890ABCDEFGHIJKLM', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire'));
+  ('user', 'user@abc.fr', '$2b$10$placeholder.user', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'public')),
+  ('admin', 'admin@abc.fr', '$2b$10$placeholder.admin', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'organisateur')),
+  ('otacos', 'otacos@prestataire.fr', '$2b$10$placeholder.otacos', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('free', 'free@prestataire.fr', '$2b$10$placeholder.free', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('decathlon', 'decathlon@prestataire.fr', '$2b$10$placeholder.decathlon', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('redbull', 'redbull@prestataire.fr', '$2b$10$placeholder.redbull', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('deezer', 'deezer@prestataire.fr', '$2b$10$placeholder.deezer', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('poliakov', 'poliakov@prestataire.fr', '$2b$10$placeholder.poliakov', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('jackdaniels', 'jackdaniels@prestataire.fr', '$2b$10$placeholder.jackdaniels', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('heetch', 'heetch@prestataire.fr', '$2b$10$placeholder.heetch', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('veolia', 'veolia@prestataire.fr', '$2b$10$placeholder.veolia', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('securitas', 'securitas@prestataire.fr', '$2b$10$placeholder.securitas', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('happn', 'happn@prestataire.fr', '$2b$10$placeholder.happn', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('allianz', 'allianz@prestataire.fr', '$2b$10$placeholder.allianz', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('jeager', 'jeager@prestataire.fr', '$2b$10$placeholder.jeager', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('ricard', 'ricard@prestataire.fr', '$2b$10$placeholder.ricard', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('jbl', 'jbl@prestataire.fr', '$2b$10$placeholder.jbl', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('pepsi', 'pepsi@prestataire.fr', '$2b$10$placeholder.pepsi', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('lipton', 'lipton@prestataire.fr', '$2b$10$placeholder.lipton', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('bagels', 'bagels@prestataire.fr', '$2b$10$placeholder.bagels', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('pizza', 'pizza@prestataire.fr', '$2b$10$placeholder.pizza', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('ailetfinesherbes', 'ailetfinesherbes@prestataire.fr', '$2b$10$placeholder.ailetfinesherbes', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('nouilles', 'nouilles@prestataire.fr', '$2b$10$placeholder.nouilles', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('coiffure', 'coiffure@prestataire.fr', '$2b$10$placeholder.coiffure', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('merch', 'merch@prestataire.fr', '$2b$10$placeholder.merch', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('bornedarcade', 'bornedarcade@prestataire.fr', '$2b$10$placeholder.bornedarcade', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
+  ('terraindebasket', 'terraindebasket@prestataire.fr', '$2b$10$placeholder.terraindebasket', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire'));
 
 -- Relations utilisateur_prestataire
 INSERT INTO utilisateur_prestataire (id_utilisateur, id_prestataire) VALUES
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'free@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'decathlon@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'poliakov@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jackdaniels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'heetch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Heetch')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'veolia@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Veolia')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'securitas@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'happn@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn')),
-                                                                         ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'allianz@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz'));
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'free@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'decathlon@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'poliakov@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jackdaniels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'heetch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Heetch')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'veolia@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Veolia')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'securitas@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'happn@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'allianz@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jeager@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jägermeister')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'ricard@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ricard')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jbl@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'JBL')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'lipton@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bagels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pizza@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'ailetfinesherbes@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'nouilles@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'coiffure@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'merch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bornedarcade@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'terraindebasket@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'));
 
 -- ============================================
 -- RELATIONS PRESTATAIRE-EMPLACEMENT (basées sur emplacements.json)

@@ -193,8 +193,7 @@ export default {
         let allPrestataires = [];
         const currentLang = this.$i18n?.locale || 'fr';
 
-        // 1. Essayer l'API
-        let apiOk = false;
+        // Charger depuis l'API
         try {
           const token = localStorage.getItem('authToken');
           const resp = await fetch('/api/prestataires', {
@@ -212,62 +211,9 @@ export default {
               type: p.type_prestataire,
               services: p.services || []
             }));
-            apiOk = true;
           }
-        } catch (e) { /* fallback */ }
-
-        // 2. Fallback JSON
-        if (!apiOk) {
-          const prestatairesResp = await fetch('/data/prestataires.json', { cache: 'no-store' });
-          const prestatairesData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] };
-          allPrestataires = (prestatairesData.prestataires || []).map(p => {
-            const updated = { ...p };
-            if (p.description && typeof p.description === 'object' && p.description.fr !== undefined) {
-              updated.description = p.description[currentLang] || p.description.fr || '';
-            }
-            if (p.services && Array.isArray(p.services)) {
-              updated.services = p.services.map(s => {
-                const service = { ...s };
-                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                  service.nom = s.nom[currentLang] || s.nom.fr || '';
-                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
-                }
-                return service;
-              });
-            }
-            return updated;
-          });
-
-          // Appliquer les modifications localStorage
-          const custom = JSON.parse(localStorage.getItem('customPrestataires') || '{}');
-          allPrestataires = allPrestataires.map(p => {
-            const local = custom[p.nom];
-            if (!local) return p;
-            const updated = { ...p };
-            if (local.presentationHtml) {
-              if (typeof local.presentationHtml === 'object' && local.presentationHtml.fr !== undefined) {
-                updated.description = local.presentationHtml[currentLang] || local.presentationHtml.fr || p.description || '';
-              } else if (typeof local.presentationHtml === 'string') {
-                updated.description = local.presentationHtml;
-              }
-            }
-            if (local.services && Array.isArray(local.services)) {
-              updated.services = local.services.map(s => {
-                const service = { ...s };
-                if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                  service.nom = s.nom[currentLang] || s.nom.fr || '';
-                  service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                    ? (s.description[currentLang] || s.description.fr || '') : (s.description || '');
-                }
-                return service;
-              });
-            }
-            if (local.email) updated.email = local.email;
-            if (local.tel) updated.tel = local.tel;
-            if (local.site) updated.site = local.site;
-            return updated;
-          });
+        } catch (e) {
+          console.error('Erreur chargement prestataires:', e);
         }
 
         this.prestataires = allPrestataires;

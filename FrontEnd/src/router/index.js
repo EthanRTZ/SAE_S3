@@ -101,6 +101,11 @@ const routes = [
         component: MerchView,
     },
     {
+        path: '/services/:type',
+        name: 'services-by-type',
+        component: () => import('@/views/ServicesByTypeView.vue')
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         redirect: '/'

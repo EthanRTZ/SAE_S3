@@ -19,6 +19,7 @@ const Billet = require('./Billet');
 const ReservationBillet = require('./ReservationBillet');
 const UtilisateurPrestataire = require('./UtilisateurPrestataire');
 const PrestataireZone = require('./PrestataireZone');
+const TypeService = require('./TypeService');
 
 // ========================================
 // DÉFINITION DES ASSOCIATIONS
@@ -41,6 +42,16 @@ Service.belongsTo(Prestataire, {
 });
 Prestataire.hasMany(Service, {
   foreignKey: 'id_prestataire',
+  as: 'services'
+});
+
+// Service <-> TypeService
+Service.belongsTo(TypeService, {
+  foreignKey: 'id_type_service',
+  as: 'typeService'
+});
+TypeService.hasMany(Service, {
+  foreignKey: 'id_type_service',
   as: 'services'
 });
 
@@ -207,6 +218,7 @@ module.exports = {
   Billet,
   ReservationBillet,
   UtilisateurPrestataire,
-  PrestataireZone
+  PrestataireZone,
+  TypeService
 };
 

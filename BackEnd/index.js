@@ -23,6 +23,8 @@ const routesEquipements = require('./routes/equipements');
 const routesAvis = require('./routes/avis');
 const routesProgrammation = require('./routes/programmation');
 const routesBillets = require('./routes/billets');
+const routesTypesService = require('./routes/typesService');
+const routesScenes = require('./routes/scenes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,22 +40,57 @@ setupSwagger(app);
 app.use('/api/auth', routesAuth); // Auth : register et login sont publics
 app.get('/api/health', (req, res) => res.json({ ok: true })); // Health check public
 
-// Routes protégées (middleware de sécurisation appliqué)
-// Pour le S3 : vérification simple de la présence du token
-// Pour le S4 : ce middleware sera remplacé par une vérification JWT complète
+// Routes publiques en lecture (GET) – données affichées sur la page d'accueil sans connexion
+app.use('/api/manifestations', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesManifestations);
+app.use('/api/prestataires', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesPrest);
+app.use('/api/artistes', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesArtistes);
+app.use('/api/programmation', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesProgrammation);
+app.use('/api/zones', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesZones);
+app.use('/api/equipements', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesEquipements);
+app.use('/api/avis', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesAvis);
+app.use('/api/billets', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesBillets);
+app.use('/api/types-service', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesTypesService);
+app.use('/api/scenes', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesScenes);
+app.use('/api/emplacements', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesEmplacements);
+
+// Routes protégées (middleware de sécurisation appliqué sur tous les verbes)
 app.use('/api/utilisateurs', simpleAuth, routesUtilisateurs);
 app.use('/api/roles', simpleAuth, routesRoles);
-app.use('/api/artistes', simpleAuth, routesArtistes);
-app.use('/api/prestataires', simpleAuth, routesPrest);
 app.use('/api/services', simpleAuth, routesServ);
-app.use('/api/emplacements', simpleAuth, routesEmplacements);
 app.use('/api/stats', simpleAuth, routesStats);
-app.use('/api/manifestations', simpleAuth, routesManifestations);
-app.use('/api/zones', simpleAuth, routesZones);
-app.use('/api/equipements', simpleAuth, routesEquipements);
-app.use('/api/avis', simpleAuth, routesAvis);
-app.use('/api/programmation', simpleAuth, routesProgrammation);
-app.use('/api/billets', simpleAuth, routesBillets);
 
 app.use((err, req, res, next) => {
   console.error(err);

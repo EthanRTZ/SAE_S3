@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -82,51 +82,8 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 const router = useRouter()
-const showPwd = ref(false) // nouvel état pour l'affichage du mot de passe
+const showPwd = ref(false)
 
-const USERS_JSON_URL = '/data/users.json'
-const LOCAL_USERS_KEY = 'customUsers'
-
-const fetchUsers = async () => {
-  try {
-    const resp = await fetch(USERS_JSON_URL, { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
-    if (!Array.isArray(data)) throw new Error('bad format')
-    return data
-  } catch (e) {
-    return [{ email: 'test@example.com', password: 'secret123', role: 'user' }]
-  }
-}
-
-const readCustomUsers = () => {
-  try {
-    const raw = localStorage.getItem(LOCAL_USERS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (e) {
-    return []
-  }
-}
-
-const persistAuthUser = (user) => {
-  const payload = {
-    email: user.email,
-    role: user.role || 'user',
-    prestataireNom: user.prestataireNom || null,
-    ts: Date.now()
-  }
-  localStorage.setItem('authUser', JSON.stringify(payload))
-  window.dispatchEvent(new Event('auth-changed'))
-}
-
-onMounted(() => {
-  // debug rapide : s'affiche dans la console du navigateur quand la vue est montée
-  console.log('LoginView monté')
-})
-
-// Remplace la simulation par la vérification sur l'API ou le JSON
 const onSubmit = async () => {
   error.value = ''
   if (!email.value || !password.value) {
@@ -135,73 +92,51 @@ const onSubmit = async () => {
   }
   loading.value = true
   try {
-    // 1. Essayer l'API
-    let apiSuccess = false
-    try {
-      const resp = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: email.value, password: password.value })
-      })
-      if (resp.ok) {
-        const data = await resp.json()
-        const token = data.token || data.accessToken
-        if (token) localStorage.setItem('authToken', token)
-        const user = data.user || data
-        persistAuthUser({
-          email: user.email,
-          username: user.nom_utilisateur || user.username,
-          role: user.role?.nom_rôle || user.role || 'public',
-          prestataireNom: user.prestataireNom || null
-        })
-        apiSuccess = true
-        if ((user.role?.nom_rôle || user.role) === 'organisateur' || (user.role?.nom_rôle || user.role) === 'admin') {
-          router.push({ path: '/admin' })
-        } else if ((user.role?.nom_rôle || user.role) === 'prestataire') {
-          router.push({ path: '/prestataire-espace' })
-        } else {
-          router.push({ path: '/' })
-        }
-      } else {
-        const errData = await resp.json().catch(() => ({}))
-        if (resp.status === 401 || resp.status === 400) {
-          error.value = t('login.invalidCredentials')
-          return
-        }
-      }
-    } catch (apiErr) { /* fallback JSON si API non dispo */ }
+    // Appel API de connexion (BDD + JWT)
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login: email.value, password: password.value })
+    })
 
-    if (!apiSuccess) {
-      // 2. Fallback JSON + localStorage
-      const [baseUsers, customUsers] = await Promise.all([
-        fetchUsers(),
-        Promise.resolve(readCustomUsers())
-      ])
-      const allUsers = [...customUsers, ...baseUsers]
-      const identifier = email.value.toLowerCase()
-      const user = allUsers.find(
-        (u) =>
-          (
-            (u.email || '').toLowerCase() === identifier ||
-            (u.username || '').toLowerCase() === identifier
-          ) &&
-          u.password === password.value
-      )
-
-      if (!user) {
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}))
+      if (resp.status === 401 || resp.status === 400) {
         error.value = t('login.invalidCredentials')
-        return
-      }
-
-      persistAuthUser(user)
-
-      if (user.role === 'admin' || user.role === 'organisateur') {
-        router.push({ path: '/admin' })
-      } else if (user.role === 'prestataire') {
-        router.push({ path: '/prestataire-espace' })
       } else {
-        router.push({ path: '/' })
+        error.value = errData.message || errData.error || t('login.accessError')
       }
+      return
+    }
+
+    const data = await resp.json()
+
+    // Stocker le token JWT
+    const token = data.token
+    if (token) {
+      localStorage.setItem('authToken', token)
+    }
+
+    // Stocker les infos utilisateur
+    const user = data.user
+    const authPayload = {
+      id: user.id,
+      email: user.email,
+      nom: user.nom,
+      role: user.role,
+      prestataireNom: user.prestataireNom || null,
+      ts: Date.now()
+    }
+    localStorage.setItem('authUser', JSON.stringify(authPayload))
+    window.dispatchEvent(new Event('auth-changed'))
+
+    // Redirection selon le rôle
+    if (user.role === 'organisateur' || user.role === 'admin') {
+      router.push({ path: '/admin' })
+    } else if (user.role === 'prestataire') {
+      router.push({ path: '/prestataire-espace' })
+    } else {
+      router.push({ path: '/' })
     }
   } catch (e) {
     error.value = t('login.accessError')

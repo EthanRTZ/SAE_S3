@@ -117,15 +117,38 @@ const normalizeProducts = (items) => {
 const fetchProducts = async () => {
   isLoading.value = true
   try {
-    const resp = await fetch('/data/merch.json', { cache: 'no-store' })
-    if (!resp.ok) throw new Error('fetch failed')
-    const data = await resp.json()
-    const items = Array.isArray(data.items) ? data.items : []
-    const list = items.length ? items : fallbackProducts
-    products.value = normalizeProducts(list)
-    if (!items.length) {
-      errorMessage.value = t('merch.loadError')
+    // Essayer de charger les produits merch depuis l'API (services des prestataires merch)
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/prestataires', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      const merchPrestataires = (Array.isArray(list) ? list : []).filter(p =>
+        p.type_prestataire === 'Merchandising' || p.nom?.toLowerCase().includes('merch')
+      )
+      if (merchPrestataires.length > 0) {
+        const merchServices = merchPrestataires.flatMap(p =>
+          (p.services || []).map((s, idx) => ({
+            id: `merch-${s.id_service || idx}`,
+            name: s.nom_service_fr || s.nom || s.nom_service_en || 'Produit',
+            price: parseFloat(s.prix_estime) || 0,
+            sizes: s.champs_specifiques?.tailles || ['Taille unique'],
+            stock: s.champs_specifiques?.stock ?? 10,
+            badge: s.champs_specifiques?.badge || '',
+            accent: s.champs_specifiques?.accent || '#2046b3',
+            image: s.champs_specifiques?.image || '/media/merch/tshirt.jpeg'
+          }))
+        )
+        if (merchServices.length > 0) {
+          products.value = normalizeProducts(merchServices)
+          isLoading.value = false
+          return
+        }
+      }
     }
+    // Si pas de données API merch, utiliser les produits par défaut
+    products.value = normalizeProducts(fallbackProducts)
   } catch (err) {
     products.value = normalizeProducts(fallbackProducts)
     errorMessage.value = t('merch.loadError')

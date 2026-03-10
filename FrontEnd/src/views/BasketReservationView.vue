@@ -313,26 +313,8 @@ const loadFestivalInfo = async () => {
           if (dates.length) { festivalDates.value = dates; return; }
         }
       }
-    } catch (e) { /* fallback */ }
-
-    // Fallback JSON
-    const response = await fetch('/data/festival.json', { cache: 'no-store' })
-    data = await response.json()
-
-    if (data.info) {
-      const info = data.info
-      if (info.dates) festivalDatesText.value = info.dates[currentLang] || info.dates.fr || ''
-      if (info.location) festivalLocation.value = info.location[currentLang] || info.location.fr || ''
-      if (info.basketLocation) basketLocationValue.value = info.basketLocation[currentLang] || info.basketLocation.fr || ''
-      if (info.festivalDates && Array.isArray(info.festivalDates)) {
-        festivalDates.value = info.festivalDates.map(date => ({
-          dateStr: date.dateStr,
-          dayName: typeof date.dayName === 'object' ? (date.dayName[currentLang] || date.dayName.fr) : date.dayName,
-          dayNumber: date.dayNumber,
-          monthName: typeof date.monthName === 'object' ? (date.monthName[currentLang] || date.monthName.fr) : date.monthName,
-          label: t(`basketReservation.day${info.festivalDates.indexOf(date) + 1}`)
-        }))
-      }
+    } catch (e) {
+      console.error('Erreur chargement festival API:', e)
     }
   } catch (error) {
     console.error('Erreur lors du chargement des informations du festival:', error)
@@ -520,7 +502,7 @@ const getEndTime = (startTime) => {
 }
 
 // Ajouter une réservation GRATUITE (sans panier)
-const addToCart = () => {
+const addToCart = async () => {
   if (!canAddToCart.value) return
 
   console.log('=== Début de la réservation ===')
@@ -529,17 +511,27 @@ const addToCart = () => {
   console.log('Nom:', teamName.value)
   console.log('Email:', contactEmail.value)
 
-  // 1) Marquer le créneau comme réservé localement
+  // 1) Sauvegarder la réservation via l'API
   const reservations = getExistingReservations()
   const newBasketResa = {
-    date: selectedDate.value, // Format "2026-08-28"
-    slot: selectedSlot.value, // Format "14:00"
+    date: selectedDate.value,
+    slot: selectedSlot.value,
     nbPlayers: nbPlayers.value,
     nom: teamName.value || '',
     email: contactEmail.value || ''
   }
   reservations.push(newBasketResa)
-  localStorage.setItem(BASKET_RESERVATIONS_KEY, JSON.stringify(reservations))
+
+  try {
+    const token = localStorage.getItem('authToken')
+    await fetch('/api/billets/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ type: 'service', prestataire: 'Terrain de basket', ...newBasketResa })
+    })
+  } catch (e) {
+    console.error('Erreur sauvegarde réservation basket:', e)
+  }
   console.log('Réservation basket sauvegardée:', newBasketResa)
 
   // 2) Créer la réservation côté prestataire

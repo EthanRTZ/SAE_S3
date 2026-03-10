@@ -25,7 +25,7 @@
             <h2 class="section-title">{{ $t('payment.orderSummary') }}</h2>
             <ul class="summary-list">
               <li v-for="item in panierStore.items" :key="item.id" class="summary-item">
-                <span class="item-name">{{ item.displayLabel || formatItemTitle(item) }}</span>
+                <span class="item-name">{{ item.displayLabel || item.label || formatItemTitle(item) }}</span>
                 <span class="item-qty">× {{ item.quantity }}</span>
               </li>
             </ul>
@@ -311,6 +311,10 @@ const formatItemTitle = (item) => {
       return t('panier.parking')
     case 'camping':
       return t('panier.camping')
+    case 'basket':
+      return t('panier.basket')
+    case 'service':
+      return item.nom || item.label || t('panier.service')
     default:
       return t('panier.item')
   }
@@ -476,7 +480,7 @@ const onSubmit = async () => {
   processing.value = true
 
   // Simulation du traitement du paiement
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
       const now = new Date()
 
@@ -492,36 +496,45 @@ const onSubmit = async () => {
         createdAt: now.toISOString()
       }
 
-      // Sauvegarder l'historique des commandes
-      const orders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-      orders.push(order)
-      localStorage.setItem('userOrders', JSON.stringify(orders))
+      // Sauvegarder la commande et les réservations via l'API
+      const token = localStorage.getItem('authToken')
+      const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-      // Ajouter chaque article du panier dans "Mes réservations"
-      const existingReservations = JSON.parse(localStorage.getItem('userReservations') || '[]')
-
-      panierStore.items.forEach(item => {
-        const reservationId = `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`
-        const reservation = {
-          id: reservationId,
-          userEmail: authUser.value.email,
-          type: item.type,
-          quantity: item.quantity,
-          displayLabel: item.displayLabel || formatItemTitle(item),
-          optionLabel: item.optionLabel || '',
-          createdAt: now.toISOString(),
-          orderId: order.id, // Lien avec la commande
-          personalInfo: {
-            firstName: formData.value.firstName,
-            lastName: formData.value.lastName,
-            phone: formData.value.phone
+      // Enregistrer chaque article du panier comme réservation via l'API
+      for (const item of panierStore.items) {
+        try {
+          if (item.type === 'service' && item.prestataire) {
+            // Réservation service prestataire
+            await fetch('/api/billets/reservations', {
+              method: 'POST', headers,
+              body: JSON.stringify({
+                type: 'service',
+                quantity: item.quantity,
+                prestataire: item.prestataire,
+                nom: item.nom || item.label,
+                serviceType: item.serviceType || '',
+                details: item.details || {},
+                prix: item.prix || 0,
+                personalInfo: { firstName: formData.value.firstName, lastName: formData.value.lastName, phone: formData.value.phone }
+              })
+            })
+          } else {
+            // Réservation billet festival
+            await fetch('/api/billets/reservations', {
+              method: 'POST', headers,
+              body: JSON.stringify({
+                type: item.type,
+                quantity: item.quantity,
+                optionLabel: item.optionLabel || '',
+                displayLabel: item.displayLabel || item.label,
+                personalInfo: { firstName: formData.value.firstName, lastName: formData.value.lastName, phone: formData.value.phone }
+              })
+            })
           }
+        } catch (e) {
+          console.error('Erreur sauvegarde réservation:', e)
         }
-        existingReservations.push(reservation)
-      })
-
-      // Sauvegarder les réservations mises à jour
-      localStorage.setItem('userReservations', JSON.stringify(existingReservations))
+      }
 
       // Vider le panier SANS restaurer le stock (places payées = places définitivement réservées)
       panierStore.clearPanierAfterPayment()

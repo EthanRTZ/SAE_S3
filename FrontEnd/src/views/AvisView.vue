@@ -180,7 +180,7 @@ const prestataires = ref([]);
 const avisListe = ref([]);
 const filtrePrestataire = ref('');
 
-// Charger les prestataires
+// Charger les prestataires depuis l'API
 const loadPrestataires = async () => {
   try {
     const token = localStorage.getItem('authToken');
@@ -190,25 +190,16 @@ const loadPrestataires = async () => {
     if (resp.ok) {
       const data = await resp.json();
       prestataires.value = Array.isArray(data) ? data : (data.prestataires || []);
-      return;
     }
-  } catch (e) { /* fallback */ }
-  // Fallback JSON
-  try {
-    const response = await fetch('/data/prestataires.json');
-    const data = await response.json();
-    prestataires.value = data.prestataires || [];
-  } catch (error) {
-    console.error('Erreur chargement prestataires:', error);
+  } catch (e) {
+    console.error('Erreur chargement prestataires:', e);
   }
 };
 
-// Charger les avis depuis l'API et localStorage
+// Charger les avis depuis l'API
 const loadAvis = async () => {
   const allAvis = [];
 
-  // 1. Essayer l'API
-  let apiOk = false;
   try {
     const token = localStorage.getItem('authToken');
     const resp = await fetch('/api/avis', {
@@ -227,122 +218,77 @@ const loadAvis = async () => {
           date: avis.date_avis
         });
       });
-      apiOk = true;
     }
-  } catch (e) { /* fallback */ }
-
-  // 2. Fallback JSON si API indisponible
-  if (!apiOk) {
-    try {
-      const response = await fetch('/data/avis.json');
-      const data = await response.json();
-      Object.keys(data).forEach(prestataireName => {
-        const prestataireAvis = data[prestataireName].avis || [];
-        prestataireAvis.forEach(avis => {
-          allAvis.push({
-            id: `${prestataireName}-${avis.id}`,
-            prestataire: prestataireName,
-            note: avis.note,
-            nom: 'Anonyme',
-            commentaire: avis.commentaire,
-            date: avis.date
-          });
-        });
-      });
-    } catch (error) {
-      console.error('Erreur chargement avis JSON:', error);
-    }
+  } catch (e) {
+    console.error('Erreur chargement avis:', e);
   }
 
-  // 3. Avis localStorage (soumis localement)
-  const stored = localStorage.getItem('festivalAvis');
-  if (stored) {
-    try {
-      const localAvis = JSON.parse(stored);
-      allAvis.push(...localAvis);
-    } catch (e) {
-      console.error('Erreur chargement localStorage:', e);
-    }
-  }
-
-  // 3. Trier par date décroissante (plus récent en premier)
+  // Trier par date décroissante
   allAvis.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   avisListe.value = allAvis;
 };
 
-// Soumettre un avis
-const submitAvis = () => {
+// Soumettre un avis via l'API
+const submitAvis = async () => {
   if (!formData.value.prestataire || !formData.value.note || !formData.value.commentaire.trim()) {
     return;
   }
 
   submitting.value = true;
 
-  const newAvis = {
-    id: Date.now(),
-    prestataire: formData.value.prestataire,
-    note: formData.value.note,
-    nom: formData.value.nom || 'Anonyme',
-    commentaire: formData.value.commentaire.trim(),
-    date: new Date().toISOString()
-  };
+  try {
+    const token = localStorage.getItem('authToken');
 
-  // MODIFICATION: Différencier festival et prestataires
-  if (formData.value.prestataire === 'Festival') {
-    // Avis sur le festival
-    const storedFestival = localStorage.getItem('avisFestival');
-    let avisFestival = [];
-    if (storedFestival) {
-      try {
-        avisFestival = JSON.parse(storedFestival);
-      } catch (e) {
-        avisFestival = [];
+    // Trouver l'ID du prestataire
+    const prest = prestataires.value.find(p => p.nom === formData.value.prestataire);
+    const id_prestataire = prest?.id_prestataire || prest?.id || null;
+
+    const resp = await fetch('/api/avis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        id_prestataire: id_prestataire,
+        note: formData.value.note,
+        commentaire: formData.value.commentaire.trim(),
+        nom: formData.value.nom || 'Anonyme'
+      })
+    });
+
+    if (!resp.ok) throw new Error('Erreur lors de l\'envoi de l\'avis');
+
+    // Émettre un événement global
+    window.dispatchEvent(new CustomEvent('avis-updated', {
+      detail: {
+        type: formData.value.prestataire === 'Festival' ? 'festival' : 'prestataire',
+        prestataire: formData.value.prestataire
       }
-    }
-    avisFestival.unshift(newAvis);
-    localStorage.setItem('avisFestival', JSON.stringify(avisFestival));
-  } else {
-    // Avis sur un prestataire
-    const stored = localStorage.getItem('festivalAvis');
-    let localAvis = [];
-    if (stored) {
-      try {
-        localAvis = JSON.parse(stored);
-      } catch (e) {
-        localAvis = [];
-      }
-    }
-    localAvis.unshift(newAvis);
-    localStorage.setItem('festivalAvis', JSON.stringify(localAvis));
-  }
+    }));
 
-  // Émettre un événement global pour notifier les autres composants
-  window.dispatchEvent(new CustomEvent('avis-updated', {
-    detail: {
-      type: formData.value.prestataire === 'Festival' ? 'festival' : 'prestataire',
-      prestataire: newAvis.prestataire,
-      avis: newAvis
-    }
-  }));
+    // Recharger tous les avis
+    await loadAvis();
 
-  // Recharger tous les avis
-  loadAvis();
+    successMessage.value = t('avis.published');
 
-  successMessage.value = t('avis.published');
+    // Reset form
+    formData.value = {
+      prestataire: '',
+      note: 0,
+      nom: '',
+      commentaire: ''
+    };
 
-  // Reset form
-  formData.value = {
-    prestataire: '',
-    note: 0,
-    nom: '',
-    commentaire: ''
-  };
-
-  setTimeout(() => {
-    successMessage.value = '';
+    setTimeout(() => {
+      successMessage.value = '';
+      submitting.value = false;
+    }, 3000);
+  } catch (e) {
+    console.error('Erreur soumission avis:', e);
     submitting.value = false;
-  }, 3000);
+  }
 };
 
 // Prestataires ayant des avis

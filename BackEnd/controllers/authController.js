@@ -1,4 +1,4 @@
-const { Utilisateur, Role, SessionAuthentification } = require('../models');
+const { Utilisateur, Role, SessionAuthentification, Prestataire } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
@@ -84,11 +84,19 @@ exports.login = async (req, res) => {
                     { nom_utilisateur: loginIdentifier }
                 ]
             },
-            include: [{
-                model: Role,
-                as: 'role',
-                attributes: ['nom_rôle']
-            }]
+            include: [
+                {
+                    model: Role,
+                    as: 'role',
+                    attributes: ['nom_rôle']
+                },
+                {
+                    model: Prestataire,
+                    as: 'prestataires',
+                    attributes: ['nom'],
+                    through: { attributes: [] }
+                }
+            ]
         });
 
         if (!user) {
@@ -102,12 +110,18 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Nom du prestataire associé (si rôle prestataire)
+        const prestataireNom = user.prestataires && user.prestataires.length > 0
+            ? user.prestataires[0].nom
+            : null;
+
         // Générer un token JWT
         const token = jwt.sign(
             {
                 id: user.id_utilisateur,
                 email: user.email,
-                role: user.role.nom_rôle
+                role: user.role.nom_rôle,
+                prestataireNom
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -131,7 +145,8 @@ exports.login = async (req, res) => {
                 id: user.id_utilisateur,
                 nom: user.nom_utilisateur,
                 email: user.email,
-                role: user.role.nom_rôle
+                role: user.role.nom_rôle,
+                prestataireNom
             }
         });
     } catch (error) {
@@ -194,11 +209,19 @@ exports.getCurrentUser = async (req, res) => {
 
         // Récupérer les infos complètes de l'utilisateur
         const user = await Utilisateur.findByPk(decoded.id, {
-            include: [{
-                model: Role,
-                as: 'role',
-                attributes: ['nom_rôle']
-            }],
+            include: [
+                {
+                    model: Role,
+                    as: 'role',
+                    attributes: ['nom_rôle']
+                },
+                {
+                    model: Prestataire,
+                    as: 'prestataires',
+                    attributes: ['nom'],
+                    through: { attributes: [] }
+                }
+            ],
             attributes: ['id_utilisateur', 'nom_utilisateur', 'email', 'date_creation']
         });
 
@@ -206,11 +229,16 @@ exports.getCurrentUser = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
+        const prestataireNom = user.prestataires && user.prestataires.length > 0
+            ? user.prestataires[0].nom
+            : null;
+
         res.json({
             id: user.id_utilisateur,
             nom: user.nom_utilisateur,
             email: user.email,
             role: user.role.nom_rôle,
+            prestataireNom,
             date_creation: user.date_creation
         });
     } catch (error) {

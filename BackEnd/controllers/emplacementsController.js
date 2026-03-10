@@ -1,4 +1,4 @@
-const { Emplacement } = require('../models');
+const { Emplacement, Prestataire } = require('../models');
 
 /**
  * GET /api/emplacements - Récupérer tous les emplacements
@@ -6,9 +6,32 @@ const { Emplacement } = require('../models');
 exports.getAllEmplacements = async (req, res) => {
     try {
         const emplacements = await Emplacement.findAll({
+            include: [{
+                model: Prestataire,
+                as: 'prestataires',
+                attributes: ['id_prestataire', 'nom', 'type_prestataire'],
+                through: {
+                    attributes: ['statut', 'date_attribution']
+                }
+            }],
             order: [['id_emplacement', 'ASC']]
         });
-        res.json(emplacements);
+
+        // Transformer pour inclure le nom du prestataire directement
+        const result = emplacements.map(e => {
+            const plain = e.toJSON();
+            const prestataire = plain.prestataires && plain.prestataires.length > 0
+                ? plain.prestataires[0]
+                : null;
+            return {
+                ...plain,
+                prestataireNom: prestataire ? prestataire.nom : null,
+                prestataireType: prestataire ? prestataire.type_prestataire : null,
+                prestataires: undefined // Supprimer le tableau brut
+            };
+        });
+
+        res.json(result);
     } catch (error) {
         console.error('Error fetching emplacements:', error);
         res.status(500).json({ error: 'Failed to fetch emplacements' });

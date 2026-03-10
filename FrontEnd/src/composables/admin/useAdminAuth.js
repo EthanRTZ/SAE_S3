@@ -5,7 +5,7 @@ export function useAdminAuth() {
   const loading = ref(true)
 
   const adminEmail = computed(() => authUser.value?.email || '')
-  const isAdmin = computed(() => authUser.value?.role === 'admin')
+  const isAdmin = computed(() => authUser.value?.role === 'admin' || authUser.value?.role === 'organisateur')
 
   const loadAuthFromStorage = () => {
     try {

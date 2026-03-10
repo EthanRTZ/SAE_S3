@@ -97,7 +97,27 @@
     "lastReviews": "Latest reviews",
     "reserveSlot": "Book your slot",
     "reserveDesc": "Enjoy our basketball court during the festival from",
-    "reserveNow": "Book now"
+    "reserveNow": "Book now",
+    "bookNow": "Book",
+    "orderNow": "Order",
+    "rentNow": "Rent",
+    "modal": {
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "nbPersons": "Number of people",
+      "location": "Location",
+      "maxSeats": "Available seats",
+      "quantity": "Quantity",
+      "prepTime": "Preparation time",
+      "unavailable": "This service is currently unavailable.",
+      "duration": "Rental duration",
+      "hours": "hours",
+      "deposit": "Deposit",
+      "total": "Total",
+      "addToCart": "Add to cart",
+      "addedToCart": "✅ Service added to cart!"
+    }
   },
   "reservation": {
     "title": "Book a package",
@@ -172,7 +192,8 @@
     "parking": "Parking space",
     "camping": "Camping spot",
     "basket": "🏀 Basketball Court",
-    "item": "Item"
+    "item": "Item",
+    "service": "Service"
   },
   "login": {
     "title": "Login",
@@ -473,7 +494,33 @@
     "userInfoSaved": "User information saved.",
     "editingLanguage": "Editing language:",
     "french": "French",
-    "english": "English"
+    "english": "English",
+    "serviceType": "Service type",
+    "selectServiceType": "-- Select a type --",
+    "noType": "None (free service)",
+    "specificFields": "Specific information",
+    "fieldRequired": "(required)"
+  },
+  "servicesByType": {
+    "loading": "Loading services...",
+    "errorTitle": "Error",
+    "loadError": "Unable to load services.",
+    "backHome": "Back to home",
+    "searchPlaceholder": "Search for a service...",
+    "results": "result(s)",
+    "noServices": "No services available for this category.",
+    "free": "Free",
+    "fields": {
+      "seats": "Seats",
+      "location": "Location",
+      "date": "Date",
+      "prepTime": "Preparation",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "minQty": "Min quantity",
+      "duration": "Duration",
+      "deposit": "Deposit"
+    }
   },
   "merch": {
     "title": "Official merch store",

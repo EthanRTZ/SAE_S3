@@ -16,6 +16,9 @@ const services = ref([])
 const userFields = ref({ email: '', tel: '', site: '' })
 const popupText = ref({ fr: '', en: '' })
 
+// Types de service (réservation, commande, location)
+const typesService = ref([])
+
 // AJOUT: fonction utilitaire pour normaliser les noms (utilisée dans loadReservations)
 const normalizeName = (name) => {
   if (!name) return ''
@@ -98,55 +101,28 @@ const loadPrestataireInfo = async () => {
       }
       if (zonesResp.ok) { const list = await zonesResp.json(); rawZones = Array.isArray(list) ? list : [] }
       if (prestatairesResp.ok) { const list = await prestatairesResp.json(); allPrestataires = Array.isArray(list) ? list : [] }
-    } catch (e) { /* fallback JSON */ }
-
-    if (!rawEmplacements.length) {
-      const [emplacementsResp, zonesResp, prestatairesResp] = await Promise.all([
-        fetch('/data/emplacements.json', { cache: 'no-store' }),
-        fetch('/data/zones.json', { cache: 'no-store' }),
-        fetch('/data/prestataires.json', { cache: 'no-store' })
-      ])
-      const ed = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
-      const zd = zonesResp.ok ? await zonesResp.json() : { zones: [] }
-      const pd = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
-      rawEmplacements = ed.emplacements || []
-      rawZones = zd.zones || []
-      allPrestataires = pd.prestataires || []
+    } catch (e) {
+      console.error('Erreur chargement API:', e)
     }
 
     emplacements.value = rawEmplacements
     zones.value = rawZones
 
-    // Emplacement attribué
-    try {
-      const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-      const emplacementsAttribues = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
-      const coordActuel = emplacementsAttribues[prestataireNom.value]
-      if (coordActuel) {
-        const emplacement = rawEmplacements.find(e => e.coordonnees === coordActuel)
-        emplacementActuel.value = emplacement ? { ...emplacement, dateAttribution: new Date().toISOString() } : null
-      } else {
-        emplacementActuel.value = null
-      }
-    } catch (e) { emplacementActuel.value = null }
+    // Emplacement attribué - chercher dans les emplacements API
+    emplacementActuel.value = rawEmplacements.find(e =>
+      e.statut === 'pris' && e.prestataireNom === prestataireNom.value
+    ) || null
 
-    // Demande en attente
-    try {
-      const demandesRaw = localStorage.getItem('demandesEmplacement')
-      const demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-      demandePendante.value = demandes.find(d => d.prestataireNom === prestataireNom.value && d.statut === 'en_attente') || null
-    } catch (e) { demandePendante.value = null }
-
-    // Custom localStorage
-    const customRaw = localStorage.getItem('customPrestataires')
-    let customPrestataires = null
-    if (customRaw) { try { customPrestataires = JSON.parse(customRaw) } catch (e) { customPrestataires = null } }
+    // Demande en attente - chercher dans les emplacements API
+    demandePendante.value = rawEmplacements.find(e =>
+      e.statut === 'en_attente' && e.prestataireNom === prestataireNom.value
+    ) || null
 
     // Trouver le prestataire
     let prestataire = allPrestataires.find(p => p.nom === prestataireNom.value) || null
     if (!prestataire) { prestataireInfo.value = null; loading.value = false; return }
 
-    // Normaliser format BDD ou JSON
+    // Normaliser format BDD
     const base = {
       ...prestataire,
       description: prestataire.description_fr
@@ -173,50 +149,22 @@ const loadPrestataireInfo = async () => {
       })
     }
 
-    // Appliquer custom
-    const customData = customPrestataires && customPrestataires[prestataireNom.value]
-      ? customPrestataires[prestataireNom.value] : {}
+    presentationText.value = base.description || ''
+    popupText.value = { fr: '', en: '' }
 
-    let descriptionBilingue = customData.description || customData.presentationHtml || {}
-    if (typeof descriptionBilingue === 'string') descriptionBilingue = { fr: descriptionBilingue, en: '' }
-    presentationText.value = descriptionBilingue[editingLang.value] || descriptionBilingue.fr || base.description || ''
-
-    if (customData.popupText && typeof customData.popupText === 'object' && customData.popupText.fr !== undefined) {
-      popupText.value = { fr: customData.popupText.fr || '', en: customData.popupText.en || '' }
-    } else {
-      popupText.value = { fr: customData.popupText || '', en: '' }
-    }
-
-    if (customData.services && Array.isArray(customData.services) && customData.services.length > 0) {
-      const firstService = customData.services[0]
-      if (firstService.nom && typeof firstService.nom === 'object' && firstService.nom.fr !== undefined) {
-        services.value = customData.services.map(s => ({
-          nom: { fr: s.nom?.fr || '', en: s.nom?.en || '' },
-          description: { fr: s.description?.fr || '', en: s.description?.en || '' },
-          prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
-          public: s.public !== undefined ? s.public : true,
-        }))
-      } else {
-        services.value = customData.services.map(s => ({
-          nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
-          description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
-          prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
-          public: s.public !== undefined ? s.public : true,
-        }))
-      }
-    } else {
-      services.value = (base.services || []).map(s => ({
-        nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
-        description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
-        prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
-        public: s.public !== undefined ? s.public : true,
-      }))
-    }
+    services.value = (base.services || []).map(s => ({
+      nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
+      description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
+      prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
+      public: s.public !== undefined ? s.public : true,
+      id_type_service: s.id_type_service || null,
+      champs_specifiques: s.champs_specifiques || {},
+    }))
 
     userFields.value = {
-      email: customData.email || base.email || '',
-      tel: customData.tel || base.tel || '',
-      site: customData.site || base.site || ''
+      email: base.email || '',
+      tel: base.tel || '',
+      site: base.site || ''
     }
 
     prestataireInfo.value = base
@@ -235,7 +183,9 @@ const addService = () => {
     description: { fr: '', en: '' }, 
     prix: 0, 
     enabled: true, 
-    public: true 
+    public: true,
+    id_type_service: null,
+    champs_specifiques: {}
   })
   saveCustomPrestataire()
 }
@@ -287,42 +237,28 @@ const emplacementsOccupes = computed(() => {
     .map(e => e.coordonnees)
 })
 
-// MODIFICATION: Nouvelle fonction pour créer une demande (fonctionnelle)
+// Fonction pour créer une demande d'emplacement via API
 const demanderEmplacement = async (coords) => {
   if (!prestataireNom.value) return
 
   try {
-    // Récupérer les demandes existantes
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    // Vérifier si une demande existe déjà pour ce prestataire
-    const demandeExistante = demandes.find(d =>
-      d.prestataireNom === prestataireNom.value && d.statut === 'en_attente'
-    )
-
-    if (demandeExistante) {
-      if (!confirm(t('prestataireSpace.replaceRequest'))) return
-      // Supprimer l'ancienne demande
-      demandes = demandes.filter(d => d.id !== demandeExistante.id)
+    // Trouver l'emplacement correspondant
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'en_attente', prestataireNom: prestataireNom.value })
+        })
+      }
     }
 
-    // Créer une nouvelle demande
-    const nouvelleDemande = {
-      id: Date.now().toString(),
-      prestataireNom: prestataireNom.value,
-      coordonnees: coords,
-      statut: 'en_attente',
-      dateDemande: new Date().toISOString()
-    }
-
-    demandes.push(nouvelleDemande)
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
-
-    // Recharger les données
     await loadPrestataireInfo()
-
-    // Déclencher un événement pour l'admin
     window.dispatchEvent(new Event('demandes-updated'))
 
     alert(t('prestataireSpace.requestSent') + '\n\n' + t('prestataireSpace.requestSentDesc'))
@@ -332,23 +268,22 @@ const demanderEmplacement = async (coords) => {
   }
 }
 
-// MODIFICATION: Fonction pour annuler une demande (fonctionnelle)
+// Fonction pour annuler une demande via API
 const annulerDemande = async () => {
   if (!prestataireNom.value || !demandePendante.value) return
-
   if (!confirm(t('prestataireSpace.cancelConfirm'))) return
 
   try {
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-
-    // Supprimer la demande
-    demandes = demandes.filter(d => d.id !== demandePendante.value.id)
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
-
+    const token = localStorage.getItem('authToken')
+    const empId = demandePendante.value.id_emplacement || demandePendante.value.id
+    if (empId) {
+      await fetch(`/api/emplacements/${empId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ statut: 'libre', prestataireNom: null })
+      })
+    }
     demandePendante.value = null
-
-    // Déclencher un événement
     window.dispatchEvent(new Event('demandes-updated'))
 
     alert(t('prestataireSpace.requestCancelled'))
@@ -362,16 +297,23 @@ const libererEmplacement = async () => {
   if (!confirm(t('prestataireSpace.releaseConfirm'))) return
 
   try {
-    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-    let emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    // Supprimer l'emplacement du prestataire
-    delete emplacements[prestataireNom.value]
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(emplacements))
+    // Trouver l'emplacement attribué via l'API
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => e.prestataireNom === prestataireNom.value && e.statut === 'pris')
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'libre', prestataireNom: null })
+        })
+      }
+    }
 
     emplacementActuel.value = null
-
-    // Déclencher un événement
     window.dispatchEvent(new Event('emplacements-updated'))
 
     alert(t('prestataireSpace.locationReleased'))
@@ -451,46 +393,43 @@ const initMap = async () => {
   }
 }
 
-const saveCustomPrestataire = () => {
+const saveCustomPrestataire = async () => {
   if (!prestataireNom.value) return
   try {
-    const raw = localStorage.getItem('customPrestataires')
-    let obj = raw ? JSON.parse(raw) : {}
-    
-    // Charger les données existantes pour préserver les autres langues
-    const existing = obj[prestataireNom.value] || {}
-    
-    // Structure bilingue pour description (renommé de presentationHtml pour uniformiser avec admin)
-    let descriptionBilingue = existing.description || existing.presentationHtml || {}
-    if (typeof descriptionBilingue === 'string') {
-      // Convertir l'ancien format en bilingue
-      descriptionBilingue = { fr: descriptionBilingue, en: '' }
-    }
-    descriptionBilingue[editingLang.value] = presentationText.value
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    // Structure bilingue pour services
-    const servicesBilingues = services.value.map(s => ({
-      nom: s.nom,
-      description: s.description,
-      prix: s.prix,
-      enabled: s.enabled,
-      public: s.public
-    }))
-    
-    obj[prestataireNom.value] = {
-      description: descriptionBilingue, // Utiliser 'description' au lieu de 'presentationHtml'
-      services: servicesBilingues,
-      email: userFields.value.email,
-      tel: userFields.value.tel,
-      site: userFields.value.site,
-      popupText: popupText.value
-    }
-    localStorage.setItem('customPrestataires', JSON.stringify(obj))
+    // Trouver l'ID du prestataire via l'API
+    const listResp = await fetch('/api/prestataires', { headers })
+    if (!listResp.ok) throw new Error('Impossible de charger les prestataires')
+    const list = await listResp.json()
+    const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
+    if (!prest) throw new Error('Prestataire introuvable')
+
+    // Construire la description bilingue
+    const descriptionFr = editingLang.value === 'fr' ? presentationText.value : (prest.description_fr || '')
+    const descriptionEn = editingLang.value === 'en' ? presentationText.value : (prest.description_en || '')
+
+    await fetch(`/api/prestataires/${prest.id_prestataire}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        description_fr: descriptionFr,
+        description_en: descriptionEn,
+        contact_email: userFields.value.email,
+        contact_tel: userFields.value.tel,
+        site_web: userFields.value.site
+      })
+    })
+
     // Déclencher un événement pour mettre à jour la carte
     window.dispatchEvent(new Event('emplacement-updated'))
     window.dispatchEvent(new Event('prestataire-updated'))
   } catch (e) {
-    console.error('Erreur sauvegarde custom', e)
+    console.error('Erreur sauvegarde prestataire', e)
   }
 }
 
@@ -502,24 +441,24 @@ const savePopupText = () => {
 }
 
 // Fonction pour changer la langue d'édition
-const changeEditingLang = (lang) => {
+const changeEditingLang = async (lang) => {
   editingLang.value = lang
 
-  // Charger le texte de présentation pour la langue sélectionnée
+  // Recharger le texte de présentation depuis l'API pour la langue sélectionnée
   try {
-    const raw = localStorage.getItem('customPrestataires')
-    const customPrestataires = raw ? JSON.parse(raw) : {}
-    const customData = customPrestataires[prestataireNom.value] || {}
-
-    // Présentation bilingue (utilise 'description' pour uniformiser avec admin)
-    let descriptionBilingue = customData.description || customData.presentationHtml || {}
-    if (typeof descriptionBilingue === 'string') {
-      // Convertir l'ancien format en bilingue
-      descriptionBilingue = { fr: descriptionBilingue, en: '' }
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/prestataires', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
+      if (prest) {
+        presentationText.value = lang === 'en'
+          ? (prest.description_en || prest.description_fr || '')
+          : (prest.description_fr || '')
+      }
     }
-
-    // Charger le texte selon la langue d'édition
-    presentationText.value = descriptionBilingue[lang] || ''
   } catch (e) {
     console.error('Erreur lors du changement de langue', e)
   }
@@ -846,22 +785,20 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const loadStatsNotes = () => {
+const loadStatsNotes = async () => {
   if (!prestataireNom.value) return
   try {
-    const localRaw = localStorage.getItem('prestataireAvis')
-    if (!localRaw) {
-      statsNotes.value = {
-        moyenne: 0,
-        nbAvis: 0,
-        parNote: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-        derniersAvis: []
-      }
-      return
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/avis', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    let avis = []
+    if (resp.ok) {
+      const list = await resp.json()
+      avis = (Array.isArray(list) ? list : [])
+        .filter(a => a.prestataire?.nom === prestataireNom.value)
+        .map(a => ({ note: a.note, commentaire: a.commentaire, date: a.date_avis, nom: a.utilisateur?.nom_utilisateur || 'Anonyme' }))
     }
-    const allAvis = JSON.parse(localRaw)
-    const data = allAvis[prestataireNom.value] || { avis: [] }
-    const avis = data.avis || []
 
     const st = {
       moyenne: 0,
@@ -886,122 +823,130 @@ const loadStatsNotes = () => {
   }
 }
 
-// AJOUT: Charger les réservations depuis localStorage + JSON, avec normalisation du nom
+// AJOUT: Charger les réservations depuis l'API
 const loadReservations = async () => {
   if (!prestataireNom.value) {
     reservations.value = []
     return
   }
 
-  const currentNameNorm = normalizeName(prestataireNom.value)
-
   try {
-    // 1) Réservations locales (source principale)
-    let localReservations = []
-    try {
-      const raw = localStorage.getItem('reservationsPrestataires')
-      const all = raw ? JSON.parse(raw) : []
-      if (Array.isArray(all)) {
-        localReservations = all.filter(
-          r => normalizeName(r.prestataireNom) === currentNameNorm
-        )
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+    // Charger les réservations depuis l'API du prestataire
+    const resp = await fetch(`/api/prestataires`, { headers })
+    if (resp.ok) {
+      const list = await resp.json()
+      const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
+      if (prest && prest.id_prestataire) {
+        // Essayer de charger les réservations spécifiques au prestataire
+        try {
+          const resaResp = await fetch(`/api/prestataires/${prest.id_prestataire}/reservations`, { headers })
+          if (resaResp.ok) {
+            const data = await resaResp.json()
+            reservations.value = Array.isArray(data) ? data : []
+            return
+          }
+        } catch (e) { /* pas de route spécifique */ }
       }
-    } catch (e) {
-      console.error('Erreur lecture reservationsPrestataires', e)
-      localReservations = []
     }
-
-    // 2) Base JSON initiale (démo)
-    let baseJson = []
-    try {
-      const resp = await fetch('/data/reservations.json', { cache: 'no-store' })
-      if (resp.ok) {
-        const data = await resp.json()
-        const all = Array.isArray(data.reservations) ? data.reservations : []
-        baseJson = all.filter(
-          r => normalizeName(r.prestataireNom) === currentNameNorm
-        )
-      }
-    } catch (e) {
-      console.error('Erreur chargement reservations.json', e)
-    }
-
-    // 3) Fusion par id (local > JSON)
-    const byId = new Map()
-    baseJson.forEach(r => {
-      if (!r.id) return
-      byId.set(String(r.id), r)
-    })
-    localReservations.forEach(r => {
-      if (!r.id) return
-      byId.set(String(r.id), r)
-    })
-
-    reservations.value = Array.from(byId.values())
+    reservations.value = []
   } catch (e) {
     console.error('Erreur loadReservations', e)
     reservations.value = []
   }
 }
 
-// MODIFICATION: Sauvegarder les statuts modifiés directement dans reservationsPrestataires
-const saveReservationsOverrides = () => {
-  try {
-    const raw = localStorage.getItem('reservationsPrestataires')
-    let all = raw ? JSON.parse(raw) : []
-    if (!Array.isArray(all)) all = []
-
-    const byId = new Map()
-    all.forEach(r => {
-      if (!r.id) return
-      byId.set(String(r.id), r)
-    })
-
-    reservations.value.forEach(r => {
-      if (!r.id) return
-      const id = String(r.id)
-      const existing = byId.get(id) || {}
-      byId.set(id, { ...existing, ...r, prestataireNom: prestataireNom.value })
-    })
-
-    localStorage.setItem('reservationsPrestataires', JSON.stringify(Array.from(byId.values())))
-  } catch (e) {
-    console.error('Erreur saveReservationsOverrides', e)
-  }
+// Sauvegarder les statuts modifiés via l'API
+const saveReservationsOverrides = async () => {
+  // Les réservations sont gérées côté serveur, pas besoin de localStorage
 }
 
-const updateReservationStatus = (resa, newStatus) => {
+const updateReservationStatus = async (resa, newStatus) => {
   resa.statut = newStatus
-  saveReservationsOverrides()
+  try {
+    const token = localStorage.getItem('authToken')
+    const resaId = resa.id_reservation || resa.id
+    if (resaId) {
+      await fetch(`/api/billets/reservations/${resaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ statut: newStatus })
+      })
+    }
+  } catch (e) {
+    console.error('Erreur mise à jour statut réservation:', e)
+  }
 
-  // SI on annule une réservation de terrain, on libère aussi le créneau
   if (newStatus === 'annulee' || newStatus === 'annulée') {
-    try {
-      const raw = localStorage.getItem('basketReservations')
-      let basketResas = raw ? JSON.parse(raw) : []
-      if (!Array.isArray(basketResas)) basketResas = []
-
-      // CORRECTION: Utiliser "slot" pour comparer
-      const resaDate = resa.date || resa.createdAt
-      const resaSlot = resa.slot || ''
-
-      basketResas = basketResas.filter(r =>
-        !(r.date === resaDate && r.slot === resaSlot)
-      )
-
-      localStorage.setItem('basketReservations', JSON.stringify(basketResas))
-    } catch (e) {
-      console.error('Erreur lors de la libération du créneau basketReservations', e)
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('basket-reservations-updated'))
-    }
+    window.dispatchEvent(new Event('basket-reservations-updated'))
   }
 }
 
 // SUPPRIMÉ: computed filtré (on montre tout sans filtre)
 // const filteredReservations = computed(() => { ... })
+
+// Charger les types de service depuis l'API
+const loadTypesService = async () => {
+  // 1. Essayer l'API
+  try {
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+    const resp = await fetch('/api/types-service', { headers })
+    if (resp.ok) {
+      const data = await resp.json()
+      if (Array.isArray(data) && data.length > 0) {
+        typesService.value = data
+        return
+      }
+    }
+  } catch (e) {
+    console.error('Erreur chargement types de service:', e)
+  }
+}
+
+// Obtenir le label localisé d'un type de service
+const getTypeLabel = (typeId) => {
+  const type = typesService.value.find(t => t.id_type_service === typeId)
+  if (!type) return ''
+  return editingLang.value === 'en' ? (type.label_en || type.label_fr) : type.label_fr
+}
+
+// Obtenir les champs requis pour un type de service donné
+const getTypeFields = (typeId) => {
+  const type = typesService.value.find(t => t.id_type_service === typeId)
+  if (!type) return []
+  return type.champs_requis || []
+}
+
+// Obtenir le label localisé d'un champ
+const getFieldLabel = (field) => {
+  return editingLang.value === 'en' ? (field.label_en || field.label_fr) : field.label_fr
+}
+
+// Mettre à jour le type de service d'un service
+const updateServiceType = (service, event) => {
+  const val = event.target.value
+  service.id_type_service = val ? parseInt(val) : null
+  // Réinitialiser les champs spécifiques lors du changement de type
+  service.champs_specifiques = {}
+  updateServiceField()
+}
+
+// Mettre à jour un champ spécifique d'un service
+const updateSpecificField = (service, key, event) => {
+  if (!service.champs_specifiques) service.champs_specifiques = {}
+  const field = getTypeFields(service.id_type_service).find(f => f.key === key)
+  if (field && field.type === 'boolean') {
+    service.champs_specifiques[key] = event.target.checked
+  } else if (field && field.type === 'number') {
+    service.champs_specifiques[key] = parseFloat(event.target.value) || 0
+  } else {
+    service.champs_specifiques[key] = event.target.value
+  }
+  updateServiceField()
+}
 
 onMounted(() => {
   loadAuthFromStorage()
@@ -1014,6 +959,7 @@ onMounted(() => {
   loadPrestataireInfo()
   loadStatsNotes()
   loadReservations()
+  loadTypesService()
 
   window.addEventListener('emplacements-updated', loadPrestataireInfo)
   window.addEventListener('demandes-updated', loadPrestataireInfo)
@@ -1193,7 +1139,27 @@ watch(editingLang, () => {
                     🗑️
                   </button>
                 </div>
-                <textarea 
+
+                <!-- Sélecteur de type de service -->
+                <div class="service-type-selector">
+                  <label class="type-label">{{ $t('prestataireSpace.serviceType') }}</label>
+                  <select
+                    class="select-type"
+                    :value="s.id_type_service || ''"
+                    @change="updateServiceType(s, $event)"
+                  >
+                    <option value="">{{ $t('prestataireSpace.noType') }}</option>
+                    <option
+                      v-for="type in typesService"
+                      :key="type.id_type_service"
+                      :value="type.id_type_service"
+                    >
+                      {{ type.icone }} {{ editingLang === 'en' ? (type.label_en || type.label_fr) : type.label_fr }}
+                    </option>
+                  </select>
+                </div>
+
+                <textarea
                   class="textarea" 
                   :value="s.description[editingLang] || ''" 
                   @input="s.description[editingLang] = $event.target.value; updateServiceField()" 
@@ -1215,6 +1181,71 @@ watch(editingLang, () => {
                   <span v-if="s.prix > 0" class="price-display">{{ formatPrix(s.prix) }}</span>
                   <span v-else class="price-display free">{{ $t('prestataireSpace.free') }}</span>
                 </div>
+
+                <!-- Champs spécifiques dynamiques selon le type sélectionné -->
+                <div v-if="s.id_type_service && getTypeFields(s.id_type_service).length" class="specific-fields-section">
+                  <label class="specific-fields-title">{{ $t('prestataireSpace.specificFields') }}</label>
+                  <div class="specific-fields-grid">
+                    <div
+                      v-for="field in getTypeFields(s.id_type_service)"
+                      :key="field.key"
+                      class="specific-field-item"
+                    >
+                      <label class="specific-field-label">
+                        {{ getFieldLabel(field) }}
+                        <span v-if="field.required" class="field-required">{{ $t('prestataireSpace.fieldRequired') }}</span>
+                      </label>
+                      <!-- Boolean -->
+                      <label v-if="field.type === 'boolean'" class="toggle-label specific-toggle">
+                        <input
+                          type="checkbox"
+                          :checked="s.champs_specifiques && s.champs_specifiques[field.key]"
+                          @change="updateSpecificField(s, field.key, $event)"
+                        />
+                        <span :class="{ active: s.champs_specifiques && s.champs_specifiques[field.key] }">
+                          {{ s.champs_specifiques && s.champs_specifiques[field.key] ? '✅' : '❌' }}
+                        </span>
+                      </label>
+                      <!-- Number -->
+                      <input
+                        v-else-if="field.type === 'number'"
+                        type="number"
+                        class="input input-specific"
+                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                        :placeholder="getFieldLabel(field)"
+                        min="0"
+                        step="any"
+                      />
+                      <!-- Date -->
+                      <input
+                        v-else-if="field.type === 'date'"
+                        type="date"
+                        class="input input-specific"
+                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                      />
+                      <!-- Time -->
+                      <input
+                        v-else-if="field.type === 'time'"
+                        type="time"
+                        class="input input-specific"
+                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                      />
+                      <!-- Text (default) -->
+                      <input
+                        v-else
+                        type="text"
+                        class="input input-specific"
+                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                        :placeholder="getFieldLabel(field)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div class="service-toggles">
                   <label class="toggle-label">
                     <input type="checkbox" v-model="s.enabled" @change="toggleServiceEnabled(s)" />
@@ -1510,10 +1541,11 @@ watch(editingLang, () => {
               <table class="data-table transactions-table">
                 <thead>
                   <tr>
-                    <th>Créneau</th>
-                    <th>Nom / Équipe</th>
-                    <th>Contact</th>
-                    <th>Participants</th>
+                    <th>Service</th>
+                    <th>Date / Créneau</th>
+                    <th>Client</th>
+                    <th>Détails</th>
+                    <th>Prix</th>
                     <th>Statut</th>
                     <th style="width: 190px;">Actions</th>
                   </tr>
@@ -1523,28 +1555,48 @@ watch(editingLang, () => {
                     v-for="resa in reservations"
                     :key="resa.id"
                   >
+                    <td class="transaction-client">
+                      <div class="resa-service-name">
+                        {{ resa.service || resa.nom || '—' }}
+                      </div>
+                      <span v-if="resa.serviceType" class="resa-type-chip" :class="'chip-' + resa.serviceType">
+                        {{ resa.serviceType === 'reservation' ? '📅 Réservation' : resa.serviceType === 'commande' ? '🛒 Commande' : resa.serviceType === 'location' ? '🔧 Location' : resa.serviceType }}
+                      </span>
+                    </td>
                     <td class="transaction-date">
                       <div class="resa-slot">
                         <span class="resa-date">
                           {{ new Date(resa.date || resa.createdAt).toLocaleDateString('fr-FR') }}
                         </span>
-                        <span class="resa-time">
-                          {{ resa.slot || '-' }}
+                        <span class="resa-time" v-if="resa.slot">
+                          {{ resa.slot }}
                         </span>
                       </div>
                     </td>
                     <td class="transaction-client">
-                      <div class="resa-name">
-                        {{ resa.nom || resa.name || '—' }}
-                      </div>
-                    </td>
-                    <td class="transaction-client">
+                      <div class="resa-name">{{ resa.nom || resa.name || '—' }}</div>
                       <div class="resa-contact">
                         <span class="resa-email">{{ resa.email || '—' }}</span>
+                        <span v-if="resa.tel" class="resa-tel"> · {{ resa.tel }}</span>
                       </div>
                     </td>
                     <td class="table-value">
-                      {{ resa.nbJoueurs || resa.players || '-' }}
+                      <template v-if="resa.serviceType === 'reservation'">
+                        👥 {{ resa.nbJoueurs || resa.details?.nombre_personnes || '-' }} pers.
+                      </template>
+                      <template v-else-if="resa.serviceType === 'commande'">
+                        📦 × {{ resa.details?.quantite || resa.nbJoueurs || 1 }}
+                      </template>
+                      <template v-else-if="resa.serviceType === 'location'">
+                        ⏳ {{ resa.details?.duree || '-' }}h
+                      </template>
+                      <template v-else>
+                        {{ resa.nbJoueurs || resa.players || '-' }}
+                      </template>
+                    </td>
+                    <td class="table-value">
+                      <span v-if="resa.prix" class="resa-prix">{{ Number(resa.prix).toFixed(2) }}€</span>
+                      <span v-else class="resa-prix free">Gratuit</span>
                     </td>
                     <td class="table-value">
                       <span
@@ -1950,6 +2002,108 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 .toggle-label span.active {
   color: #FCDC1E;
   font-weight: 600;
+}
+
+/* Type de service selector */
+.service-type-selector {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.type-label {
+  font-weight: 600;
+  color: #FCDC1E;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.select-type {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.select-type:focus {
+  outline: none;
+  border-color: #FCDC1E;
+  box-shadow: 0 0 0 3px rgba(252,220,30,0.1);
+}
+
+.select-type option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+/* Champs spécifiques dynamiques */
+.specific-fields-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(252,220,30,0.05);
+  border-radius: 12px;
+  border: 1px dashed rgba(252,220,30,0.3);
+}
+
+.specific-fields-title {
+  display: block;
+  font-weight: 700;
+  color: #FCDC1E;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+}
+
+.specific-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.specific-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.specific-field-label {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+  font-weight: 500;
+}
+
+.field-required {
+  color: #ff6b6b;
+  font-size: 0.75rem;
+  margin-left: 4px;
+}
+
+.input-specific {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  margin-top: 4px;
+}
+
+.input-specific:focus {
+  outline: none;
+  border-color: #FCDC1E;
+  box-shadow: 0 0 0 3px rgba(252,220,30,0.1);
+}
+
+.specific-toggle {
+  margin-top: 6px;
 }
 
 .empty-state {
@@ -2402,6 +2556,53 @@ code {
 .resa-email {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
+}
+
+.resa-tel {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.resa-service-name {
+  font-weight: 700;
+  color: #FCDC1E;
+  font-size: 0.95rem;
+}
+
+.resa-type-chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.chip-reservation {
+  background: rgba(252, 220, 30, 0.15);
+  color: #FCDC1E;
+  border: 1px solid rgba(252, 220, 30, 0.3);
+}
+
+.chip-commande {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.chip-location {
+  background: rgba(33, 150, 243, 0.15);
+  color: #64b5f6;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.resa-prix {
+  font-weight: 700;
+  color: #FCDC1E;
+}
+
+.resa-prix.free {
+  color: #81c784;
 }
 
 .status-badge {

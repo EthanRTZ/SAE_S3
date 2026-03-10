@@ -378,18 +378,8 @@ export default {
               usedApi = true;
             }
           }
-        } catch (e) { /* fallback */ }
-
-        if (!usedApi) {
-          // Fallback JSON
-          const response = await fetch('/data/forfaits.json')
-          const data = await response.json()
-          this.forfaits = JSON.parse(JSON.stringify(data))
-          Object.keys(this.forfaits).forEach((key) => {
-            if (Array.isArray(this.forfaits[key].days)) {
-              this.forfaits[key].stock = this.forfaits[key].days.reduce((sum, day) => sum + day.stock, 0)
-            }
-          })
+        } catch (e) {
+          console.error('Erreur chargement forfaits API:', e)
         }
 
         this.applyPaidReservationsToStock()
@@ -401,15 +391,21 @@ export default {
         this.loading = false
       }
     },
-    applyPaidReservationsToStock() {
-      // Déduire TOUTES les réservations payées du stock disponible
+    async applyPaidReservationsToStock() {
+      // Déduire les réservations payées du stock depuis l'API
       try {
-        const allReservations = JSON.parse(localStorage.getItem('userReservations') || '[]')
-        allReservations.forEach(reservation => {
-          if (reservation.type && reservation.quantity) {
-            this.decrementStock(reservation.type, reservation.quantity, reservation.optionLabel || '')
-          }
+        const token = localStorage.getItem('authToken')
+        const resp = await fetch('/api/billets/mes-reservations', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
+        if (resp.ok) {
+          const allReservations = await resp.json()
+          ;(Array.isArray(allReservations) ? allReservations : []).forEach(reservation => {
+            if (reservation.type && reservation.quantity) {
+              this.decrementStock(reservation.type, reservation.quantity, reservation.optionLabel || '')
+            }
+          })
+        }
       } catch (e) {
         console.error('Erreur lors de l\'application des réservations payées:', e)
       }
@@ -512,20 +508,25 @@ export default {
         this.incrementStock(item.type, item.quantity, item.optionLabel || '')
       }
     },
-    getAllReservations() {
+    async getAllReservations() {
       try {
-        const raw = localStorage.getItem('userReservations')
-        if (!raw) return []
-        const parsed = JSON.parse(raw)
-        return Array.isArray(parsed) ? parsed : []
+        const token = localStorage.getItem('authToken')
+        const resp = await fetch('/api/billets/mes-reservations', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          return Array.isArray(data) ? data : []
+        }
+        return []
       } catch (e) {
         return []
       }
     },
-    saveAllReservations(list) {
-      localStorage.setItem('userReservations', JSON.stringify(list))
+    async saveAllReservations(list) {
+      // Les réservations sont gérées côté serveur, rien à faire localement
     },
-    recordReservation(type, quantity, extra = {}) {
+    async recordReservation(type, quantity, extra = {}) {
       if (!this.authUser || !this.authUser.email || !quantity || quantity <= 0) {
         return
       }

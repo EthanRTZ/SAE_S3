@@ -46,6 +46,16 @@ const Festival = sequelize.define('Festival', {
     allowNull: true,
     field: 'description_en'
   },
+  presentation_fr: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'presentation_fr'
+  },
+  presentation_en: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'presentation_en'
+  },
   nombre_festivaliers: {
     type: DataTypes.INTEGER,
     allowNull: true,

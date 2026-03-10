@@ -31,7 +31,7 @@ const loadAllData = async () => {
     const token = localStorage.getItem('authToken')
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-    // 1. Emplacements via API puis fallback JSON
+    // 1. Emplacements via API
     let emps = []
     try {
       const resp = await fetch('/api/emplacements', { headers })
@@ -44,72 +44,32 @@ const loadAllData = async () => {
           statut: e.statut || 'libre'
         }))
       }
-    } catch (e) { /* fallback */ }
-
-    if (!emps.length) {
-      const emplacementsRes = await fetch('/data/emplacements.json', { cache: 'no-store' })
-      const emplacementsData = await emplacementsRes.json()
-      emps = emplacementsData.emplacements || []
+    } catch (e) {
+      console.error('Erreur chargement emplacements:', e)
     }
 
-    // 2. emplacementsInfo localStorage
-    try {
-      const infoRaw = localStorage.getItem('emplacementsInfo')
-      if (infoRaw) {
-        const info = JSON.parse(infoRaw)
-        emps = emps.map(e => info[e.id] ? { ...e, ...info[e.id] } : e)
-      }
-    } catch (e) { /* ignore */ }
-
-    // 3. emplacementsAttribues localStorage (prioritaire)
-    let attribues = {}
-    try {
-      const attribuesRaw = localStorage.getItem('emplacementsAttribues')
-      attribues = attribuesRaw ? JSON.parse(attribuesRaw) : {}
-    } catch (e) { /* ignore */ }
-    emplacementsAttribues.value = attribues
-
-    emps = emps.map(e => {
-      const attr = Object.entries(attribues).find(([, coords]) => coords === e.coordonnees)
-      if (attr) return { ...e, statut: 'pris', prestataireNom: attr[0] }
-      return e
-    })
-
-    // 4. demandesEmplacement localStorage + emplacements avec statut 'en_attente'
+    // Demandes en attente depuis les emplacements
     let demandes = []
-    try {
-      const demandesRaw = localStorage.getItem('demandesEmplacement')
-      demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-    } catch (e) { /* ignore */ }
 
     emps.forEach(e => {
       if (e.statut === 'en_attente' && e.prestataireNom) {
         const dejaPresente = demandes.find(d => d.coordonnees === e.coordonnees && d.statut === 'en_attente')
         if (!dejaPresente) {
           demandes.push({
-            id: `json-${e.id}`,
+            id: `api-${e.id}`,
             prestataireNom: e.prestataireNom,
             coordonnees: e.coordonnees,
             statut: 'en_attente',
-            dateDemande: e.dateDemande || new Date().toISOString(),
-            fromJson: true
+            dateDemande: e.dateDemande || new Date().toISOString()
           })
         }
       }
     })
 
     demandesEmplacement.value = demandes
-
-    emps = emps.map(e => {
-      if (e.statut === 'pris') return e
-      const demande = demandes.find(d => d.coordonnees === e.coordonnees && d.statut === 'en_attente')
-      if (demande) return { ...e, statut: 'en_attente', prestataireNom: demande.prestataireNom }
-      return e
-    })
-
     emplacements.value = emps
 
-    // 5. Prestataires via API puis fallback JSON
+    // 2. Prestataires via API
     let prets = []
     try {
       const resp = await fetch('/api/prestataires', { headers })
@@ -122,19 +82,9 @@ const loadAllData = async () => {
           image: p.photo_url, type: p.type_prestataire
         }))
       }
-    } catch (e) { /* fallback */ }
-
-    if (!prets.length) {
-      const prestRes = await fetch('/data/prestataires.json', { cache: 'no-store' })
-      const prestData = await prestRes.json()
-      prets = prestData.prestataires || []
+    } catch (e) {
+      console.error('Erreur chargement prestataires:', e)
     }
-
-    try {
-      const customRaw = localStorage.getItem('customPrestataires')
-      const custom = customRaw ? JSON.parse(customRaw) : {}
-      prets = prets.map(p => ({ ...p, ...(custom[p.nom] || {}) }))
-    } catch (e) { /* ignore */ }
     prestataires.value = prets
 
     if (mapInstance) updateMarkers()
@@ -143,68 +93,75 @@ const loadAllData = async () => {
   }
 }
 
-// ─── Actions (sauvegardent dans localStorage puis rechargent) ────────────────
-const accepterDemande = (demande) => {
+// ─── Actions (sauvegardent via API puis rechargent) ────────────────
+const accepterDemande = async (demande) => {
   if (!confirm(`Accepter la demande de ${demande.prestataireNom} ?`)) return
   try {
-    const raw = localStorage.getItem('emplacementsAttribues')
-    const attribues = raw ? JSON.parse(raw) : {}
-    attribues[demande.prestataireNom] = demande.coordonnees
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(attribues))
-
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-    const idx = demandes.findIndex(d => d.id === demande.id)
-    if (idx !== -1) {
-      demandes[idx].statut = 'acceptee'
-      demandes[idx].dateTraitement = new Date().toISOString()
-    } else {
-      // Demande qui venait du JSON : la persister dans le localStorage avec statut acceptee
-      demandes.push({ ...demande, statut: 'acceptee', dateTraitement: new Date().toISOString() })
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    if (demande.id_emplacement) {
+      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ statut: 'pris', prestataireNom: demande.prestataireNom })
+      })
     }
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
     emit('accepterDemande', demande)
     loadAllData()
   } catch (e) { console.error(e) }
 }
 
-const refuserDemande = (demande) => {
+const refuserDemande = async (demande) => {
   if (!confirm(`Refuser la demande de ${demande.prestataireNom} ?`)) return
   try {
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-    const idx = demandes.findIndex(d => d.id === demande.id)
-    if (idx !== -1) {
-      demandes[idx].statut = 'refusee'
-      demandes[idx].dateTraitement = new Date().toISOString()
-    } else {
-      // Demande qui venait du JSON : la persister dans le localStorage avec statut refusee
-      demandes.push({ ...demande, statut: 'refusee', dateTraitement: new Date().toISOString() })
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    if (demande.id_emplacement) {
+      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ statut: 'libre' })
+      })
     }
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
     emit('refuserDemande', demande)
     loadAllData()
   } catch (e) { console.error(e) }
 }
 
-const libererEmplacement = (nomPrestataire) => {
+const libererEmplacement = async (nomPrestataire) => {
   if (!confirm(`Libérer l'emplacement de ${nomPrestataire} ?`)) return
   try {
-    const raw = localStorage.getItem('emplacementsAttribues')
-    const attribues = raw ? JSON.parse(raw) : {}
-    delete attribues[nomPrestataire]
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(attribues))
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => e.prestataireNom === nomPrestataire && e.statut === 'pris')
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'libre', prestataireNom: null })
+        })
+      }
+    }
     emit('libererEmplacement', nomPrestataire)
     loadAllData()
   } catch (e) { console.error(e) }
 }
 
-const assignerEmplacement = (nomPrestataire, coords) => {
+const assignerEmplacement = async (nomPrestataire, coords) => {
   try {
-    const raw = localStorage.getItem('emplacementsAttribues')
-    const attribues = raw ? JSON.parse(raw) : {}
-    attribues[nomPrestataire] = coords
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(attribues))
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'pris', prestataireNom: nomPrestataire })
+        })
+      }
+    }
     emit('assignerEmplacement', nomPrestataire, coords)
     loadAllData()
   } catch (e) { console.error(e) }

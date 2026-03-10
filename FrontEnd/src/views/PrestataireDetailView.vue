@@ -59,17 +59,35 @@
         <section v-if="publicServices.length > 0" class="detail-section">
           <h2 class="section-title">{{ $t('prestataireDetail.services') }}</h2>
           <div class="services-grid">
-            <div v-for="service in publicServices" :key="service.nom" class="service-card">
+            <div v-for="(service, idx) in publicServices" :key="idx" class="service-card">
               <div class="service-header">
-                <h3 class="service-name">{{ service.nom }}</h3>
+                <div class="service-header-left">
+                  <h3 class="service-name">{{ service.nom }}</h3>
+                  <span v-if="service.typeName" class="service-type-badge">
+                    {{ service.typeIcon }} {{ service.typeLabel }}
+                  </span>
+                </div>
                 <span class="service-price-badge" :class="{ 'price-free': (service.prix || 0) === 0 }">
                   {{ formatServicePrix(service.prix) }}
                 </span>
               </div>
               <p v-if="service.description" class="service-description">{{ service.description }}</p>
+
+              <!-- Bouton d'achat adapté au type -->
+              <button
+                class="btn-buy-service"
+                :class="service.typeName ? 'btn-type-' + service.typeName : 'btn-type-default'"
+                @click="goToServicePage(service)"
+              >
+                <span v-if="service.typeName === 'reservation'">📅 {{ $t('prestataireDetail.bookNow') }}</span>
+                <span v-else-if="service.typeName === 'commande'">🛒 {{ $t('prestataireDetail.orderNow') }}</span>
+                <span v-else-if="service.typeName === 'location'">🔧 {{ $t('prestataireDetail.rentNow') }}</span>
+                <span v-else>🛒 {{ $t('prestataireDetail.orderNow') }}</span>
+              </button>
             </div>
           </div>
         </section>
+
 
         <!-- Informations de contact -->
         <section class="detail-section">
@@ -190,12 +208,15 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { usePanierStore } from '@/stores/panier'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const panier = usePanierStore()
 const prestataire = ref(null)
 const loading = ref(true)
+
 
 // ================================
 // ÉTAT POUR LES AVIS / STATISTIQUES
@@ -210,8 +231,7 @@ const noteStats = ref({
 // --------- AVIS : chargement / sauvegarde / calcul ---------
 const loadAvisFromStorage = async (prestataireNom) => {
   try {
-    // 1. Essayer l'API
-    let apiOk = false
+    // Charger les avis depuis l'API
     try {
       const token = localStorage.getItem('authToken')
       const resp = await fetch(`/api/avis/prestataire/${encodeURIComponent(prestataireNom)}`, {
@@ -228,50 +248,10 @@ const loadAvisFromStorage = async (prestataireNom) => {
           date: a.date_avis,
           source: 'api'
         }))
-        apiOk = true
       }
-    } catch (e) { /* fallback */ }
-
-    if (!apiOk) {
-      // Fallback JSON
-      let jsonAvis = []
-      try {
-        const resp = await fetch('/data/avis.json', { cache: 'no-store' })
-        if (resp.ok) {
-          const data = await resp.json()
-          const prestataireData = data[prestataireNom]
-          if (prestataireData && prestataireData.avis) {
-            jsonAvis = prestataireData.avis.map(a => ({
-              ...a, id: `json-${a.id}`, source: 'json'
-            }))
-          }
-        }
-      } catch (e) { /* ignore */ }
-
-      // localStorage
-      let localAvis = []
-      try {
-        const stored = localStorage.getItem('festivalAvis')
-        if (stored) {
-          localAvis = JSON.parse(stored)
-            .filter(a => a.prestataire === prestataireNom)
-            .map(a => ({ ...a, source: 'local' }))
-        }
-      } catch (e) { /* ignore */ }
-
-      avisList.value = [...localAvis, ...jsonAvis]
+    } catch (e) {
+      console.error('Erreur chargement avis API:', e)
     }
-
-    // Ajouter les avis localStorage dans tous les cas
-    try {
-      const stored = localStorage.getItem('festivalAvis')
-      if (stored) {
-        const localAvis = JSON.parse(stored)
-          .filter(a => a.prestataire === prestataireNom && !avisList.value.find(x => x.id === a.id))
-          .map(a => ({ ...a, source: 'local' }))
-        avisList.value = [...localAvis, ...avisList.value]
-      }
-    } catch (e) { /* ignore */ }
 
     avisList.value.sort((a, b) => new Date(b.date || b.date_avis) - new Date(a.date || a.date_avis))
     computeNoteStats()
@@ -306,6 +286,35 @@ const computeNoteStats = () => {
   noteStats.value = stats
 }
 
+// --------- Chargement des types de service ---------
+const loadTypesService = async () => {
+  try {
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/types-service', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      typesServiceList.value = await resp.json()
+    }
+  } catch (e) {
+    console.warn('Types de service indisponibles', e)
+  }
+}
+
+// Enrichir un service avec les infos du type à partir de id_type_service
+const enrichService = (s, lang) => {
+  if (s.typeName) return s
+  if (s.id_type_service && typesServiceList.value.length > 0) {
+    const type = typesServiceList.value.find(t => t.id_type_service === s.id_type_service)
+    if (type) {
+      s.typeName = type.nom
+      s.typeLabel = lang === 'en' ? (type.label_en || type.label_fr) : type.label_fr
+      s.typeIcon = type.icone || ''
+    }
+  }
+  return s
+}
+
 // --------- Chargement du prestataire + avis ---------
 const loadPrestataire = async () => {
   loading.value = true
@@ -333,66 +342,23 @@ const loadPrestataire = async () => {
             tel: p.contact_tel,
             site: p.site_web,
             type: p.type_prestataire,
-            services: p.services || []
+            services: (p.services || []).map(s => ({
+              id_service: s.id_service,
+              nom: currentLang === 'en' ? (s.nom_service_en || s.nom_service_fr) : s.nom_service_fr,
+              description: currentLang === 'en' ? (s.description_en || s.description_fr) : s.description_fr,
+              prix: parseFloat(s.prix_estime) || 0,
+              champs_specifiques: s.champs_specifiques || {},
+              id_type_service: s.id_type_service,
+              typeName: s.typeService?.nom || null,
+              typeLabel: s.typeService ? (currentLang === 'en' ? (s.typeService.label_en || s.typeService.label_fr) : s.typeService.label_fr) : '',
+              typeIcon: s.typeService?.icone || '',
+              actif: true
+            }))
           }
         }
       }
-    } catch (e) { /* fallback */ }
-
-    // 2. Fallback JSON
-    if (!found) {
-      const customRaw = localStorage.getItem('customPrestataires')
-      let customPrestataires = null
-      if (customRaw) { try { customPrestataires = JSON.parse(customRaw) } catch (e) { /* ignore */ } }
-
-      const response = await fetch('/data/prestataires.json', { cache: 'no-store' })
-      if (!response.ok) throw new Error('fetch failed')
-      const data = await response.json()
-      found = (data.prestataires || []).find(p => p.nom === prestataireNom)
-
-      if (found) {
-        // Normaliser le format bilingue
-        if (found.description && typeof found.description === 'object' && found.description.fr !== undefined) {
-          found.description = found.description[currentLang] || found.description.fr || ''
-        }
-        if (found.services && Array.isArray(found.services)) {
-          found.services = found.services.map(s => {
-            const service = { ...s }
-            if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-              service.nom = s.nom[currentLang] || s.nom.fr || ''
-              service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                ? (s.description[currentLang] || s.description.fr || '') : (s.description || '')
-            }
-            return service
-          })
-        }
-        // Appliquer les modifications locales
-        if (customPrestataires && customPrestataires[prestataireNom]) {
-          const customData = customPrestataires[prestataireNom]
-          const descSource = customData.description || customData.presentationHtml
-          if (descSource) {
-            if (typeof descSource === 'object' && descSource.fr !== undefined) {
-              found.description = descSource[currentLang] || descSource.fr || found.description || ''
-            } else if (typeof descSource === 'string') {
-              found.description = descSource
-            }
-          }
-          if (customData.services && Array.isArray(customData.services)) {
-            found.services = customData.services.map(s => {
-              const service = { ...s }
-              if (s.nom && typeof s.nom === 'object' && s.nom.fr !== undefined) {
-                service.nom = s.nom[currentLang] || s.nom.fr || ''
-                service.description = (s.description && typeof s.description === 'object' && s.description.fr !== undefined)
-                  ? (s.description[currentLang] || s.description.fr || '') : (s.description || '')
-              }
-              return service
-            })
-          }
-          if (customData.email) found.email = customData.email
-          if (customData.tel) found.tel = customData.tel
-          if (customData.site) found.site = customData.site
-        }
-      }
+    } catch (e) {
+      console.error('Erreur chargement prestataire API:', e)
     }
 
     if (!found) {
@@ -439,14 +405,10 @@ watch(() => locale.value, () => {
   loadPrestataire()
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await loadTypesService()
   loadPrestataire()
   window.addEventListener('prestataire-updated', updateHandler)
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'customPrestataires' || e.key === 'festivalAvis') {
-      loadPrestataire()
-    }
-  })
 })
 
 // Écouter les mises à jour
@@ -460,6 +422,47 @@ const publicServices = computed(() => {
   if (!prestataire.value?.services) return []
   return prestataire.value.services.filter(s => s.actif !== false)
 })
+
+// Formater la clé d'un champ spécifique pour l'affichage
+const formatFieldKey = (key) => {
+  const labels = {
+    date: '📅 Date',
+    heure_debut: '🕐 Début',
+    heure_fin: '🕐 Fin',
+    nombre_places: '👥 Places',
+    lieu: '📍 Lieu',
+    quantite_min: '📦 Qté min',
+    quantite_max: '📦 Qté max',
+    delai_preparation: '⏱️ Préparation',
+    disponible: '✅ Disponibilité',
+    duree_min: '⏳ Durée min',
+    duree_max: '⏳ Durée max',
+    caution: '💳 Caution',
+  }
+  return labels[key] || key
+}
+
+// Formater la valeur d'un champ spécifique
+const formatFieldValue = (val) => {
+  if (typeof val === 'boolean') return val ? '✅ Oui' : '❌ Non'
+  if (typeof val === 'number') return val.toString()
+  return val
+}
+
+// ---- Modal d'achat ----
+// Redirigé vers ServicesByTypeView via goToServicePage()
+
+// Rediriger vers la page du type de service
+const goToServicePage = (service) => {
+  const type = service.typeName || 'commande'
+  router.push({
+    path: `/services/${type}`,
+    query: {
+      service: service.id_service || '',
+      prestataire: prestataire.value?.nom || ''
+    }
+  })
+}
 
 // Vérifier si c'est le prestataire "Terrain de basket"
 const isBasketPrestataire = computed(() => {
@@ -691,6 +694,234 @@ const isBasketPrestataire = computed(() => {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+.service-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.service-type-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(100, 150, 255, 0.15);
+  color: #8ab4ff;
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  font-weight: 600;
+  width: fit-content;
+}
+
+.service-specific-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.specific-detail-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.06);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.specific-key {
+  color: rgba(255,255,255,0.6);
+}
+
+.specific-val {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Bouton d'achat */
+.btn-buy-service {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.btn-buy-service:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.btn-type-reservation {
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #1a1a2e;
+}
+.btn-type-commande, .btn-type-default {
+  background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+  color: #fff;
+}
+.btn-type-location {
+  background: linear-gradient(135deg, #2196F3 0%, #64B5F6 100%);
+  color: #fff;
+}
+
+/* Modal */
+.service-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.service-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(252,220,30,0.3);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.modal-close:hover { background: rgba(255,255,255,0.2); }
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(252,220,30,0.2);
+}
+.modal-type-icon {
+  font-size: 2.5rem;
+  background: rgba(252,220,30,0.1);
+  width: 64px; height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+.modal-title {
+  color: #FCDC1E;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+}
+.modal-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #FCDC1E;
+  box-shadow: 0 0 0 3px rgba(252,220,30,0.1);
+}
+.form-hint {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+}
+.modal-price-recap {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.95rem;
+}
+.price-total {
+  border-top: 1px solid rgba(252,220,30,0.3);
+  margin-top: 8px;
+  padding-top: 12px;
+  color: #FCDC1E;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.btn-validate-modal {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #1a1a2e;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-validate-modal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(252,220,30,0.4);
 }
 
 .contact-info {

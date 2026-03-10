@@ -164,18 +164,12 @@ export default {
           if (resp.ok) {
             data = await resp.json();
           }
-        } catch (e) { /* ignore, fallback JSON */ }
+        } catch (e) {
+          console.error('Erreur chargement programmation API:', e);
+        }
 
-        if (!data || (!data.stages && !data.schedules)) {
-          // Fallback : JSON statique
-          const customRaw = localStorage.getItem('customProgrammation');
-          if (customRaw) {
-            try { data = JSON.parse(customRaw); } catch (e) { /* ignore */ }
-          }
-          if (!data) {
-            const response = await fetch('/data/programmation.json');
-            data = await response.json();
-          }
+        if (!data) {
+          data = { stages: [], schedules: [] };
         }
 
         this.stages = data.stages || [];

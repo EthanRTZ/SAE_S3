@@ -54,59 +54,61 @@ const historiqueDemandes = computed(() => {
     .sort((a, b) => new Date(b.dateTraitement || 0) - new Date(a.dateTraitement || 0))
 })
 
-// AJOUT: Fonction pour charger les demandes
-const loadDemandesEmplacement = () => {
+// Charger les demandes d'emplacement depuis l'API
+const loadDemandesEmplacement = async () => {
   try {
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    demandesEmplacement.value = demandesRaw ? JSON.parse(demandesRaw) : []
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/emplacements', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      demandesEmplacement.value = (Array.isArray(list) ? list : []).filter(e => e.statut === 'en_attente')
+    }
   } catch (e) {
     console.error('Erreur chargement demandes', e)
     demandesEmplacement.value = []
   }
 }
 
-// AJOUT: Fonction pour charger les emplacements attribués
-const loadEmplacementsAttribues = () => {
+// Charger les emplacements attribués depuis l'API
+const loadEmplacementsAttribues = async () => {
   try {
-    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-    emplacementsAttribues.value = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/emplacements', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      const attribues = {}
+      ;(Array.isArray(list) ? list : []).forEach(e => {
+        if (e.statut === 'pris' && e.prestataireNom) {
+          attribues[e.prestataireNom] = e.coordonnees_completes || e.coordonnees
+        }
+      })
+      emplacementsAttribues.value = attribues
+    }
   } catch (e) {
-    console.error('Erreur chargement emplacements', e)
+    console.error('Erreur chargement emplacements attribués', e)
     emplacementsAttribues.value = {}
   }
 }
 
 // AJOUT: Accepter une demande (fonctionnel) - UNE SEULE VERSION
-const accepterDemande = (demande) => {
+const accepterDemande = async (demande) => {
   if (!confirm(`Accepter la demande de ${demande.prestataireNom} pour l'emplacement ${demande.coordonnees} ?`)) return
 
   try {
-    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-    let emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    const prestataireOccupant = Object.entries(emplacements).find(([, coords]) => coords === demande.coordonnees)
-    if (prestataireOccupant && prestataireOccupant[0] !== demande.prestataireNom) {
-      alert(`❌ Cet emplacement est déjà occupé par ${prestataireOccupant[0]}`)
-      return
+    // Mettre à jour l'emplacement via l'API
+    if (demande.id_emplacement) {
+      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ statut: 'pris', prestataireNom: demande.prestataireNom })
+      })
     }
-
-    if (emplacements[demande.prestataireNom]) {
-      delete emplacements[demande.prestataireNom]
-    }
-
-    emplacements[demande.prestataireNom] = demande.coordonnees
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(emplacements))
-
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
-
-    const index = demandes.findIndex(d => d.id === demande.id)
-    if (index !== -1) {
-      demandes[index].statut = 'acceptee'
-      demandes[index].dateTraitement = new Date().toISOString()
-    }
-
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
 
     loadDemandesEmplacement()
     loadEmplacementsAttribues()
@@ -123,25 +125,22 @@ const accepterDemande = (demande) => {
 }
 
 // AJOUT: Refuser une demande (fonctionnel) - UNE SEULE VERSION
-const refuserDemande = (demande) => {
+const refuserDemande = async (demande) => {
   const raison = prompt(`Raison du refus de la demande de ${demande.prestataireNom} :`)
   if (raison === null) return
 
   try {
-    const demandesRaw = localStorage.getItem('demandesEmplacement')
-    let demandes = demandesRaw ? JSON.parse(demandesRaw) : []
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    const index = demandes.findIndex(d => d.id === demande.id)
-    if (index !== -1) {
-      demandes[index].statut = 'refusee'
-      demandes[index].raison = raison
-      demandes[index].dateTraitement = new Date().toISOString()
+    if (demande.id_emplacement) {
+      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ statut: 'libre', raison_refus: raison })
+      })
     }
 
-    localStorage.setItem('demandesEmplacement', JSON.stringify(demandes))
-
     loadDemandesEmplacement()
-
     window.dispatchEvent(new Event('demandes-updated'))
 
     alert(`✅ Demande refusée.\n\nRaison : ${raison}`)
@@ -152,28 +151,27 @@ const refuserDemande = (demande) => {
 }
 
 // AJOUT: Assigner directement un emplacement (fonctionnel) - UNE SEULE VERSION
-const assignerEmplacement = (prestataireNom, coords) => {
+const assignerEmplacement = async (prestataireNom, coords) => {
   if (!confirm(`Assigner l'emplacement ${coords} à ${prestataireNom} ?`)) return
 
   try {
-    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-    let emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    const prestataireOccupant = Object.entries(emplacements).find(([, c]) => c === coords)
-    if (prestataireOccupant && prestataireOccupant[0] !== prestataireNom) {
-      alert(`❌ Cet emplacement est déjà occupé par ${prestataireOccupant[0]}`)
-      return
+    // Trouver l'emplacement correspondant via l'API
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'pris', prestataireNom })
+        })
+      }
     }
-
-    if (emplacements[prestataireNom]) {
-      delete emplacements[prestataireNom]
-    }
-
-    emplacements[prestataireNom] = coords
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(emplacements))
 
     loadEmplacementsAttribues()
-
     window.dispatchEvent(new Event('emplacements-updated'))
 
     alert(`✅ Emplacement assigné !\n\n${coords} a été attribué à ${prestataireNom}.`)
@@ -184,27 +182,29 @@ const assignerEmplacement = (prestataireNom, coords) => {
 }
 
 // AJOUT: Libérer un emplacement (fonctionnel) - UNE SEULE VERSION
-const libererEmplacementAdmin = (prestataireNom) => {
+const libererEmplacementAdmin = async (prestataireNom) => {
   if (!confirm(`Libérer l'emplacement de ${prestataireNom} ?`)) return
 
   try {
-    const emplacementsRaw = localStorage.getItem('emplacementsAttribues')
-    let emplacements = emplacementsRaw ? JSON.parse(emplacementsRaw) : {}
+    const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
 
-    const coords = emplacements[prestataireNom]
-    if (!coords) {
-      alert('❌ Ce prestataire n\'a pas d\'emplacement attribué')
-      return
+    // Trouver l'emplacement attribué à ce prestataire via l'API
+    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (empResp.ok) {
+      const list = await empResp.json()
+      const emp = (Array.isArray(list) ? list : []).find(e => e.prestataireNom === prestataireNom && e.statut === 'pris')
+      if (emp) {
+        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({ statut: 'libre', prestataireNom: null })
+        })
+      }
     }
 
-    delete emplacements[prestataireNom]
-    localStorage.setItem('emplacementsAttribues', JSON.stringify(emplacements))
-
     loadEmplacementsAttribues()
-
     window.dispatchEvent(new Event('emplacements-updated'))
-
-    alert(`✅ Emplacement libéré !\n\nL'emplacement ${coords} de ${prestataireNom} a été libéré.`)
+    alert(`✅ Emplacement de ${prestataireNom} libéré.`)
   } catch (e) {
     console.error('Erreur libération emplacement', e)
     alert('❌ Erreur lors de la libération')
@@ -366,7 +366,7 @@ const selectPresentationSection = (sectionId) => {
 }
 
 
-const saveUser = () => {
+const saveUser = async () => {
   if (isCreatingUser.value) {
     // Créer un nouvel utilisateur
     if (!newUser.value.email || !newUser.value.password) {
@@ -381,7 +381,15 @@ const saveUser = () => {
     }
 
     users.value.push({ ...newUser.value })
-    localStorage.setItem('users', JSON.stringify(users.value))
+    // Créer via l'API
+    try {
+      const token = localStorage.getItem('authToken')
+      await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(newUser.value)
+      })
+    } catch (e) { console.error('Erreur création utilisateur API:', e) }
     alert('Utilisateur créé avec succès!')
     changeSection('users')
   } else if (selectedUser.value) {
@@ -389,13 +397,24 @@ const saveUser = () => {
     const index = users.value.findIndex(u => u.email === selectedUser.value.email)
     if (index !== -1) {
       users.value[index] = { ...selectedUser.value }
-      localStorage.setItem('users', JSON.stringify(users.value))
+      // Mettre à jour via l'API
+      try {
+        const token = localStorage.getItem('authToken')
+        const userId = selectedUser.value.id_utilisateur || selectedUser.value.id
+        if (userId) {
+          await fetch(`/api/utilisateurs/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify(selectedUser.value)
+          })
+        }
+      } catch (e) { console.error('Erreur modification utilisateur API:', e) }
       alert('Utilisateur modifié avec succès!')
     }
   }
 }
 
-const deleteUser = () => {
+const deleteUser = async () => {
   if (!selectedUser.value) return
 
   if (selectedUser.value.email === authUser.value?.email) {
@@ -409,40 +428,24 @@ const deleteUser = () => {
 
   try {
     const emailToDelete = selectedUser.value.email
+    const userId = selectedUser.value.id_utilisateur || selectedUser.value.id
 
-    // MODIFICATION: Supprimer de users.value
+    // Supprimer via l'API
+    if (userId) {
+      const token = localStorage.getItem('authToken')
+      await fetch(`/api/utilisateurs/${userId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+    }
+
+    // Mettre à jour la liste locale
     const index = users.value.findIndex(u => u.email === emailToDelete)
     if (index !== -1) {
       users.value.splice(index, 1)
     }
 
-    // MODIFICATION: Supprimer du localStorage 'users' (créés via AdminView)
-    const localStorageUsersRaw = localStorage.getItem('users')
-    if (localStorageUsersRaw) {
-      try {
-        let localUsers = JSON.parse(localStorageUsersRaw)
-        localUsers = localUsers.filter(u => u.email !== emailToDelete)
-        localStorage.setItem('users', JSON.stringify(localUsers))
-      } catch (e) {
-        console.error('Erreur suppression localStorage users', e)
-      }
-    }
-
-    // MODIFICATION: Supprimer du localStorage 'customUsers' (créés via RegisterView)
-    const customUsersRaw = localStorage.getItem('customUsers')
-    if (customUsersRaw) {
-      try {
-        let customUsers = JSON.parse(customUsersRaw)
-        customUsers = customUsers.filter(u => u.email !== emailToDelete)
-        localStorage.setItem('customUsers', JSON.stringify(customUsers))
-      } catch (e) {
-        console.error('Erreur suppression customUsers', e)
-      }
-    }
-
-    // AJOUT: Émettre des événements pour synchroniser
     window.dispatchEvent(new Event('auth-changed'))
-    window.dispatchEvent(new Event('storage'))
 
     alert('Utilisateur supprimé avec succès!')
     changeSection('users')
@@ -471,36 +474,8 @@ const reloadUsers = async () => {
         })) : []
         usedApi = true
       }
-    } catch (e) { /* fallback */ }
-
-    if (!usedApi) {
-      // Fallback JSON + localStorage
-      const usersResp = await fetch('/data/users.json', { cache: 'no-store' })
-      if (usersResp.ok) {
-        const usersData = await usersResp.json()
-        users.value = []
-        await nextTick()
-
-        const customUsersRaw = localStorage.getItem('customUsers')
-        const localStorageUsersRaw = localStorage.getItem('users')
-        let allUsers = [...usersData]
-
-        if (customUsersRaw) {
-          try { allUsers = [...allUsers, ...JSON.parse(customUsersRaw)] } catch (e) { /* ignore */ }
-        }
-        if (localStorageUsersRaw) {
-          try {
-            JSON.parse(localStorageUsersRaw).forEach(localUser => {
-              if (!allUsers.some(u => u.email === localUser.email)) allUsers.push(localUser)
-            })
-          } catch (e) { /* ignore */ }
-        }
-
-        users.value = allUsers.reduce((acc, user) => {
-          if (!acc.some(u => u.email === user.email)) acc.push(user)
-          return acc
-        }, [])
-      }
+    } catch (e) {
+      console.error('Erreur chargement utilisateurs API:', e)
     }
     console.log('✅ Utilisateurs rechargés:', users.value.length)
   } catch (e) {
@@ -564,34 +539,21 @@ const loadData = async () => {
           avisDataRaw[nom].avis.push({ id: a.id_avis, note: a.note, commentaire: a.commentaire, date: a.date_avis })
         })
       }
-    } catch (e) { /* fallback JSON */ }
-
-    // Fallback JSON si API vide
-    if (!prestataireData.prestataires.length) {
-      const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
-        fetch('/data/prestataires.json', { cache: 'no-store' }),
-        fetch('/data/zones.json', { cache: 'no-store' }),
-        fetch('/data/emplacements.json', { cache: 'no-store' }),
-        fetch('/data/avis.json', { cache: 'no-store' })
-      ])
-      prestataireData = prestatairesResp.ok ? await prestatairesResp.json() : { prestataires: [] }
-      zonesData = zonesResp.ok ? await zonesResp.json() : { zones: [] }
-      emplacementsData = emplacementsResp.ok ? await emplacementsResp.json() : { emplacements: [] }
-      avisDataRaw = avisResp.ok ? await avisResp.json() : {}
+    } catch (e) {
+      console.error('Erreur chargement données API:', e)
     }
 
     zones.value = zonesData.zones || []
     emplacementsForMap.value = emplacementsData.emplacements || []
 
-    // MODIFICATION: Utiliser TOUS les prestataires du JSON, pas seulement ceux avec des avis
+    // Utiliser TOUS les prestataires de l'API
     const prestatairesFiltered = (prestataireData.prestataires || [])
       .map(p => {
-        // Normaliser la description en objet bilingue
         let description = p.description
         if (typeof description === 'string') {
           description = { fr: description, en: '' }
         } else if (!description || typeof description !== 'object') {
-          description = { fr: '', en: '' }
+          description = { fr: p.description_fr || '', en: p.description_en || '' }
         } else {
           description = {
             fr: description.fr || '',
@@ -606,54 +568,20 @@ const loadData = async () => {
       })
 
     prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestatairesFiltered))
-
-    // Charger les modifications locales
-    const customRaw = localStorage.getItem('customPrestataires')
-    if (customRaw) {
-      try {
-        customPrestataires.value = JSON.parse(customRaw)
-      } catch (e) {
-        customPrestataires.value = {}
-      }
-    }
-
-    // Fusionner les données originales avec les modifications
-    prestataires.value = prestatairesFiltered.map(p => {
-      const custom = customPrestataires.value[p.nom]
-      if (custom) {
-        // Normaliser la description custom aussi
-        let customDescription = custom.description
-        if (typeof customDescription === 'string') {
-          customDescription = { fr: customDescription, en: '' }
-        } else if (!customDescription || typeof customDescription !== 'object') {
-          customDescription = p.description // Utiliser l'original si custom est invalide
-        } else {
-          customDescription = {
-            fr: customDescription.fr || '',
-            en: customDescription.en || ''
-          }
-        }
-        
-        return {
-          ...p,
-          ...custom,
-          description: customDescription
-        }
-      }
-      return p
-    })
+    prestataires.value = prestatairesFiltered
 
     const totalServices = prestataires.value.reduce((acc, p) => acc + (p.services?.length || 0), 0)
 
-    // Charger les réservations
-    const reservationsRaw = localStorage.getItem('reservations')
+    // Charger les réservations depuis l'API
     let reservations = []
-    if (reservationsRaw) {
-      try {
-        reservations = JSON.parse(reservationsRaw)
-      } catch (e) {
-        reservations = []
+    try {
+      const billetsResp = await fetch('/api/billets', { headers })
+      if (billetsResp.ok) {
+        const billetsData = await billetsResp.json()
+        reservations = Array.isArray(billetsData) ? billetsData : []
       }
+    } catch (e) {
+      console.error('Erreur chargement réservations:', e)
     }
 
     // Calculer les stats de tickets
@@ -701,29 +629,6 @@ const loadData = async () => {
     // Calculer les stats globales des avis prestataires
     let allAvis = { ...avisDataRaw }
 
-    // Ajouter les avis depuis JSON si allAvis vide (double fallback)
-    if (!Object.keys(allAvis).length) {
-      try {
-        const resp = await fetch('/data/avis.json', { cache: 'no-store' })
-        if (resp.ok) allAvis = await resp.json()
-      } catch (e) { /* ignore */ }
-    }
-
-    // Ajouter les avis localStorage
-    try {
-      const stored = localStorage.getItem('festivalAvis')
-      if (stored) {
-        const localAvis = JSON.parse(stored)
-        localAvis.forEach(avis => {
-          if (!allAvis[avis.prestataire]) {
-            allAvis[avis.prestataire] = { avis: [] }
-          }
-          allAvis[avis.prestataire].avis.push(avis)
-        })
-      }
-    } catch (e) {
-      console.error('Erreur localStorage avis', e)
-    }
 
     let totalAvis = 0
     let sommeNotes = 0
@@ -743,43 +648,16 @@ const loadData = async () => {
 
     const notesMoyenne = totalAvis > 0 ? sommeNotes / totalAvis : 0
 
-    // Suppression du calcul de derniersAvisPrestataires
-
-    // ===================================
-    // NOUVEAU : Calcul des avis festival
-    // ===================================
-    let avisFestivalList = []
-    try {
-      const storedFestivalAvis = localStorage.getItem('avisFestival')
-      if (storedFestivalAvis) {
-        avisFestivalList = JSON.parse(storedFestivalAvis)
-      }
-    } catch (e) {
-      console.error('Erreur chargement avisFestival', e)
-    }
-
-    const totalAvisFestival = avisFestivalList.length
-    let sommeNotesFestival = 0
+    // Avis festival — chargés depuis l'API (pas de localStorage)
+    const avisFestivalList = []
+    const totalAvisFestival = 0
+    const avisFestivalMoyenne = 0
     const repartitionNotesFestival = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-
-    avisFestivalList.forEach(avis => {
-      sommeNotesFestival += avis.note || 0
-      const note = avis.note || 0
-      if (repartitionNotesFestival[note] !== undefined) {
-        repartitionNotesFestival[note]++
-      }
-    })
-
-    const avisFestivalMoyenne = totalAvisFestival > 0 ? sommeNotesFestival / totalAvisFestival : 0
-
-    // Récupérer les derniers avis du festival (triés par date décroissante)
-    const dernierAvisFestival = avisFestivalList
-      .slice()
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const dernierAvisFestival = []
 
     stats.value = {
       totalUsers: users.value.length,
-      totalPrestataires: prestataires.value.length, // MODIFICATION: Utilise le nombre total de prestataires
+      totalPrestataires: prestataires.value.length,
       totalReservations: reservations.length,
       totalServices,
       totalTickets,
@@ -791,48 +669,37 @@ const loadData = async () => {
       avisFestivalMoyenne,
       totalAvisFestival,
       repartitionNotesFestival,
-      dernierAvisFestival // AJOUT
+      dernierAvisFestival
     }
 
-    // Charger présentation depuis l'API ou festival.json (BDD)
+    // Charger présentation depuis l'API (BDD)
     try {
       let festivalData = null
 
-      // Essayer l'API
       try {
         const resp = await fetch('/api/manifestations', { headers })
         if (resp.ok) {
           const list = await resp.json()
           const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
-          if (festival && festival.description_fr) {
+          if (festival) {
+            const presFr = festival.presentation_fr || {}
+            const presEn = festival.presentation_en || {}
             festivalData = {
               presentation: {
-                fr: { ...defaultPresentationFR, description: festival.description_fr },
-                en: { ...defaultPresentationEN, description: festival.description_en }
+                fr: Object.keys(presFr).length > 0 ? presFr : { ...defaultPresentationFR, description: festival.description_fr || '' },
+                en: Object.keys(presEn).length > 0 ? presEn : { ...defaultPresentationEN, description: festival.description_en || '' }
               }
             }
           }
         }
-      } catch (e) { /* fallback JSON */ }
-
-      // Fallback JSON si API vide
-      if (!festivalData) {
-        const festivalResp = await fetch('/data/festival.json', { cache: 'no-store' })
-        if (festivalResp.ok) festivalData = await festivalResp.json()
+      } catch (e) {
+        console.error('Erreur chargement festival API:', e)
       }
 
       if (festivalData?.presentation) {
         festivalPresentation.value = festivalData.presentation
       } else {
         festivalPresentation.value = { fr: { ...defaultPresentationFR }, en: { ...defaultPresentationEN } }
-      }
-
-      // localStorage prioritaire sur tout le reste
-      const storedPresentation = localStorage.getItem('festivalPresentation')
-      if (storedPresentation) {
-        try {
-          festivalPresentation.value = JSON.parse(storedPresentation)
-        } catch (e) { /* ignore */ }
       }
     } catch (e) {
       console.error('Erreur chargement présentation festival:', e)
@@ -863,7 +730,6 @@ const loadEmplacements = async () => {
   try {
     const token = localStorage.getItem('authToken')
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
-    let usedApi = false
     try {
       const resp = await fetch('/api/emplacements', { headers })
       if (resp.ok) {
@@ -871,15 +737,9 @@ const loadEmplacements = async () => {
         emplacements.value = (Array.isArray(list) ? list : []).map(e => ({
           ...e, coordonnees: e.coordonnees_completes || e.coordonnees, id: e.id_emplacement
         }))
-        usedApi = true
       }
-    } catch (e) { /* fallback */ }
-    if (!usedApi) {
-      const resp = await fetch('/data/emplacements.json', { cache: 'no-store' })
-      if (resp.ok) {
-        const data = await resp.json()
-        emplacements.value = data.emplacements || []
-      }
+    } catch (e) {
+      console.error('Erreur chargement emplacements:', e)
     }
   } catch (e) {
     emplacements.value = []
@@ -901,20 +761,12 @@ const loadProgrammation = async () => {
           data = apiData
         }
       }
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      console.error('Erreur chargement programmation:', e)
+    }
 
     if (!data) {
-      // Fallback JSON + localStorage
-      const resp = await fetch('/data/programmation.json', { cache: 'no-store' })
-      if (!resp.ok) throw new Error('fetch failed')
-      data = await resp.json()
-      const customRaw = localStorage.getItem('customProgrammation')
-      if (customRaw) {
-        try {
-          const custom = JSON.parse(customRaw)
-          data = { stages: custom.stages || data.stages || [], schedules: custom.schedules || data.schedules || [] }
-        } catch (e) { /* ignore */ }
-      }
+      data = { stages: [], schedules: [] }
     }
 
     programmationOriginaux.value = JSON.parse(JSON.stringify(data))
@@ -931,7 +783,29 @@ const loadProgrammation = async () => {
 const savePresentation = async () => {
   try {
     const presentationToSave = JSON.parse(JSON.stringify(toRaw(festivalPresentation.value)));
-    localStorage.setItem('festivalPresentation', JSON.stringify(presentationToSave));
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/manifestations', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
+      if (festival) {
+        await fetch(`/api/manifestations/${festival.id_festival}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            description_fr: presentationToSave.fr?.description || presentationToSave.fr?.footerDescription || '',
+            description_en: presentationToSave.en?.description || presentationToSave.en?.footerDescription || '',
+            presentation_fr: presentationToSave.fr || {},
+            presentation_en: presentationToSave.en || {}
+          })
+        })
+      }
+    }
     window.dispatchEvent(new Event('festival-presentation-updated'));
     alert('Présentation sauvegardée avec succès!');
   } catch (e) {
@@ -1104,7 +978,7 @@ const getModifiedFields = (prestataire) => {
 }
 
 // AJOUT: Fonction resetPrestataire manquante
-const resetPrestataire = () => {
+const resetPrestataire = async () => {
   if (!selectedPrestataire.value) return
 
   const nom = selectedPrestataire.value.nom
@@ -1113,9 +987,26 @@ const resetPrestataire = () => {
   if (original) {
     selectedPrestataire.value = JSON.parse(JSON.stringify(original))
     delete customPrestataires.value[nom]
-    localStorage.setItem('customPrestataires', JSON.stringify(customPrestataires.value))
 
-    // Mettre à jour la liste
+    // Réinitialiser via l'API
+    const id = original.id_prestataire
+    if (id) {
+      try {
+        const token = localStorage.getItem('authToken')
+        await fetch(`/api/prestataires/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({
+            description_fr: original.description?.fr || original.description_fr || '',
+            description_en: original.description?.en || original.description_en || '',
+            contact_email: original.email || original.contact_email || '',
+            contact_tel: original.tel || original.contact_tel || '',
+            site_web: original.site || original.site_web || ''
+          })
+        })
+      } catch (e) { console.error('Erreur reset prestataire API:', e) }
+    }
+
     const index = prestataires.value.findIndex(p => p.nom === nom)
     if (index !== -1) {
       prestataires.value[index] = JSON.parse(JSON.stringify(original))
@@ -1126,17 +1017,12 @@ const resetPrestataire = () => {
 }
 
 // AJOUT: Fonction savePrestataireChanges manquante
-const savePrestataireChanges = (updatedPrestataire) => {
-  // Si les données sont passées depuis le composant enfant, les utiliser
-  // Sinon, utiliser selectedPrestataire.value (mode manuel)
+const savePrestataireChanges = async (updatedPrestataire) => {
   const prestataireToSave = updatedPrestataire || selectedPrestataire.value
-
   if (!prestataireToSave) return
 
   const nom = prestataireToSave.nom
-  console.log('🔵 Sauvegarde pour:', nom, prestataireToSave.description)
 
-  // Créer une copie propre des données à sauvegarder
   const dataToSave = {
     description: JSON.parse(JSON.stringify(prestataireToSave.description)),
     services: JSON.parse(JSON.stringify(prestataireToSave.services || [])),
@@ -1145,58 +1031,47 @@ const savePrestataireChanges = (updatedPrestataire) => {
     site: prestataireToSave.site || ''
   }
 
-  // S'assurer que description est un objet bilingue valide
   if (typeof dataToSave.description === 'string') {
     dataToSave.description = { fr: dataToSave.description, en: '' }
   } else if (!dataToSave.description || typeof dataToSave.description !== 'object') {
     dataToSave.description = { fr: '', en: '' }
   } else {
-    dataToSave.description = {
-      fr: dataToSave.description.fr || '',
-      en: dataToSave.description.en || ''
-    }
+    dataToSave.description = { fr: dataToSave.description.fr || '', en: dataToSave.description.en || '' }
   }
 
-  console.log('💾 Sauvegarde localStorage:', dataToSave)
-
-  // Charger les données custom existantes
-  const raw = localStorage.getItem('customPrestataires')
-  let customPrestatairesList = raw ? JSON.parse(raw) : {}
-
-  // Sauvegarder les modifications
-  customPrestatairesList[nom] = dataToSave
-
-  // Sauvegarder dans localStorage
-  localStorage.setItem('customPrestataires', JSON.stringify(customPrestatairesList))
-
-  // Mettre à jour customPrestataires (réactif)
-  customPrestataires.value[nom] = dataToSave
+  // Sauvegarder via l'API
+  const id = prestataireToSave.id_prestataire
+  if (id) {
+    try {
+      const token = localStorage.getItem('authToken')
+      await fetch(`/api/prestataires/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          description_fr: dataToSave.description.fr,
+          description_en: dataToSave.description.en,
+          contact_email: dataToSave.email,
+          contact_tel: dataToSave.tel,
+          site_web: dataToSave.site
+        })
+      })
+    } catch (e) { console.error('Erreur sauvegarde prestataire API:', e) }
+  }
 
   // Mettre à jour la liste en mémoire
   const index = prestataires.value.findIndex(p => p.nom === nom)
   if (index !== -1) {
-    // Fusionner avec les données de base
     const base = prestatairesOriginaux.value.find(p => p.nom === nom) || prestataires.value[index]
-    prestataires.value[index] = {
-      ...base,
-      ...dataToSave
-    }
+    prestataires.value[index] = { ...base, ...dataToSave }
   }
 
-  // IMPORTANT: Mettre à jour selectedPrestataire avec les données sauvegardées
   const base = prestatairesOriginaux.value.find(p => p.nom === nom)
   if (base) {
-    selectedPrestataire.value = {
-      ...base,
-      ...dataToSave
-    }
+    selectedPrestataire.value = { ...base, ...dataToSave }
   }
 
-  // Déclencher un événement pour notifier les autres composants
   window.dispatchEvent(new Event('prestataire-updated'))
-
   alert('Modifications sauvegardées avec succès!')
-  console.log('✅ Terminé')
 }
 
 
@@ -1248,7 +1123,7 @@ const startCreateUser = () => {
 }
 
 // AJOUT: Fonction resetPresentation manquante
-const resetPresentation = () => {
+const resetPresentation = async () => {
   if (!confirm('Êtes-vous sûr de vouloir réinitialiser la présentation ? Toutes les modifications seront perdues.')) return
 
   festivalPresentation.value = {
@@ -1256,7 +1131,7 @@ const resetPresentation = () => {
     en: { ...defaultPresentationEN }
   }
 
-  localStorage.removeItem('festivalPresentation')
+  await savePresentation()
   window.dispatchEvent(new Event('festival-presentation-updated'))
   alert('Présentation réinitialisée avec succès!')
 }
@@ -1309,10 +1184,21 @@ const cancelEdit = () => {
 }
 
 // AJOUT: Fonction saveProgrammation manquante
-const saveProgrammation = () => {
-  localStorage.setItem('customProgrammation', JSON.stringify(programmation.value))
-  window.dispatchEvent(new Event('programmation-updated'))
-  alert('Programmation sauvegardée avec succès!')
+const saveProgrammation = async () => {
+  try {
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/programmation', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(programmation.value)
+    })
+    if (!resp.ok) throw new Error('Erreur sauvegarde')
+    window.dispatchEvent(new Event('programmation-updated'))
+    alert('Programmation sauvegardée avec succès!')
+  } catch (e) {
+    console.error('Erreur sauvegarde programmation:', e)
+    alert('Erreur lors de la sauvegarde de la programmation')
+  }
 }
 
 // AJOUT: Fonction computeAvisStatsForPrestataires manquante
@@ -1321,7 +1207,7 @@ const computeAvisStatsForPrestataires = async () => {
   const token = localStorage.getItem('authToken')
   const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-  // Charger tous les avis en une fois (API puis fallback JSON)
+  // Charger tous les avis depuis l'API
   let allAvisMap = {}
   try {
     const resp = await fetch('/api/avis', { headers })
@@ -1334,31 +1220,13 @@ const computeAvisStatsForPrestataires = async () => {
         allAvisMap[nom].push({ note: a.note, commentaire: a.commentaire, date: a.date_avis })
       })
     }
-  } catch (e) { /* fallback */ }
-
-  if (!Object.keys(allAvisMap).length) {
-    try {
-      const resp = await fetch('/data/avis.json', { cache: 'no-store' })
-      if (resp.ok) {
-        const data = await resp.json()
-        Object.keys(data).forEach(nom => {
-          allAvisMap[nom] = data[nom]?.avis || []
-        })
-      }
-    } catch (e) { /* ignore */ }
+  } catch (e) {
+    console.error('Erreur chargement avis:', e)
   }
 
   for (const prestataire of prestataires.value) {
     let avisArray = [...(allAvisMap[prestataire.nom] || [])]
 
-    // Ajouter les avis localStorage
-    try {
-      const stored = localStorage.getItem('festivalAvis')
-      if (stored) {
-        const localAvis = JSON.parse(stored)
-        avisArray = [...avisArray, ...localAvis.filter(a => a.prestataire === prestataire.nom)]
-      }
-    } catch (e) { /* ignore */ }
 
     const nbAvis = avisArray.length
     let moyenne = 0
