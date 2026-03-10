@@ -106,7 +106,7 @@ const authUser = ref(null)
 
 const isAuthenticatedAsUser = computed(() => {
   if (!authUser.value) return false
-  return authUser.value.role === 'user'
+  return authUser.value.role === 'user' || authUser.value.role === 'public'
 })
 
 const loadAuthUser = () => {

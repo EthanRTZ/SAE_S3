@@ -5,7 +5,7 @@
         <h1>{{ $t('payment.title') }}</h1>
         <div class="divider"></div>
 
-        <div v-if="!authUser || authUser.role !== 'user'" class="auth-warning">
+        <div v-if="!authUser || (authUser.role !== 'user' && authUser.role !== 'public')" class="auth-warning">
           <p class="warning-text">
             {{ $t('payment.mustLogin') }}
             <router-link to="/login" class="warning-link">{{ $t('payment.loginHere') }}</router-link>
@@ -552,7 +552,7 @@ const onSubmit = async () => {
 
 onMounted(() => {
   loadAuthUser()
-  if (!authUser.value || authUser.value.role !== 'user') {
+  if (!authUser.value || (authUser.value.role !== 'user' && authUser.value.role !== 'public')) {
     router.push('/login')
   }
   if (panierStore.itemCount === 0) {

@@ -304,13 +304,13 @@ export default {
   computed: {
     isAuthenticatedAsUser() {
       if (!this.authUser) return false
-      return this.authUser.role === 'user'
+      return this.authUser.role === 'user' || this.authUser.role === 'public'
     },
     authMessage() {
       if (!this.authUser) {
         return 'Vous devez être connecté avec un compte utilisateur pour réserver un forfait. Veuillez vous connecter pour poursuivre votre réservation.'
       }
-      if (this.authUser.role !== 'user') {
+      if (this.authUser.role !== 'user' && this.authUser.role !== 'public') {
         return `Vous êtes connecté en tant que ${this.authUser.role}. Seuls les comptes utilisateurs peuvent réserver des billets.`
       }
       return 'Vous devez être connecté pour réserver un forfait.'

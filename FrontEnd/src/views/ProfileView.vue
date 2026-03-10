@@ -188,7 +188,7 @@
       <div class="section-divider"></div>
 
       <!-- Section Gestion des réservations (uniquement pour les comptes user) -->
-      <div v-if="currentUserRole === 'user'" class="profile-section">
+      <div v-if="currentUserRole === 'user' || currentUserRole === 'public'" class="profile-section">
         <h3>{{ $t('profile.myReservations') }}</h3>
         <p class="reservations-help">
           {{ $t('profile.reservationsHelp') }}
@@ -375,7 +375,7 @@ onMounted(async () => {
   if (!currentUserEmail.value) {
     router.push('/login')
   } else {
-    if (currentUserRole.value === 'user') {
+    if (currentUserRole.value === 'user' || currentUserRole.value === 'public') {
       loadReservations()
     } else if (currentUserRole.value === 'prestataire') {
       await loadPrestataireInfo()

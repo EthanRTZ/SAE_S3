@@ -25,7 +25,7 @@ const loadAuthFromStorage = () => {
 const isAuthenticated = computed(() => !!authUser.value)
 const userEmail = computed(() => authUser.value?.email || '')
 const userRole = computed(() => authUser.value?.role || 'user')
-const isUserRole = computed(() => userRole.value === 'user')
+const isUserRole = computed(() => userRole.value === 'user' || userRole.value === 'public')
 const prestataireNom = computed(() => authUser.value?.prestataireNom || '')
 const prestataireInfo = ref(null)
 
