@@ -12,6 +12,7 @@ export const billetsService = {
 
   // Réservations
   getReservationsByUser: (userId) => api.get(`/billets/reservations/user/${userId}`),
+  getMyReservations: () => api.get('/billets/reservations/me'),
   createReservation: (payload) => api.post('/billets/reservations', payload),
   updateReservation: (id, payload) => api.put(`/billets/reservations/${id}`, payload),
   updateReservationDate: (id, date_utilisation) => api.patch(`/billets/reservations/${id}/date`, { date_utilisation }),

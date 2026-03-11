@@ -264,6 +264,7 @@
 
 <script>
 import { usePanierStore } from '@/stores/panier'
+import { billetsService } from '@/services/billetsService'
 
 export default {
   name: 'ReservationView',
@@ -392,22 +393,31 @@ export default {
       }
     },
     async applyPaidReservationsToStock() {
-      // Déduire les réservations payées du stock depuis l'API
       try {
-        const token = localStorage.getItem('authToken')
-        const resp = await fetch('/api/billets/mes-reservations', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        const reservations = await this.getAllReservations()
+        reservations.forEach(reservation => {
+          if (reservation.type && reservation.quantity) {
+            this.decrementStock(reservation.type, reservation.quantity, reservation.optionLabel || '')
+          }
         })
-        if (resp.ok) {
-          const allReservations = await resp.json()
-          ;(Array.isArray(allReservations) ? allReservations : []).forEach(reservation => {
-            if (reservation.type && reservation.quantity) {
-              this.decrementStock(reservation.type, reservation.quantity, reservation.optionLabel || '')
-            }
-          })
-        }
       } catch (e) {
         console.error('Erreur lors de l\'application des réservations payées:', e)
+      }
+    },
+    async getAllReservations() {
+      try {
+        const list = await billetsService.getMyReservations()
+        return (Array.isArray(list) ? list : []).map(resa => ({
+          id: resa.id_reservation,
+          type: this.normalizeTypeBillet(resa?.billet?.type_billet || resa.type_billet || resa.type),
+          quantity: resa.quantite,
+          optionLabel: '',
+          displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
+          date: resa.date_utilisation,
+          createdAt: resa.date_reservation
+        }))
+      } catch (_) {
+        return []
       }
     },
     applyPanierToStock() {
@@ -510,16 +520,17 @@ export default {
     },
     async getAllReservations() {
       try {
-        const token = localStorage.getItem('authToken')
-        const resp = await fetch('/api/billets/mes-reservations', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
-        if (resp.ok) {
-          const data = await resp.json()
-          return Array.isArray(data) ? data : []
-        }
-        return []
-      } catch (e) {
+        const list = await billetsService.getMyReservations()
+        return (Array.isArray(list) ? list : []).map(resa => ({
+          id: resa.id_reservation,
+          type: this.normalizeTypeBillet(resa?.billet?.type_billet || resa.type_billet || resa.type),
+          quantity: resa.quantite,
+          optionLabel: '',
+          displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
+          date: resa.date_utilisation,
+          createdAt: resa.date_reservation
+        }))
+      } catch (_) {
         return []
       }
     },

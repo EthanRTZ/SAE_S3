@@ -184,6 +184,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { billetsService } from '@/services/billetsService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -338,15 +339,16 @@ const loadFestivalDates = async () => {
 
 const getAllReservations = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const resp = await fetch('/api/billets/mes-reservations', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
-    if (resp.ok) {
-      const data = await resp.json()
-      return Array.isArray(data) ? data : []
-    }
-    return []
+    const list = await billetsService.getMyReservations()
+    return (Array.isArray(list) ? list : []).map(resa => ({
+      id: resa.id_reservation,
+      type: resa?.billet?.type_billet || resa.type_billet || resa.type,
+      quantity: resa.quantite,
+      optionLabel: '',
+      displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
+      date: resa.date_utilisation,
+      createdAt: resa.date_reservation
+    }))
   } catch (e) {
     return []
   }
@@ -354,7 +356,7 @@ const getAllReservations = async () => {
 
 const getUsedPlacesByDay = (type, excludedReservationId = null) => {
   const used = {}
-  const allReservations = getAllReservations()
+  const allReservations = reservations.value
 
   allReservations.forEach((reservation) => {
     if (reservation.type !== type) return
@@ -407,10 +409,7 @@ const loadReservations = async () => {
   reservationsLoading.value = true
   try {
     const list = await getAllReservations()
-    const email = (currentUserEmail.value || '').toLowerCase()
-    reservations.value = list.filter(
-      (r) => (r.userEmail || '').toLowerCase() === email
-    )
+    reservations.value = list
     initDaySelections()
   } catch (e) {
     reservations.value = []
@@ -635,9 +634,7 @@ onMounted(async () => {
 
 const getOtherBasketReservations = (excludedId = null) => {
   try {
-    const fromMain = getAllReservations()
-      .filter(r => r.type === 'basket' && r.id !== excludedId)
-    // Les réservations basket sont dans reservations.value (chargées depuis l'API)
+    const fromMain = reservations.value.filter(r => r.type === 'basket' && r.id !== excludedId)
     const fromBasket = reservations.value.filter(r => r.type === 'service')
     const mainDates = new Set(fromMain.map(r => `${r.date}|${r.slot}`))
     const uniqueBasket = fromBasket.filter(r => !mainDates.has(`${r.date}|${r.slot}`))

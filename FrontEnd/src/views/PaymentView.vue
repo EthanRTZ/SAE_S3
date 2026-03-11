@@ -258,6 +258,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePanierStore } from '@/stores/panier'
 import { useI18n } from 'vue-i18n'
+import { billetsService } from '@/services/billetsService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -287,6 +288,15 @@ const cardData = ref({
 const cardError = ref('')
 const expiryError = ref('')
 
+const billetsByType = ref({})
+const normalizeType = (raw) => {
+  const val = String(raw || '').toLowerCase()
+  if (val === '1jour') return 'oneDay'
+  if (val === '2jours') return 'twoDays'
+  if (val === '3jours') return 'threeDays'
+  return raw
+}
+
 const loadAuthUser = () => {
   try {
     const stored = localStorage.getItem('authUser')
@@ -296,6 +306,19 @@ const loadAuthUser = () => {
     }
   } catch (e) {
     authUser.value = null
+  }
+}
+
+const loadBillets = async () => {
+  try {
+    const list = await billetsService.getAll()
+    billetsByType.value = (Array.isArray(list) ? list : []).reduce((acc, billet) => {
+      acc[normalizeType(billet.type_billet)] = billet
+      return acc
+    }, {})
+  } catch (e) {
+    console.error('Erreur chargement billets pour le paiement:', e)
+    billetsByType.value = {}
   }
 }
 
@@ -483,8 +506,16 @@ const onSubmit = async () => {
   setTimeout(async () => {
     try {
       const now = new Date()
+      if (!authUser.value?.id) {
+        error.value = t('payment.mustLogin')
+        processing.value = false
+        return
+      }
 
-      // Enregistrer la commande dans localStorage
+      if (!Object.keys(billetsByType.value).length) {
+        await loadBillets()
+      }
+
       const order = {
         id: `ORDER-${Date.now()}`,
         userEmail: authUser.value.email,
@@ -496,53 +527,31 @@ const onSubmit = async () => {
         createdAt: now.toISOString()
       }
 
-      // Sauvegarder la commande et les réservations via l'API
-      const token = localStorage.getItem('authToken')
-      const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-
-      // Enregistrer chaque article du panier comme réservation via l'API
+      // Sauvegarder chaque article du panier comme réservation via l'API
       for (const item of panierStore.items) {
-        try {
-          if (item.type === 'service' && item.prestataire) {
-            // Réservation service prestataire
-            await fetch('/api/billets/reservations', {
-              method: 'POST', headers,
-              body: JSON.stringify({
-                type: 'service',
-                quantity: item.quantity,
-                prestataire: item.prestataire,
-                nom: item.nom || item.label,
-                serviceType: item.serviceType || '',
-                details: item.details || {},
-                prix: item.prix || 0,
-                personalInfo: { firstName: formData.value.firstName, lastName: formData.value.lastName, phone: formData.value.phone }
-              })
-            })
-          } else {
-            // Réservation billet festival
-            await fetch('/api/billets/reservations', {
-              method: 'POST', headers,
-              body: JSON.stringify({
-                type: item.type,
-                quantity: item.quantity,
-                optionLabel: item.optionLabel || '',
-                displayLabel: item.displayLabel || item.label,
-                personalInfo: { firstName: formData.value.firstName, lastName: formData.value.lastName, phone: formData.value.phone }
-              })
-            })
-          }
-        } catch (e) {
-          console.error('Erreur sauvegarde réservation:', e)
+        const billet = billetsByType.value[normalizeType(item.type)]
+        if (!billet) {
+          console.warn('Billet introuvable pour le type', item.type)
+          continue
         }
+        const quantity = Number(item.quantity) || 1
+        const prixUnitaire = Number(billet.prix) || 0
+        await billetsService.createReservation({
+          id_utilisateur: authUser.value.id,
+          id_billet: billet.id_billet,
+          quantite: quantity,
+          prix_total: prixUnitaire * quantity,
+          transaction_id: order.id,
+          date_utilisation: item.date || null
+        })
       }
 
-      // Vider le panier SANS restaurer le stock (places payées = places définitivement réservées)
       panierStore.clearPanierAfterPayment()
 
-      // Rediriger vers la page des réservations
       alert(t('payment.paymentSuccess'))
       router.push('/mes-reservations')
     } catch (e) {
+      console.error('Erreur paiement/réservation:', e)
       error.value = t('payment.paymentError')
     } finally {
       processing.value = false
@@ -552,6 +561,7 @@ const onSubmit = async () => {
 
 onMounted(() => {
   loadAuthUser()
+  loadBillets()
   if (!authUser.value || (authUser.value.role !== 'user' && authUser.value.role !== 'public')) {
     router.push('/login')
   }
