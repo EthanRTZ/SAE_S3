@@ -6,7 +6,7 @@
  * 2. Exécutez : node test-email.js
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/.env' });
 const { sendReservationConfirmation } = require('./services/emailService');
 
 // Données de test
@@ -50,7 +50,7 @@ async function testEmail() {
 
     if (result.success) {
       console.log('✅ Email envoyé avec succès !');
-      console.log('ID de l\'email :', result.data.id);
+      console.log('ID de l\'email :', result.id);
       console.log('\n📬 Vérifiez la boîte email de', testData.to);
     } else {
       console.log('❌ Échec de l\'envoi de l\'email');
@@ -64,4 +64,3 @@ async function testEmail() {
 
 // Exécution du test
 testEmail();
-
