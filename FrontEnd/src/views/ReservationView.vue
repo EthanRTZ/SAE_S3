@@ -55,7 +55,7 @@
                   v-model.number="quantities.oneDay"
                   @input="handleQuantityChange('oneDay')"
                 />
-                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('oneDay') }}</p>
+                <!-- Le détail des places restantes est affiché plus bas dans la liste des jours -->
               </div>
               <button
                 class="cta"
@@ -109,7 +109,7 @@
                   v-model.number="quantities.twoDays"
                   @input="handleQuantityChange('twoDays')"
                 />
-                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('twoDays') }}</p>
+                <!-- Le détail des places restantes est affiché plus bas dans la liste des jours -->
               </div>
               <button
                 class="cta"
@@ -145,7 +145,7 @@
                   v-model.number="quantities.threeDays"
                   @input="handleQuantityChange('threeDays')"
                 />
-                <p class="quantity-hint">{{ $t('reservation.available') }} {{ getMaxQuantity('threeDays') }}</p>
+                <!-- Le détail des places restantes est affiché plus bas dans la liste des jours -->
               </div>
               <p v-if="dayErrors.threeDays" class="day-error">{{ dayErrors.threeDays }}</p>
               <button 
@@ -189,7 +189,7 @@
                   v-model.number="quantities.parking"
                   @input="sanitizeQuantity('parking')"
                 />
-                <p class="quantity-hint">{{ $t('reservation.available') }} {{ forfaits.parking.stock }}</p>
+                <!-- Le détail des places restantes est géré via le stock global -->
               </div>
               <button
                 class="cta"
@@ -231,7 +231,7 @@
                   v-model.number="quantities.camping"
                   @input="sanitizeQuantity('camping')"
                 />
-                <p class="quantity-hint">{{ $t('reservation.available') }} {{ forfaits.camping.stock }}</p>
+                <!-- Le détail des places restantes est géré via le stock global -->
               </div>
               <button
                 class="cta"
@@ -427,16 +427,22 @@ export default {
         this.decrementStock(item.type, item.quantity, item.optionLabel)
       })
     },
+    recalcForfaitStock(type) {
+      const forfait = this.forfaits[type]
+      if (!forfait) return
+      if (Array.isArray(forfait.days) && forfait.days.length > 0) {
+        forfait.stock = forfait.days.reduce((sum, day) => sum + (Number(day.stock) || 0), 0)
+      }
+    },
     decrementStock(type, quantity, optionLabel = '') {
-      if (!this.forfaits[type]) return
+      const forfait = this.forfaits[type]
+      if (!forfait || !quantity) return
 
       if (type === 'oneDay' || type === 'twoDays') {
-        // Décrémenter le stock de l'option spécifique
         const dayOption = this.getDayOptions(type).find(day => day.label === optionLabel)
         if (dayOption) {
           dayOption.stock = Math.max(0, dayOption.stock - quantity)
 
-          // Si c'est twoDays, décrémenter aussi les jours liés
           if (type === 'twoDays' && Array.isArray(dayOption.linkedDays)) {
             dayOption.linkedDays.forEach(linkedLabel => {
               const linkedDay = this.findOneDayOption(linkedLabel)
@@ -444,39 +450,42 @@ export default {
                 linkedDay.stock = Math.max(0, linkedDay.stock - quantity)
               }
             })
+            this.recalcForfaitStock('oneDay')
           }
+
+          this.recalcForfaitStock(type)
+          return
         }
-      } else if (type === 'threeDays') {
-        // Décrémenter tous les stocks liés
-        if (this.forfaits.threeDays) {
-          this.forfaits.threeDays.stock = Math.max(0, this.forfaits.threeDays.stock - quantity)
-        }
+
+        forfait.stock = Math.max(0, (forfait.stock ?? 0) - quantity)
+        return
+      }
+
+      if (type === 'threeDays') {
+        forfait.stock = Math.max(0, (forfait.stock ?? 0) - quantity)
         this.getDayOptions('oneDay').forEach(day => {
           day.stock = Math.max(0, day.stock - quantity)
         })
         this.getDayOptions('twoDays').forEach(day => {
           day.stock = Math.max(0, day.stock - quantity)
         })
-      } else {
-        // parking ou camping
-        this.forfaits[type].stock = Math.max(0, this.forfaits[type].stock - quantity)
+        this.recalcForfaitStock('oneDay')
+        this.recalcForfaitStock('twoDays')
+        this.recalcForfaitStock('threeDays')
+        return
       }
 
-      // Recalculer le stock total si nécessaire
-      if (Array.isArray(this.forfaits[type].days)) {
-        this.forfaits[type].stock = this.forfaits[type].days.reduce((sum, day) => sum + day.stock, 0)
-      }
+      forfait.stock = Math.max(0, (forfait.stock ?? 0) - quantity)
     },
     incrementStock(type, quantity, optionLabel = '') {
-      if (!this.forfaits[type]) return
+      const forfait = this.forfaits[type]
+      if (!forfait || !quantity) return
 
       if (type === 'oneDay' || type === 'twoDays') {
-        // Incrémenter le stock de l'option spécifique
         const dayOption = this.getDayOptions(type).find(day => day.label === optionLabel)
         if (dayOption) {
           dayOption.stock += quantity
 
-          // Si c'est twoDays, incrémenter aussi les jours liés
           if (type === 'twoDays' && Array.isArray(dayOption.linkedDays)) {
             dayOption.linkedDays.forEach(linkedLabel => {
               const linkedDay = this.findOneDayOption(linkedLabel)
@@ -484,28 +493,32 @@ export default {
                 linkedDay.stock += quantity
               }
             })
+            this.recalcForfaitStock('oneDay')
           }
+
+          this.recalcForfaitStock(type)
+          return
         }
-      } else if (type === 'threeDays') {
-        // Incrémenter tous les stocks liés
-        if (this.forfaits.threeDays) {
-          this.forfaits.threeDays.stock += quantity
-        }
+
+        forfait.stock += quantity
+        return
+      }
+
+      if (type === 'threeDays') {
+        forfait.stock += quantity
         this.getDayOptions('oneDay').forEach(day => {
           day.stock += quantity
         })
         this.getDayOptions('twoDays').forEach(day => {
           day.stock += quantity
         })
-      } else {
-        // parking ou camping
-        this.forfaits[type].stock += quantity
+        this.recalcForfaitStock('oneDay')
+        this.recalcForfaitStock('twoDays')
+        this.recalcForfaitStock('threeDays')
+        return
       }
 
-      // Recalculer le stock total si nécessaire
-      if (Array.isArray(this.forfaits[type].days)) {
-        this.forfaits[type].stock = this.forfaits[type].days.reduce((sum, day) => sum + day.stock, 0)
-      }
+      forfait.stock += quantity
     },
     handlePanierChange() {
       // Recharger les forfaits et réappliquer le panier
@@ -518,22 +531,6 @@ export default {
         this.incrementStock(item.type, item.quantity, item.optionLabel || '')
       }
     },
-    async getAllReservations() {
-      try {
-        const list = await billetsService.getMyReservations()
-        return (Array.isArray(list) ? list : []).map(resa => ({
-          id: resa.id_reservation,
-          type: this.normalizeTypeBillet(resa?.billet?.type_billet || resa.type_billet || resa.type),
-          quantity: resa.quantite,
-          optionLabel: '',
-          displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
-          date: resa.date_utilisation,
-          createdAt: resa.date_reservation
-        }))
-      } catch (_) {
-        return []
-      }
-    },
     async saveAllReservations(list) {
       // Les réservations sont gérées côté serveur, rien à faire localement
     },
@@ -541,7 +538,7 @@ export default {
       if (!this.authUser || !this.authUser.email || !quantity || quantity <= 0) {
         return
       }
-      const all = this.getAllReservations()
+      const all = await this.getAllReservations()
       const now = new Date()
       const id = `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`
       const reservation = {
@@ -980,11 +977,6 @@ h1 {
   box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.35);
 }
 
-.quantity-hint {
-  margin: 0;
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.7);
-}
 
 .option-stocks {
   width: 100%;

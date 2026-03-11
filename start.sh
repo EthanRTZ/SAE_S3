@@ -55,6 +55,13 @@ fi
 # 2) Démarrage du backend
 # ==========================
 
+# Libérer le port 3000 si déjà occupé
+if lsof -i :3000 >/dev/null 2>&1; then
+    echo -e "${YELLOW}Le port 3000 est occupé, arrêt du/des processus avant démarrage...${NC}"
+    lsof -ti :3000 | xargs -r kill
+    sleep 1
+fi
+
 echo -e "${YELLOW}Démarrage du backend...${NC}"
 cd BackEnd || { echo -e "${RED}Dossier BackEnd introuvable.${NC}"; exit 1; }
 
