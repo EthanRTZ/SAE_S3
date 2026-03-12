@@ -1,8 +1,7 @@
 const express = require('express');
-const { Billet, ReservationBillet } = require('../models');
+const { Billet, ReservationBillet, Utilisateur } = require('../models');
 const sequelize = require('../config/database');
 const simpleAuth = require('../middleware/simpleAuth');
-const { Billet, ReservationBillet, Utilisateur } = require('../models');
 const { sendReservationConfirmation } = require('../services/emailService');
 const router = express.Router();
 
