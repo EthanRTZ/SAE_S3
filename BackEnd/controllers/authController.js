@@ -44,8 +44,32 @@ exports.register = async (req, res) => {
             id_rôle: roleRecord.id_rôle
         });
 
+        // Générer un token JWT pour connecter directement l'utilisateur
+        const token = jwt.sign(
+            {
+                id: user.id_utilisateur,
+                email: user.email,
+                role: roleName,
+                prestataireNom: null
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        // Enregistrer la session en BDD
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 7);
+
+        await SessionAuthentification.create({
+            id_utilisateur: user.id_utilisateur,
+            token,
+            date_expiration: expirationDate,
+            actif: true
+        });
+
         res.status(201).json({
             message: 'User registered successfully',
+            token,
             user: {
                 id: user.id_utilisateur,
                 nom: user.nom_utilisateur,

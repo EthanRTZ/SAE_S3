@@ -150,14 +150,14 @@ const onSubmit = async () => {
 
   loading.value = true
   try {
-    // Inscription via l'API backend
+    // Inscription via l'API backend (connecte automatiquement)
     await register({
       email: email.value,
       password: password.value,
     })
 
     success.value = t('register.success')
-    setTimeout(() => router.push('/'), 1000)
+    setTimeout(() => router.push('/'), 500)
   } catch (e) {
     error.value = e.message || t('register.createError')
   } finally {

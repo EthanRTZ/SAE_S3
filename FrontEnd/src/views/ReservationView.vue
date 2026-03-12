@@ -109,7 +109,6 @@
                   v-model.number="quantities.twoDays"
                   @input="handleQuantityChange('twoDays')"
                 />
-                <!-- Le détail des places restantes est affiché plus bas dans la liste des jours -->
               </div>
               <button
                 class="cta"
@@ -145,7 +144,6 @@
                   v-model.number="quantities.threeDays"
                   @input="handleQuantityChange('threeDays')"
                 />
-                <!-- Le détail des places restantes est affiché plus bas dans la liste des jours -->
               </div>
               <p v-if="dayErrors.threeDays" class="day-error">{{ dayErrors.threeDays }}</p>
               <button 
@@ -189,7 +187,6 @@
                   v-model.number="quantities.parking"
                   @input="sanitizeQuantity('parking')"
                 />
-                <!-- Le détail des places restantes est géré via le stock global -->
               </div>
               <button
                 class="cta"
@@ -231,7 +228,6 @@
                   v-model.number="quantities.camping"
                   @input="sanitizeQuantity('camping')"
                 />
-                <!-- Le détail des places restantes est géré via le stock global -->
               </div>
               <button
                 class="cta"
@@ -264,7 +260,6 @@
 
 <script>
 import { usePanierStore } from '@/stores/panier'
-import { billetsService } from '@/services/billetsService'
 
 export default {
   name: 'ReservationView',
@@ -361,11 +356,25 @@ export default {
             const billets = await resp.json();
             if (Array.isArray(billets) && billets.length) {
               // Convertir le format BDD vers le format attendu par la vue
-              this.forfaits = {};
+              const newForfaits = {
+                oneDay: { label: 'Forfait 1 jour', stock: 0, days: [] },
+                twoDays: { label: 'Forfait 2 jours', stock: 0, days: [] },
+                threeDays: { label: 'Pass 3 jours', stock: 0 },
+                parking: { label: 'Place de parking', stock: 0 },
+                camping: { label: 'Emplacement de camping', stock: 0 }
+              };
               billets.forEach(b => {
                 const key = this.normalizeTypeBillet(b.type_billet);
-                const normalizedDays = this.normalizeJoursAssocies(b.jours_associes || [], 40);
-                this.forfaits[key] = {
+                const normalizedDays = this.normalizeJoursAssocies(b.jours_associes || [], b.stock_disponible);
+                // Si le billet a des jours associés, on utilise stock_disponible de la BDD
+                // comme stock par jour pour que les modifications en BDD soient reflétées
+                if (normalizedDays.length > 0) {
+                  const stockPerDay = Math.floor(b.stock_disponible / normalizedDays.length);
+                  normalizedDays.forEach(day => {
+                    day.stock = stockPerDay;
+                  });
+                }
+                newForfaits[key] = {
                   label: b.label_fr,
                   labelEn: b.label_en,
                   price: parseFloat(b.prix),
@@ -376,6 +385,7 @@ export default {
                   id: b.id_billet
                 };
               });
+              this.forfaits = newForfaits;
               usedApi = true;
             }
           }
@@ -383,7 +393,6 @@ export default {
           console.error('Erreur chargement forfaits API:', e)
         }
 
-        this.applyPaidReservationsToStock()
         this.applyPanierToStock()
 
         this.loading = false
@@ -529,6 +538,22 @@ export default {
       const item = event.detail
       if (item && item.type && item.quantity) {
         this.incrementStock(item.type, item.quantity, item.optionLabel || '')
+      }
+    },
+    async getAllReservations() {
+      try {
+        if (!this.authUser || !this.authUser.id) return []
+        const token = localStorage.getItem('authToken')
+        const resp = await fetch(`/api/billets/reservations/user/${this.authUser.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          return Array.isArray(data) ? data : []
+        }
+        return []
+      } catch (e) {
+        return []
       }
     },
     async saveAllReservations(list) {
@@ -720,7 +745,9 @@ export default {
           displayLabel: type === 'oneDay'
             ? `Forfait 1 jour - ${selected.label}`
             : `Forfait 2 jours - ${selected.label}`,
-          userEmail: this.authUser.email
+          userEmail: this.authUser.email,
+          id_billet: this.forfaits[type]?.id,
+          price: this.forfaits[type]?.price || 0
         })
 
         // Décrémenter le stock local
@@ -748,7 +775,9 @@ export default {
           quantity: requestedQty,
           optionLabel: '3 jours',
           displayLabel: 'Forfait 3 jours',
-          userEmail: this.authUser.email
+          userEmail: this.authUser.email,
+          id_billet: this.forfaits[type]?.id,
+          price: this.forfaits[type]?.price || 0
         })
 
         // Décrémenter le stock local
@@ -770,7 +799,9 @@ export default {
             type,
             quantity: requestedQty,
             displayLabel,
-            userEmail: this.authUser.email
+            userEmail: this.authUser.email,
+            id_billet: this.forfaits[type]?.id,
+            price: this.forfaits[type]?.price || 0
           })
 
           // Décrémenter le stock local
@@ -788,7 +819,9 @@ export default {
           type,
           quantity: requestedQty,
           displayLabel: 'Forfait',
-          userEmail: this.authUser.email
+          userEmail: this.authUser.email,
+          id_billet: this.forfaits[type]?.id,
+          price: this.forfaits[type]?.price || 0
         })
 
         // Décrémenter le stock local

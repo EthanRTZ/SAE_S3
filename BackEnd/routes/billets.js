@@ -1,4 +1,6 @@
 const express = require('express');
+const { Billet, ReservationBillet } = require('../models');
+const sequelize = require('../config/database');
 const simpleAuth = require('../middleware/simpleAuth');
 const { Billet, ReservationBillet, Utilisateur } = require('../models');
 const { sendReservationConfirmation } = require('../services/emailService');
@@ -157,6 +159,62 @@ router.delete('/:id', async (req, res, next) => {
     await billet.destroy();
     res.json({ message: 'Billet supprimé' });
   } catch (err) { next(err); }
+});
+
+// ─── Réservations ────────────────────────────────────────────────────────────
+
+// GET /api/billets/reservations/user/:userId - Réservations d'un utilisateur
+router.get('/reservations/user/:userId', async (req, res, next) => {
+  try {
+    const reservations = await ReservationBillet.findAll({
+      where: { id_utilisateur: req.params.userId },
+      include: [{ model: Billet, as: 'billet' }],
+      order: [['date_reservation', 'DESC']]
+    });
+    res.json(reservations);
+  } catch (err) { next(err); }
+});
+
+// POST /api/billets/reservations - Créer une réservation et décrémenter le stock
+router.post('/reservations', async (req, res, next) => {
+  const t = await sequelize.transaction();
+  try {
+    const { id_utilisateur, id_billet, quantite, date_utilisation, prix_total, transaction_id } = req.body;
+    if (!id_utilisateur || !id_billet || !quantite || !prix_total) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Champs requis manquants' });
+    }
+
+    // Vérifier que le billet existe et a assez de stock
+    const billet = await Billet.findByPk(id_billet, { transaction: t, lock: t.LOCK.UPDATE });
+    if (!billet) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Billet non trouvé' });
+    }
+    if (billet.stock_disponible < quantite) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Stock insuffisant', stock_disponible: billet.stock_disponible });
+    }
+
+    // Créer la réservation
+    const reservation = await ReservationBillet.create({
+      id_utilisateur, id_billet, quantite,
+      date_utilisation, prix_total, transaction_id,
+      statut: 'réservé',
+      date_paiement: new Date()
+    }, { transaction: t });
+
+    // Décrémenter le stock disponible
+    await billet.update({
+      stock_disponible: billet.stock_disponible - quantite
+    }, { transaction: t });
+
+    await t.commit();
+    res.status(201).json(reservation);
+  } catch (err) {
+    await t.rollback();
+    next(err);
+  }
 });
 
 // PUT /api/billets/reservations/:id

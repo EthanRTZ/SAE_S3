@@ -29,7 +29,12 @@ export async function register({ email, password, nom }) {
     email,
     mot_de_passe: password,
   })
-  // Le register ne retourne pas de token → on ne connecte pas automatiquement
+  // Connexion automatique après inscription
+  if (data.token) {
+    setToken(data.token)
+    localStorage.setItem('authUser', JSON.stringify(data.user))
+    window.dispatchEvent(new Event('auth-changed'))
+  }
   return data
 }
 
