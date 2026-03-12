@@ -488,13 +488,31 @@ export default {
             const list = await resp.json();
             prestatairesData = (Array.isArray(list) ? list : []).map(p => ({
               ...p,
-              description: currentLang === 'en' ? (p.description_en || p.description_fr || '') : (p.description_fr || ''),
+              description: currentLang === 'en'
+                ? (p.description_en || p.description_fr || '')
+                : (p.description_fr || ''),
               image: p.photo_url,
               email: p.contact_email,
               tel: p.contact_tel,
               site: p.site_web,
               type: p.type_prestataire,
-              services: p.services || []
+              // Normaliser les services pour exposer nom / description / prix,
+              // afin que la plage de prix affichée reflète bien les données BDD
+              services: (p.services || []).map(s => ({
+                id_service: s.id_service,
+                nom: currentLang === 'en'
+                  ? (s.nom_service_en || s.nom_service_fr)
+                  : s.nom_service_fr,
+                description: currentLang === 'en'
+                  ? (s.description_en || s.description_fr)
+                  : s.description_fr,
+                prix: s.prix_estime !== undefined && s.prix_estime !== null
+                  ? parseFloat(s.prix_estime) || 0
+                  : 0,
+                public: s.public !== false,
+                champs_specifiques: s.champs_specifiques || {},
+                id_type_service: s.id_type_service
+              }))
             }));
             prestataires.value = prestatairesData;
             return;
