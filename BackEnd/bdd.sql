@@ -607,78 +607,147 @@ INSERT INTO artiste (nom, style_musique, description, pays_origine, photo_url, c
   ('NEGRITO', 'Rap / Afrobeat', 'Artiste mêlant rap et afrobeat.', 'France', 'negrito.jpg', 14000.00, NULL),
   ('SAF', 'DJ / Electro', 'DJ et producteur reconnu.', 'France', 'saf.jpg', 12000.00, NULL),
   ('ROUNHAA', 'Rap / Melodic Trap', 'Artiste trap mélodique émergent.', 'France', 'rounhaa.jpg', 13000.00, NULL),
-  ('FAVÉ', 'Rap / R&B', 'Artiste rap R&B en plein essor.', 'France', 'fave.jpg', 20000.00, NULL)
+  ('FAVÉ', 'Rap / R&B', 'Artiste rap R&B en plein essor.', 'France', 'fave.jpg', 20000.00, NULL),
+  -- Nouveaux artistes pour les jours 2 et 3
+  ('GENEZIO', 'Rap / Trap', 'Artiste rap / trap programmé au Golden Coast.', 'France', 'genezio.jpg', 20000.00, NULL),
+  ('OXMO PUCCINO', 'Rap Poétique / Français', 'Légende du rap poétique français.', 'France', 'oxmo_puccino.jpg', 45000.00, NULL),
+  ('RILÈS', 'Rap Français / Pop', 'Artiste mêlant rap et pop.', 'France', 'riles.jpg', 30000.00, NULL),
+  ('TAYC', 'R&B / Afrobeat', 'Chanteur R&B / Afrobeat.', 'France', 'tayc.jpg', 32000.00, NULL),
+  ('ELGRANDE TOTO', 'Rap / Trap', 'Artiste rap / trap.', 'Maroc', 'elgrandetoto.jpg', 30000.00, NULL),
+  ('MC SOLAAR', 'Hip-hop / Rap Français', 'Pionnier du rap français.', 'France', 'mcsolaar.jpg', 50000.00, NULL),
+  ('KAARIS', 'Rap / Trap', 'Rappeur français emblématique.', 'France', 'kaaris.jpg', 40000.00, NULL),
+  ('BIGFLO & OLI', 'Rap Français / Pop', 'Duo de rap français populaire.', 'France', 'bigflo_oli.jpg', 45000.00, NULL),
+  ('NINHO & NISKA', 'Rap Français', 'Show commun de Ninho et Niska.', 'France', 'ninho_niska.jpg', 70000.00, NULL),
+  ('AMK', 'Rap / R&B', 'Artiste rap / R&B.', 'France', 'amk.jpg', 15000.00, NULL),
+  ('ADÈLE CASTILLON', 'Pop / R&B', 'Chanteuse pop / R&B.', 'France', 'adele_castillon.jpg', 18000.00, NULL),
+  ('L2B', 'Rap Français', 'Artiste rap français.', 'France', 'l2b.jpg', 15000.00, NULL),
+  ('HIGH & FINES HERBES', 'Rap Alternatif', 'Collectif rap alternatif.', 'France', 'high_fines_herbes.jpg', 22000.00, NULL),
+  ('LA MANO 1.9', 'Rap Français / Trap', 'Groupe rap français.', 'France', 'lamano19.jpg', 20000.00, NULL),
+  ('TIF', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'tif.jpg', 18000.00, NULL),
+  ('THEODORA', 'R&B / Pop', 'Chanteuse R&B / pop.', 'France', 'theodora.jpg', 16000.00, NULL),
+  ('KORE', 'Rap / Trap', 'Producteur / DJ rap / trap.', 'France', 'kore.jpg', 25000.00, NULL),
+  ('ILIANA', 'R&B / Pop', 'Chanteuse R&B / pop.', 'France', 'iliana.jpg', 14000.00, NULL),
+  ('ZERATHEKIDD', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'zerathekidd.jpg', 15000.00, NULL),
+  ('THÉA', 'Pop / R&B', 'Chanteuse pop / R&B.', 'France', 'thea.jpg', 14000.00, NULL),
+  ('LE JUIICE', 'Rap Français', 'Rappeuse française.', 'France', 'lejuiice.jpg', 16000.00, NULL),
+  ('KHTEK', 'Rap Français', 'Rappeur français.', 'France', 'khtek.jpg', 15000.00, NULL),
+  ('TAGNE', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'tagne.jpg', 15000.00, NULL),
+  ('ASININE', 'Rap Français', 'Artiste rap français.', 'France', 'asinine.jpg', 14000.00, NULL),
+  ('VEN1', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'ven1.jpg', 15000.00, NULL),
+  ('DINA AYADA', 'R&B / Pop', 'Chanteuse R&B / pop.', 'France', 'dina_ayada.jpg', 16000.00, NULL),
+  ('NONO LA GRINTA', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'nono_lagrinta.jpg', 15000.00, NULL),
+  ('TH', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'th.jpg', 15000.00, NULL),
+  ('DARLEAN', 'Rap / Hip-hop', 'Artiste rap / hip-hop.', 'France', 'darlean.jpg', 14000.00, NULL),
+  ('DJ ELFIGO', 'DJ / Electro Rap', 'DJ electro rap.', 'France', 'dj_elfigo.jpg', 13000.00, NULL),
+  ('TIGARAH', 'R&B / Pop', 'Artiste R&B / pop.', 'France', 'tigarah.jpg', 14000.00, NULL),
+  ('NAOMI', 'R&B / Pop', 'Chanteuse R&B / pop.', 'France', 'naomi.jpg', 14000.00, NULL),
+  ('LIL ROSY & ZEPEQUENAI', 'Rap / Trap', 'Duo rap / trap.', 'France', 'lilrosy_zepequenai.jpg', 15000.00, NULL),
+  ('MARABOUTAGE', 'Rap / Trap', 'Collectif rap / trap.', 'France', 'maraboutage.jpg', 16000.00, NULL),
+  ('DANYL', 'Rap Français / R&B', 'Artiste rap / R&B.', 'France', 'danyl.jpg', 15000.00, NULL),
+  ('LACRIM', 'Rap Français', 'Rappeur français.', 'France', 'lacrim.jpg', 35000.00, NULL),
+  ('LA FOUINE', 'Rap Français', 'Rappeur français emblématique.', 'France', 'lafouine.jpg', 35000.00, NULL),
+  ('VALD PANDEMONIUM RELOADED', 'Rap Français / Trap', 'Show spécial de Vald.', 'France', 'vald_pandemonium.jpg', 45000.00, NULL),
+  ('SHAO', 'Rap / R&B', 'Artiste rap / R&B.', 'France', 'shao.jpg', 14000.00, NULL),
+  ('GARÇON PRINTEMPS', 'Pop / Rap', 'Artiste pop / rap.', 'France', 'garcon_printemps.jpg', 14000.00, NULL),
+  ('TRIPTIK', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'triptik.jpg', 15000.00, NULL),
+  ('JUSTE SHANI', 'R&B / Pop', 'Chanteuse R&B / pop.', 'France', 'juste_shani.jpg', 15000.00, NULL),
+  ('MAIRO', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'mairo.jpg', 15000.00, NULL),
+  ('H JEUNECRACK', 'Rap / Trap', 'Rappeur français.', 'France', 'h_jeunecrack.jpg', 15000.00, NULL),
+  ('DALÍ', 'Rap Français / Trap', 'Artiste rap / trap.', 'France', 'dali.jpg', 15000.00, NULL),
+  ('THEODORT', 'Rap Français / Trap', 'Rappeur / youtubeur français.', 'France', 'theodort.jpg', 20000.00, NULL),
+  ('YANISS', 'Reggae / Rap', 'Artiste reggae / rap.', 'France', 'yaniss.jpg', 15000.00, NULL),
+  ('BLANKKA CLUB', 'DJ / Rap', 'Collectif DJ / rap.', 'France', 'blankka_club.jpg', 14000.00, NULL),
+  ('TODIEFOR', 'DJ / Rap', 'DJ rap / electro.', 'France', 'todiefor.jpg', 15000.00, NULL),
+  ('MATOU', 'DJ / Rap', 'DJ rap.', 'France', 'matou.jpg', 14000.00, NULL),
+  ('LORKESTRA', 'DJ / Rap', 'Collectif DJ / rap.', 'France', 'lorkestra.jpg', 15000.00, NULL),
+  ('MARA', 'Rap / Trap', 'Artiste rap / trap.', 'France', 'mara.jpg', 15000.00, NULL)
 ON CONFLICT DO NOTHING;
 
 -- ============================================
--- Samedi 29 août 2026 - MOTHERSHIP
+-- Samedi 29 août 2026 - programmation mise à jour
 -- ============================================
+-- MOTHERSHIP
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'PLK'), '2026-08-29', '17:00', '17:50', 'Rap Français', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'GAZO'), '2026-08-29', '18:30', '19:20', 'Drill / Rap Français', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'DAMSO'), '2026-08-29', '20:00', '21:10', 'Rap / R&B', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Ninho'), '2026-08-29', '21:50', '23:00', 'Rap français', 4),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Booba'), '2026-08-29', '00:00', '01:30', 'Rap français', 5);
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'GENEZIO'), '2026-08-29', '15:10', '15:50', 'Rap / Trap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'OXMO PUCCINO'), '2026-08-29', '16:15', '17:05', 'Rap Poétique / Français', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'RIMK'), '2026-08-29', '17:45', '18:35', 'Rap Français / Trap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'RILÈS'), '2026-08-29', '19:10', '20:00', 'Rap Français / Pop', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'TAYC'), '2026-08-29', '20:50', '21:40', 'R&B / Afrobeat', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Gims'), '2026-08-29', '22:20', '23:30', 'Rap / Pop', 6),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'GAZO'), '2026-08-29', '00:10', '01:20', 'Rap / Drill', 7);
 
--- Samedi 29 août 2026 - ZERO GRAVITY
+-- ZERO GRAVITY
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TSEW THE KID'), '2026-08-29', '16:30', '17:15', 'R&B / Rap', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TIAKOLA'), '2026-08-29', '17:50', '18:40', 'Afrobeat / R&B', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'NISKA'), '2026-08-29', '19:20', '20:20', 'Rap / Afrotrap', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'LAYLOW'), '2026-08-29', '21:00', '22:00', 'Rap / Trap atmosphérique', 4),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'WERENOI'), '2026-08-29', '22:40', '23:30', 'Rap Français / Trap', 5),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ZIAK'), '2026-08-29', '00:10', '01:00', 'Drill / Rap', 6);
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'AMK'), '2026-08-29', '14:30', '15:10', 'Rap / R&B', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ADÈLE CASTILLON'), '2026-08-29', '15:40', '16:25', 'Pop / R&B', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'L2B'), '2026-08-29', '17:00', '17:50', 'Rap Français', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'HIGH & FINES HERBES'), '2026-08-29', '18:30', '19:30', 'Rap Alternatif', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'LA MANO 1.9'), '2026-08-29', '20:10', '21:00', 'Rap Français / Trap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TIF'), '2026-08-29', '21:40', '22:30', 'Rap / Trap', 6),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'THEODORA'), '2026-08-29', '23:30', '00:20', 'R&B / Pop', 7),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'KORE'), '2026-08-29', '01:20', '02:20', 'Rap / Trap', 8);
 
--- Samedi 29 août 2026 - CARGO
+-- CARGO
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'ROUNHAA'), '2026-08-29', '15:30', '16:10', 'Rap / Melodic Trap', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'NEGRITO'), '2026-08-29', '16:40', '17:20', 'Rap / Afrobeat', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'FAVÉ'), '2026-08-29', '17:50', '18:30', 'Rap / R&B', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'LETO'), '2026-08-29', '19:10', '20:00', 'Rap Français / Trap', 4),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DA UZI'), '2026-08-29', '20:40', '21:25', 'Rap / Trap', 5),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DINOS'), '2026-08-29', '22:00', '22:50', 'Rap Français / Lyrical', 6),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'BENJAMIN EPPS'), '2026-08-29', '23:20', '00:05', 'Rap / Underground', 7),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'SOPICO'), '2026-08-29', '00:40', '01:30', 'Rap / Expérimental', 8);
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'ILIANA'), '2026-08-29', '13:40', '14:10', 'R&B / Pop', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'ZERATHEKIDD'), '2026-08-29', '14:30', '15:10', 'Rap / Trap', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'THÉA'), '2026-08-29', '15:30', '16:10', 'Pop / R&B', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'LE JUIICE'), '2026-08-29', '16:35', '17:15', 'Rap Français', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'KHTEK'), '2026-08-29', '17:40', '18:15', 'Rap Français', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'TAGNE'), '2026-08-29', '18:15', '18:50', 'Rap / Trap', 6),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'ASININE'), '2026-08-29', '19:20', '20:00', 'Rap Français', 7),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'VEN1'), '2026-08-29', '20:30', '21:10', 'Rap / Trap', 8),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DINA AYADA'), '2026-08-29', '21:40', '22:20', 'R&B / Pop', 9),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'NONO LA GRINTA'), '2026-08-29', '23:30', '00:10', 'Rap / Trap', 10),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'TH'), '2026-08-29', '01:20', '02:10', 'Rap / Trap', 11);
 
--- Samedi 29 août 2026 - ANTDT CLUB
+-- ANTDT CLUB
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LUIDJI'), '2026-08-29', '18:00', '19:00', 'R&B / Soul', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SAF'), '2026-08-29', '19:30', '21:00', 'DJ / Electro', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'ANDY4000'), '2026-08-29', '21:30', '23:00', 'DJ / Electro Rap', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'RIMK'), '2026-08-29', '23:30', '01:00', 'Rap Français', 4);
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'DARLEAN'), '2026-08-29', '15:30', '16:50', 'Rap / Hip-hop', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'DJ ELFIGO'), '2026-08-29', '17:00', '18:30', 'DJ / Electro Rap', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'TIGARAH'), '2026-08-29', '18:30', '20:00', 'R&B / Pop', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'NAOMI'), '2026-08-29', '20:00', '22:00', 'R&B / Pop', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LIL ROSY & ZEPEQUENAI'), '2026-08-29', '22:00', '00:00', 'Rap / Trap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'MARABOUTAGE'), '2026-08-29', '00:00', '02:30', 'Rap / Trap', 6);
 
 -- ============================================
--- Dimanche 30 août 2026 - MOTHERSHIP
+-- Dimanche 30 août 2026 - programmation mise à jour
 -- ============================================
+-- MOTHERSHIP
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'WERENOI'), '2026-08-30', '16:00', '16:50', 'Rap Français / Trap', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'SDM'), '2026-08-30', '17:30', '18:30', 'Rap français', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Josman'), '2026-08-30', '19:10', '20:10', 'Rap français', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'Gims'), '2026-08-30', '21:00', '22:15', 'Pop / Rap français', 4);
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'ELGRANDE TOTO'), '2026-08-30', '14:40', '15:25', 'Rap / Trap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'MC SOLAAR'), '2026-08-30', '16:10', '17:10', 'Hip-hop / Rap Français', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'KAARIS'), '2026-08-30', '17:50', '18:50', 'Rap / Trap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'BIGFLO & OLI'), '2026-08-30', '19:40', '20:40', 'Rap Français / Pop', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'MOTHERSHIP'), (SELECT id_artiste FROM artiste WHERE nom = 'NINHO & NISKA'), '2026-08-30', '21:30', '22:40', 'Rap Français', 5);
 
--- Dimanche 30 août 2026 - ZERO GRAVITY
+-- ZERO GRAVITY
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'FRANGLISH'), '2026-08-30', '15:30', '16:20', 'R&B / Rap Français', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'KEBLACK'), '2026-08-30', '17:00', '17:50', 'R&B / Rap Français / Afrobeat', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'TIAKOLA'), '2026-08-30', '18:30', '19:20', 'Afrobeat / R&B', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'NISKA'), '2026-08-30', '20:00', '21:00', 'Rap / Afrotrap', 4),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ALONZO'), '2026-08-30', '21:40', '22:30', 'Rap Français', 5);
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'DANYL'), '2026-08-30', '14:00', '14:40', 'Rap Français / R&B', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'ZIAK'), '2026-08-30', '15:25', '16:15', 'Rap / Trap', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'LACRIM'), '2026-08-30', '17:00', '17:50', 'Rap Français', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'LA FOUINE'), '2026-08-30', '18:50', '19:40', 'Rap Français', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ZERO GRAVITY'), (SELECT id_artiste FROM artiste WHERE nom = 'VALD PANDEMONIUM RELOADED'), '2026-08-30', '20:10', '21:40', 'Rap Français / Trap', 5);
 
--- Dimanche 30 août 2026 - CARGO
+-- CARGO
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'SWAAYVE'), '2026-08-30', '14:30', '15:10', 'Hip-hop / Cloud Rap', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'NAOHS'), '2026-08-30', '15:40', '16:20', 'Rap / R&B', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'FAVÉ'), '2026-08-30', '16:50', '17:30', 'Rap / R&B', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = '1PLIKÉ140'), '2026-08-30', '18:10', '19:00', 'Drill / Rap Français', 4),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'GAZO'), '2026-08-30', '19:40', '20:30', 'Drill / Rap Français', 5),
-  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'PLK'), '2026-08-30', '21:10', '22:00', 'Rap Français', 6);
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'SHAO'), '2026-08-30', '13:30', '14:00', 'Rap / R&B', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'GARÇON PRINTEMPS'), '2026-08-30', '14:10', '14:40', 'Pop / Rap', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'TRIPTIK'), '2026-08-30', '14:45', '15:30', 'Rap / Trap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'JUSTE SHANI'), '2026-08-30', '16:00', '16:40', 'R&B / Pop', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'MAIRO'), '2026-08-30', '17:00', '17:40', 'Rap / Trap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'H JEUNECRACK'), '2026-08-30', '18:10', '18:50', 'Rap / Trap', 6),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'DALÍ'), '2026-08-30', '19:25', '20:10', 'Rap Français / Trap', 7),
+  ((SELECT id_scene FROM scenes WHERE nom = 'CARGO'), (SELECT id_artiste FROM artiste WHERE nom = 'THEODORT'), '2026-08-30', '20:40', '21:30', 'Rap Français / Trap', 8);
 
--- Dimanche 30 août 2026 - ANTDT CLUB
+-- ANTDT CLUB
 INSERT INTO programmation (id_scene, id_artiste, date_concert, heure_debut, heure_fin, style_musique, ordre_passage) VALUES
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LUIDJI'), '2026-08-30', '16:00', '17:00', 'R&B / Soul', 1),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SHEIK LE FABULEUX'), '2026-08-30', '17:30', '18:30', 'Rap / Humour', 2),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SAF'), '2026-08-30', '19:00', '20:30', 'DJ / Electro', 3),
-  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'SWAVE'), '2026-08-30', '21:00', '22:30', 'Hip-hop / Cloud Rap', 4);
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'YANISS'), '2026-08-30', '15:30', '16:30', 'Reggae / Rap', 1),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'BLANKKA CLUB'), '2026-08-30', '16:30', '18:00', 'DJ / Rap', 2),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'TODIEFOR'), '2026-08-30', '18:00', '19:15', 'DJ / Rap', 3),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'MATOU'), '2026-08-30', '19:15', '20:30', 'DJ / Rap', 4),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'LORKESTRA'), '2026-08-30', '20:30', '22:00', 'DJ / Rap', 5),
+  ((SELECT id_scene FROM scenes WHERE nom = 'ANTDT CLUB'), (SELECT id_artiste FROM artiste WHERE nom = 'MARA'), '2026-08-30', '22:00', '23:15', 'Rap / Trap', 6);
 
 -- ============================================
 -- EMPLACEMENTS (basés sur emplacements.json avec nouveaux champs)
