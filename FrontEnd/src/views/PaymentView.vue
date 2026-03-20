@@ -542,7 +542,9 @@ const onSubmit = async () => {
           quantite: quantity,
           prix_total: prixUnitaire * quantity,
           transaction_id: order.id,
-          date_utilisation: item.date || null
+          date_utilisation: item.date || null,
+          optionLabel: item.optionLabel || null,
+          selectedDays: item.selectedDays || null
         })
       }
 
