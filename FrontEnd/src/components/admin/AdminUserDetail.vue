@@ -11,16 +11,16 @@ const props = defineProps({
 // Emits: save(updated), back(), delete(email)
 const emit = defineEmits(['save', 'back', 'delete'])
 
-const defaultUser = { email: '', password: '', role: 'user', prestataireNom: '' }
+const defaultUser = { email: '', nom_utilisateur: '', password: '', role: 'public', prestataireNom: '' }
 const model = ref(props.user ? { ...props.user } : { ...defaultUser })
 
 watch(() => props.user, (u) => {
-  if (u) {
+  if (u && Object.keys(u).length > 0) {
     model.value = { ...u }
   } else {
     model.value = { ...defaultUser }
   }
-})
+}, { immediate: true, deep: true })
 
 const onSave = () => emit('save', { ...model.value })
 const onBack = () => emit('back')
@@ -73,6 +73,20 @@ const onDelete = () => {
           </div>
 
           <div class="user-form-group">
+            <label class="user-form-label">Nom d'utilisateur *</label>
+            <input
+              v-model="model.nom_utilisateur"
+              type="text"
+              class="user-form-input"
+              placeholder="Exemple: jean_dupont"
+            />
+            <p class="user-form-hint">
+              <span class="hint-icon">👤</span>
+              Identifiant unique de l'utilisateur (sans espaces)
+            </p>
+          </div>
+
+          <div class="user-form-group">
             <label class="user-form-label">
               Mot de passe {{ isCreating ? '*' : '' }}
             </label>
@@ -91,13 +105,13 @@ const onDelete = () => {
           <div class="user-form-group">
             <label class="user-form-label">Rôle *</label>
             <select v-model="model.role" class="user-form-input">
-              <option value="user">Utilisateur</option>
+              <option value="public">Utilisateur</option>
               <option value="prestataire">Prestataire</option>
-              <option value="admin">Administrateur</option>
+              <option value="organisateur">Administrateur</option>
             </select>
             <p class="user-form-hint">
               <span class="hint-icon">👑</span>
-              Les admins ont accès à toutes les fonctionnalités
+              Les administrateurs ont accès à toutes les fonctionnalités
             </p>
           </div>
 
