@@ -213,6 +213,67 @@ router.get('/:id/services', ctrl.getPrestataireServices);
 
 /**
  * @openapi
+ * /prestataires/{id}/services:
+ *   put:
+ *     tags:
+ *       - Prestataires
+ *     summary: Synchronise les services d'un prestataire
+ *     description: Crée, met à jour et supprime les services pour correspondre au tableau envoyé
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID du prestataire
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - services
+ *             properties:
+ *               services:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id_service:
+ *                       type: integer
+ *                     nom:
+ *                       type: object
+ *                       properties:
+ *                         fr:
+ *                           type: string
+ *                         en:
+ *                           type: string
+ *                     description:
+ *                       type: object
+ *                       properties:
+ *                         fr:
+ *                           type: string
+ *                         en:
+ *                           type: string
+ *                     prix:
+ *                       type: number
+ *                     id_type_service:
+ *                       type: integer
+ *                     champs_specifiques:
+ *                       type: object
+ *     responses:
+ *       200:
+ *         description: Services synchronisés avec succès
+ *       404:
+ *         description: Prestataire non trouvé
+ */
+router.put('/:id/services', ctrl.syncPrestataireServices);
+
+/**
+ * @openapi
  * /prestataires/{id}/emplacements:
  *   get:
  *     tags:

@@ -91,6 +91,12 @@ router.get('/emplacements', ctrl.getEmplacementsStats);
  */
 router.get('/artistes', ctrl.getArtistesStats);
 
+router.get('/reservations', ctrl.getReservationsStats);
+
+router.get('/avis-festival', ctrl.getAvisFestivalStats);
+
+router.get('/avis-prestataires', ctrl.getAvisPrestatairesStats);
+
 module.exports = router;
 
 

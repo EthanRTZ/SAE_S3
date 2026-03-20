@@ -499,7 +499,11 @@
     "selectServiceType": "-- Sélectionnez un type --",
     "noType": "Aucun (service libre)",
     "specificFields": "Informations spécifiques",
-    "fieldRequired": "(requis)"
+    "fieldRequired": "(requis)",
+    "saveServices": "Enregistrer les services",
+    "servicesSaved": "Services enregistrés avec succès !",
+    "servicesSaveError": "Erreur lors de l'enregistrement des services",
+    "saving": "Enregistrement..."
   },
   "servicesByType": {
     "loading": "Chargement des services...",

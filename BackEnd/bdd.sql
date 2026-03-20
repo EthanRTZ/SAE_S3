@@ -5,6 +5,7 @@
 -- ============================================
 
 -- Suppression des tables existantes (dans l'ordre pour éviter les conflits de clés étrangères)
+DROP TABLE IF EXISTS avis_festival CASCADE;
 DROP TABLE IF EXISTS reservation_billet CASCADE;
 DROP TABLE IF EXISTS billets CASCADE;
 DROP TABLE IF EXISTS avis CASCADE;
@@ -255,6 +256,20 @@ CREATE TABLE festival (
                           nombre_festivaliers INT,
                           version VARCHAR(20), -- V3, etc.
                           actif BOOLEAN DEFAULT TRUE
+);
+
+-- ============================================
+-- TABLE : avis_festival
+-- Notes et avis des utilisateurs sur le festival
+-- ============================================
+CREATE TABLE avis_festival (
+                               id_avis_festival SERIAL PRIMARY KEY,
+                               id_utilisateur INT REFERENCES utilisateurs(id_utilisateur) ON DELETE SET NULL,
+                               id_festival INT NOT NULL REFERENCES festival(id_festival) ON DELETE CASCADE,
+                               note INT NOT NULL CHECK (note >= 1 AND note <= 5),
+                               commentaire TEXT,
+                               date_avis TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                               valide BOOLEAN DEFAULT TRUE
 );
 
 -- ============================================
@@ -881,6 +896,23 @@ INSERT INTO avis (id_utilisateur, id_prestataire, note, commentaire, date_avis) 
                                                                                     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 3, 'Correct, mais j''aurais aimé plus d''options végétariennes.', '2025-01-16 19:20:00'),
                                                                                     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 4, 'Bonne couverture réseau, j''ai pu streamer tous les concerts.', '2025-01-15 17:05:00'),
                                                                                     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 5, 'Wi-Fi gratuit au top, ça change la vie sur le site du festival.', '2025-01-16 15:22:00');
+
+-- ============================================
+-- AVIS FESTIVAL (notes sur le festival lui-même)
+-- ============================================
+INSERT INTO avis_festival (id_utilisateur, id_festival, note, commentaire, date_avis) VALUES
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), 1, 5, 'Festival incroyable ! L''ambiance était magique, les artistes au top et l''organisation impeccable. Vivement l''année prochaine !', '2025-09-01 10:30:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), 1, 4, 'Super festival dans un cadre naturel magnifique. Seul bémol : les files d''attente aux bars étaient un peu longues.', '2025-09-02 14:15:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), 1, 5, 'La meilleure édition jusqu''ici ! Le line-up était exceptionnel et le site est vraiment unique en France.', '2025-09-01 18:00:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'), 1, 4, 'Très bien organisé, bon public et bonne ambiance générale. Les équipes du festival sont professionnelles.', '2025-09-03 09:45:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'free@prestataire.fr'), 1, 5, 'Un événement qui monte en puissance chaque année. Le cadre en forêt rend l''expérience vraiment spéciale.', '2025-09-02 11:20:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), 1, 4, 'Bonne organisation, programmation variée. Le camping était confortable et bien aménagé.', '2025-09-04 08:30:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'decathlon@prestataire.fr'), 1, 5, 'Festival à taille humaine avec une programmation de qualité. Le rapport qualité-prix est excellent !', '2025-09-01 20:00:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), 1, 3, 'Bonne ambiance mais les sanitaires auraient pu être plus nombreux. La musique était au rendez-vous cependant.', '2025-09-03 16:30:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'heetch@prestataire.fr'), 1, 5, 'Le Golden Coast est devenu un incontournable ! L''ambiance est unique et le site au milieu de la nature est parfait.', '2025-09-02 22:10:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'poliakov@prestataire.fr'), 1, 4, 'Tres bon festival, très bonne programmation. J''ai adoré le village food avec tous les stands.', '2025-09-05 12:00:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), 1, 5, 'Trois jours de folie ! Les scènes étaient bien réparties et le son était parfait partout.', '2025-09-01 23:45:00'),
+    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'lipton@prestataire.fr'), 1, 4, 'Superbe cadre, bonne programmation. J''ai particulièrement aimé la scène en forêt, une vraie pépite.', '2025-09-03 14:00:00');
 
 -- ============================================
 -- FIN DU SCRIPT

@@ -570,96 +570,81 @@ const loadData = async () => {
     prestatairesOriginaux.value = JSON.parse(JSON.stringify(prestatairesFiltered))
     prestataires.value = prestatairesFiltered
 
-    const totalServices = prestataires.value.reduce((acc, p) => acc + (p.services?.length || 0), 0)
+    // ===== TOUTES LES STATS DEPUIS LA BDD =====
 
-    // Charger les réservations depuis l'API
-    let reservations = []
+    // 1) Stats globales du dashboard (totalUsers, totalPrestataires, totalServices) depuis la BDD
+    let totalUsersDB = 0
+    let totalPrestatairesDB = 0
+    let totalServicesDB = 0
     try {
-      const billetsResp = await fetch('/api/billets', { headers })
-      if (billetsResp.ok) {
-        const billetsData = await billetsResp.json()
-        reservations = Array.isArray(billetsData) ? billetsData : []
+      const dashResp = await fetch('/api/stats/dashboard', { headers })
+      if (dashResp.ok) {
+        const dashData = await dashResp.json()
+        totalUsersDB = dashData.totalUtilisateurs || 0
+        totalPrestatairesDB = dashData.totalPrestataires || 0
+        totalServicesDB = dashData.totalServices || 0
       }
     } catch (e) {
-      console.error('Erreur chargement réservations:', e)
+      console.error('Erreur chargement stats dashboard:', e)
     }
 
-    // Calculer les stats de tickets
-    const ticketsStats = {
-      oneDay: 0,
-      twoDays: 0,
-      threeDays: 0,
-      parking: 0,
-      camping: 0
-    }
+    // 2) Stats de réservations depuis la BDD
+    let totalReservations = 0
+    let totalTickets = 0
     let totalRevenue = 0
-    const TARIFS = {
-      oneDay: 49,
-      twoDays: 89,
-      threeDays: 119,
-      parking: 15,
-      camping: 25
+    let ticketsStats = { oneDay: 0, twoDays: 0, threeDays: 0, parking: 0, camping: 0 }
+    try {
+      const resaResp = await fetch('/api/stats/reservations', { headers })
+      if (resaResp.ok) {
+        const resaData = await resaResp.json()
+        totalReservations = resaData.totalReservations || 0
+        totalTickets = resaData.totalTickets || 0
+        totalRevenue = resaData.totalRevenue || 0
+        ticketsStats = { ...ticketsStats, ...(resaData.ticketsParType || {}) }
+      }
+    } catch (e) {
+      console.error('Erreur chargement stats réservations:', e)
     }
 
-    reservations.forEach(reservation => {
-      if (reservation.oneDay) {
-        ticketsStats.oneDay += reservation.oneDay
-        totalRevenue += reservation.oneDay * TARIFS.oneDay
-      }
-      if (reservation.twoDays) {
-        ticketsStats.twoDays += reservation.twoDays
-        totalRevenue += reservation.twoDays * TARIFS.twoDays
-      }
-      if (reservation.threeDays) {
-        ticketsStats.threeDays += reservation.threeDays
-        totalRevenue += reservation.threeDays * TARIFS.threeDays
-      }
-      if (reservation.parking) {
-        ticketsStats.parking += reservation.parking
-        totalRevenue += reservation.parking * TARIFS.parking
-      }
-      if (reservation.camping) {
-        ticketsStats.camping += reservation.camping
-        totalRevenue += reservation.camping * TARIFS.camping
-      }
-    })
-
-    const totalTickets = Object.values(ticketsStats).reduce((sum, val) => sum + val, 0)
-
-    // Calculer les stats globales des avis prestataires
-    let allAvis = { ...avisDataRaw }
-
-
+    // 3) Stats des avis prestataires depuis la BDD
     let totalAvis = 0
-    let sommeNotes = 0
-    const repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    let notesMoyenne = 0
+    let repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    try {
+      const avisPresResp = await fetch('/api/stats/avis-prestataires', { headers })
+      if (avisPresResp.ok) {
+        const avisPresData = await avisPresResp.json()
+        totalAvis = avisPresData.totalAvis || 0
+        notesMoyenne = avisPresData.notesMoyenne || 0
+        repartitionNotes = avisPresData.repartitionNotes || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+      }
+    } catch (e) {
+      console.error('Erreur chargement stats avis prestataires:', e)
+    }
 
-    Object.entries(allAvis).forEach(([prestataire, entry]) => {
-      const avisArray = entry.avis || []
-      avisArray.forEach(a => {
-        totalAvis++
-        sommeNotes += a.note || 0
-        const note = a.note || 0
-        if (repartitionNotes[note] !== undefined) {
-          repartitionNotes[note]++
-        }
-      })
-    })
-
-    const notesMoyenne = totalAvis > 0 ? sommeNotes / totalAvis : 0
-
-    // Avis festival — chargés depuis l'API (pas de localStorage)
-    const avisFestivalList = []
-    const totalAvisFestival = 0
-    const avisFestivalMoyenne = 0
-    const repartitionNotesFestival = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    const dernierAvisFestival = []
+    // 4) Stats des avis festival depuis la BDD
+    let totalAvisFestival = 0
+    let avisFestivalMoyenne = 0
+    let repartitionNotesFestival = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    let dernierAvisFestival = []
+    try {
+      const avisFestResp = await fetch('/api/stats/avis-festival', { headers })
+      if (avisFestResp.ok) {
+        const avisFestData = await avisFestResp.json()
+        totalAvisFestival = avisFestData.totalAvisFestival || 0
+        avisFestivalMoyenne = avisFestData.avisFestivalMoyenne || 0
+        repartitionNotesFestival = avisFestData.repartitionNotesFestival || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+        dernierAvisFestival = avisFestData.dernierAvisFestival || []
+      }
+    } catch (e) {
+      console.error('Erreur chargement stats avis festival:', e)
+    }
 
     stats.value = {
-      totalUsers: users.value.length,
-      totalPrestataires: prestataires.value.length,
-      totalReservations: reservations.length,
-      totalServices,
+      totalUsers: totalUsersDB,
+      totalPrestataires: totalPrestatairesDB,
+      totalReservations,
+      totalServices: totalServicesDB,
       totalTickets,
       totalRevenue,
       ticketsParType: ticketsStats,
@@ -1074,6 +1059,93 @@ const savePrestataireChanges = async (updatedPrestataire) => {
   alert('Modifications sauvegardées avec succès!')
 }
 
+const saveSingleService = async ({ prestataire, service, index }) => {
+  const prestataireId = prestataire?.id_prestataire || selectedPrestataire.value?.id_prestataire
+  if (!prestataireId) {
+    alert('Impossible d\'enregistrer ce service: prestataire introuvable.')
+    return
+  }
+
+  const nomFr = service?.nom?.fr || ''
+  if (!nomFr.trim()) {
+    alert('Le nom du service en français est obligatoire.')
+    return
+  }
+
+  const payload = {
+    id_prestataire: prestataireId,
+    id_type_service: service?.id_type_service ?? null,
+    nom_service: {
+      fr: nomFr,
+      en: service?.nom?.en || ''
+    },
+    description: {
+      fr: service?.description?.fr || '',
+      en: service?.description?.en || ''
+    },
+    prix_estime: service?.prix_estime ?? null,
+    champs_specifiques: service?.champs_specifiques || {}
+  }
+
+  try {
+    const token = localStorage.getItem('authToken')
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+
+    const serviceId = service?.id_service
+    const url = serviceId ? `/api/services/${serviceId}` : '/api/services'
+    const method = serviceId ? 'PUT' : 'POST'
+    const resp = await fetch(url, {
+      method,
+      headers,
+      body: JSON.stringify(payload)
+    })
+
+    if (!resp.ok) {
+      throw new Error('Erreur API service')
+    }
+
+    const savedService = await resp.json()
+    const normalizedService = {
+      ...service,
+      id_service: savedService.id_service || serviceId,
+      id_prestataire: savedService.id_prestataire || prestataireId,
+      id_type_service: savedService.id_type_service ?? payload.id_type_service,
+      nom: {
+        fr: savedService.nom_service_fr ?? payload.nom_service.fr,
+        en: savedService.nom_service_en ?? payload.nom_service.en
+      },
+      description: {
+        fr: savedService.description_fr ?? payload.description.fr,
+        en: savedService.description_en ?? payload.description.en
+      },
+      prix_estime: savedService.prix_estime ?? payload.prix_estime,
+      champs_specifiques: savedService.champs_specifiques ?? payload.champs_specifiques,
+      actif: service?.actif !== false
+    }
+
+    if (!selectedPrestataire.value?.services) {
+      selectedPrestataire.value.services = []
+    }
+    selectedPrestataire.value.services[index] = normalizedService
+
+    const prestataireIndex = prestataires.value.findIndex(p => p.id_prestataire === prestataireId)
+    if (prestataireIndex !== -1) {
+      if (!prestataires.value[prestataireIndex].services) {
+        prestataires.value[prestataireIndex].services = []
+      }
+      prestataires.value[prestataireIndex].services[index] = normalizedService
+    }
+
+    alert('Service enregistré avec succès!')
+  } catch (e) {
+    console.error('Erreur sauvegarde service API:', e)
+    alert('Erreur lors de l\'enregistrement du service')
+  }
+}
+
 
 // AJOUT: Fonction addService manquante
 const addService = () => {
@@ -1334,6 +1406,7 @@ const handleResetPresentation = async () => {
           :hasModifications="hasModifications(selectedPrestataire)"
           :modifiedFields="getModifiedFields(selectedPrestataire)"
           @save="savePrestataireChanges"
+          @save-service="saveSingleService"
           @back="changeSection('prestataires')"
           @reset="resetPrestataire"
         />

@@ -8,7 +8,7 @@ const props = defineProps({
   modifiedFields: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['save', 'back', 'reset'])
+const emit = defineEmits(['save', 'save-service', 'back', 'reset'])
 
 // Langue d'édition
 const editingLang = ref('fr')
@@ -35,8 +35,17 @@ const normalizePrestataire = (prestataire) => {
   // Normaliser les services en bilingue aussi
   if (normalized.services && Array.isArray(normalized.services)) {
     normalized.services = normalized.services.map(s => ({
-      nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
-      description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
+      id_service: s.id_service,
+      id_prestataire: s.id_prestataire,
+      id_type_service: s.id_type_service ?? null,
+      nom: typeof s.nom === 'string'
+        ? { fr: s.nom, en: '' }
+        : (s.nom || { fr: s.nom_service_fr || '', en: s.nom_service_en || '' }),
+      description: typeof s.description === 'string'
+        ? { fr: s.description, en: '' }
+        : (s.description || { fr: s.description_fr || '', en: s.description_en || '' }),
+      prix_estime: s.prix_estime ?? null,
+      champs_specifiques: s.champs_specifiques || {},
       actif: s.actif !== false
     }))
   }
@@ -126,6 +135,30 @@ const deleteService = (index) => {
   if (!model.value?.services) return
   if (!confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) return
   model.value.services.splice(index, 1)
+}
+
+const onSaveService = (index) => {
+  if (!model.value?.services?.[index]) return
+
+  const currentService = model.value.services[index]
+  emit('save-service', {
+    prestataire: {
+      id_prestataire: model.value.id_prestataire,
+      nom: model.value.nom
+    },
+    index,
+    service: {
+      ...currentService,
+      nom: {
+        fr: currentService.nom?.fr || '',
+        en: currentService.nom?.en || ''
+      },
+      description: {
+        fr: currentService.description?.fr || '',
+        en: currentService.description?.en || ''
+      }
+    }
+  })
 }
 
 const onSave = () => {
@@ -324,6 +357,10 @@ const onReset = () => {
               </div>
 
               <div class="prest-service-actions">
+                <button @click="onSaveService(index)" class="prest-btn-save-service">
+                  <span class="prest-btn-icon">💾</span>
+                  Enregistrer
+                </button>
                 <button
                   @click="toggleService(index)"
                   :class="['prest-btn-toggle', { 'prest-btn-toggle-active': service.actif !== false }]"
@@ -651,6 +688,27 @@ const onReset = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.prest-btn-save-service {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--green, #22c55e);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.prest-btn-save-service:hover {
+  background: rgba(34, 197, 94, 0.25);
+  transform: translateY(-2px);
 }
 
 .prest-btn-toggle {

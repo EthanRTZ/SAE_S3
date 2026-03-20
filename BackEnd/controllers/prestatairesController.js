@@ -274,6 +274,98 @@ exports.assignEmplacementToPrestataire = async (req, res) => {
 };
 
 /**
+ * PUT /api/prestataires/:id/services - Synchroniser les services d'un prestataire
+ * Crée, met à jour ou supprime les services pour correspondre au tableau envoyé
+ */
+exports.syncPrestataireServices = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { services: servicesData } = req.body;
+
+        const prestataire = await Prestataire.findByPk(id);
+        if (!prestataire) {
+            return res.status(404).json({ error: 'Prestataire not found' });
+        }
+
+        if (!Array.isArray(servicesData)) {
+            return res.status(400).json({ error: 'services must be an array' });
+        }
+
+        // Récupérer les services existants du prestataire
+        const existingServices = await Service.findAll({
+            where: { id_prestataire: id }
+        });
+        const existingIds = existingServices.map(s => s.id_service);
+
+        // IDs envoyés par le client (services existants à mettre à jour)
+        const sentIds = servicesData
+            .filter(s => s.id_service)
+            .map(s => s.id_service);
+
+        // Supprimer les services qui ne sont plus dans la liste
+        const toDelete = existingIds.filter(eid => !sentIds.includes(eid));
+        if (toDelete.length > 0) {
+            await Service.destroy({ where: { id_service: toDelete, id_prestataire: id } });
+        }
+
+        for (const svc of servicesData) {
+            // Gérer les noms bilingues
+            let nomFr = svc.nom_service_fr;
+            let nomEn = svc.nom_service_en;
+            if (svc.nom && typeof svc.nom === 'object') {
+                nomFr = svc.nom.fr || nomFr || '';
+                nomEn = svc.nom.en || nomEn || '';
+            }
+
+            // Gérer les descriptions bilingues
+            let descFr = svc.description_fr;
+            let descEn = svc.description_en;
+            if (svc.description && typeof svc.description === 'object') {
+                descFr = svc.description.fr || descFr || '';
+                descEn = svc.description.en || descEn || '';
+            }
+
+            const serviceData = {
+                id_prestataire: parseInt(id),
+                id_type_service: svc.id_type_service || null,
+                nom_service_fr: nomFr || 'Service sans nom',
+                nom_service_en: nomEn || '',
+                description_fr: descFr || '',
+                description_en: descEn || '',
+                prix_estime: svc.prix !== undefined ? svc.prix : (svc.prix_estime || null),
+                champs_specifiques: svc.champs_specifiques || {}
+            };
+
+            if (svc.id_service && existingIds.includes(svc.id_service)) {
+                // Mettre à jour
+                await Service.update(serviceData, {
+                    where: { id_service: svc.id_service, id_prestataire: id }
+                });
+            } else {
+                // Créer
+                await Service.create(serviceData);
+            }
+        }
+
+        // Recharger avec les associations TypeService
+        const finalServices = await Service.findAll({
+            where: { id_prestataire: id },
+            include: [{
+                model: TypeService,
+                as: 'typeService',
+                attributes: ['id_type_service', 'nom', 'label_fr', 'label_en', 'icone', 'champs_requis']
+            }],
+            order: [['id_service', 'ASC']]
+        });
+
+        res.json({ message: 'Services synchronized successfully', services: finalServices });
+    } catch (error) {
+        console.error('Error syncing prestataire services:', error);
+        res.status(500).json({ error: 'Failed to sync services' });
+    }
+};
+
+/**
  * DELETE /api/prestataires/:id/emplacements/:idEmplacement - Retirer un emplacement d'un prestataire
  * NON-TRIVIAL: Interagit avec prestataire + emplacements + prestataire_emplacement
  */

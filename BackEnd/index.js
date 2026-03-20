@@ -25,6 +25,7 @@ const routesProgrammation = require('./routes/programmation');
 const routesBillets = require('./routes/billets');
 const routesTypesService = require('./routes/typesService');
 const routesScenes = require('./routes/scenes');
+const routesAvisFestival = require('./routes/avisFestival');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,6 +82,10 @@ app.use('/api/scenes', (req, res, next) => {
   if (req.method === 'GET') return next();
   return simpleAuth(req, res, next);
 }, routesScenes);
+app.use('/api/avis-festival', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesAvisFestival);
 app.use('/api/emplacements', (req, res, next) => {
   if (req.method === 'GET') return next();
   return simpleAuth(req, res, next);

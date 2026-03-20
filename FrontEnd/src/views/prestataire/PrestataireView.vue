@@ -153,9 +153,11 @@ const loadPrestataireInfo = async () => {
     popupText.value = { fr: '', en: '' }
 
     services.value = (base.services || []).map(s => ({
-      nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: '', en: '' }),
-      description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: '', en: '' }),
-      prix: s.prix !== undefined ? s.prix : 0, enabled: s.enabled !== undefined ? s.enabled : true,
+      id_service: s.id_service || null,
+      nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: s.nom_service_fr || '', en: s.nom_service_en || '' }),
+      description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: s.description_fr || '', en: s.description_en || '' }),
+      prix: s.prix !== undefined ? s.prix : (s.prix_estime !== undefined ? parseFloat(s.prix_estime) || 0 : 0),
+      enabled: s.enabled !== undefined ? s.enabled : true,
       public: s.public !== undefined ? s.public : true,
       id_type_service: s.id_type_service || null,
       champs_specifiques: s.champs_specifiques || {},
@@ -179,7 +181,8 @@ const loadPrestataireInfo = async () => {
 
 const addService = () => {
   services.value.push({ 
-    nom: { fr: t('prestataireSpace.newService'), en: '' }, 
+    id_service: null,
+    nom: { fr: t('prestataireSpace.newService'), en: '' },
     description: { fr: '', en: '' }, 
     prix: 0, 
     enabled: true, 
@@ -187,27 +190,89 @@ const addService = () => {
     id_type_service: null,
     champs_specifiques: {}
   })
-  saveCustomPrestataire()
 }
 
 const deleteService = (index) => {
   services.value.splice(index, 1)
-  saveCustomPrestataire()
 }
 
 const toggleServiceEnabled = (s) => {
   s.enabled = !s.enabled
-  saveCustomPrestataire()
 }
 
 const toggleServicePublic = (s) => {
   s.public = !s.public
-  saveCustomPrestataire()
 }
 
 const updateServiceField = () => {
-  // appelé via @input sur champs : autosave
-  saveCustomPrestataire()
+  // appelé via @input sur champs : les données sont mises à jour localement
+  // La sauvegarde se fait via le bouton "Enregistrer"
+}
+
+// Sauvegarder les services dans la BDD via l'API
+const savingServices = ref(false)
+const saveServices = async () => {
+  if (!prestataireNom.value) return
+  savingServices.value = true
+  try {
+    const token = localStorage.getItem('authToken')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+    // Trouver l'ID du prestataire
+    const listResp = await fetch('/api/prestataires', { headers })
+    if (!listResp.ok) throw new Error('Impossible de charger les prestataires')
+    const list = await listResp.json()
+    const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
+    if (!prest) throw new Error('Prestataire introuvable')
+
+    // Préparer les services à envoyer
+    const servicesToSync = services.value.map(s => ({
+      id_service: s.id_service || undefined,
+      nom: s.nom,
+      description: s.description,
+      prix: s.prix,
+      id_type_service: s.id_type_service || null,
+      champs_specifiques: s.champs_specifiques || {}
+    }))
+
+    const resp = await fetch(`/api/prestataires/${prest.id_prestataire}/services`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ services: servicesToSync })
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}))
+      throw new Error(err.error || 'Erreur lors de la sauvegarde')
+    }
+
+    const result = await resp.json()
+
+    // Mettre à jour les services locaux avec les IDs retournés par la BDD
+    if (result.services) {
+      services.value = result.services.map(s => ({
+        id_service: s.id_service,
+        nom: { fr: s.nom_service_fr || '', en: s.nom_service_en || '' },
+        description: { fr: s.description_fr || '', en: s.description_en || '' },
+        prix: s.prix_estime !== undefined && s.prix_estime !== null ? parseFloat(s.prix_estime) || 0 : 0,
+        enabled: true,
+        public: true,
+        id_type_service: s.id_type_service || null,
+        champs_specifiques: s.champs_specifiques || {},
+      }))
+    }
+
+    window.dispatchEvent(new Event('prestataire-updated'))
+    alert(t('prestataireSpace.servicesSaved') || 'Services enregistrés avec succès !')
+  } catch (e) {
+    console.error('Erreur sauvegarde services:', e)
+    alert(t('prestataireSpace.servicesSaveError') || 'Erreur lors de l\'enregistrement des services')
+  } finally {
+    savingServices.value = false
+  }
 }
 
 const savePresentation = () => {
@@ -948,6 +1013,104 @@ const updateSpecificField = (service, key, event) => {
   updateServiceField()
 }
 
+// Obtenir le nom technique d'un type de service (ex: 'reservation', 'commande', 'location')
+const getTypeName = (typeId) => {
+  const type = typesService.value.find(t => t.id_type_service === typeId)
+  return type?.nom || ''
+}
+
+// ===== Grille de sélection de créneaux (3 jours du festival) =====
+const festivalJours = [
+  { key: 'vendredi', label: 'Vendredi 15', emoji: '🎪' },
+  { key: 'samedi',   label: 'Samedi 16',   emoji: '🎵' },
+  { key: 'dimanche', label: 'Dimanche 17', emoji: '🎸' }
+]
+
+const creneauxPeriodes = [
+  { label: '🌅 Matin',     slots: ['09:00', '10:00', '11:00', '12:00'] },
+  { label: '☀️ Après-midi', slots: ['13:00', '14:00', '15:00', '16:00', '17:00'] },
+  { label: '🌙 Soir',      slots: ['18:00', '19:00', '20:00', '21:00'] }
+]
+
+// Calcule l'heure de fin (+ 1 heure)
+const getCreneauEndTime = (startTime) => {
+  const [h, m] = startTime.split(':').map(Number)
+  return `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+// Vérifie si un créneau (jour + heure) est sélectionné
+const isCreneauSelected = (service, jour, time) => {
+  return (service.champs_specifiques?.creneaux || []).some(c => c.jour === jour && c.heure_debut === time)
+}
+
+// Récupère le nb de places d'un créneau sélectionné
+const getCreneauPlaces = (service, jour, time) => {
+  const c = (service.champs_specifiques?.creneaux || []).find(c => c.jour === jour && c.heure_debut === time)
+  return c?.nombre_places ?? 10
+}
+
+// Nombre de créneaux sélectionnés pour un jour donné
+const countCreneauxJour = (service, jour) => {
+  return (service.champs_specifiques?.creneaux || []).filter(c => c.jour === jour).length
+}
+
+// Active / désactive un créneau (toggle) avec la dimension jour
+const toggleCreneau = (service, jour, time) => {
+  if (!service.champs_specifiques) service.champs_specifiques = {}
+  if (!Array.isArray(service.champs_specifiques.creneaux)) {
+    service.champs_specifiques.creneaux = []
+  }
+  const idx = service.champs_specifiques.creneaux.findIndex(c => c.jour === jour && c.heure_debut === time)
+  if (idx >= 0) {
+    service.champs_specifiques.creneaux.splice(idx, 1)
+  } else {
+    service.champs_specifiques.creneaux.push({
+      jour,
+      heure_debut: time,
+      heure_fin: getCreneauEndTime(time),
+      nombre_places: service._creneaux_places_default || 10
+    })
+    // Trier par jour puis par heure
+    const jourOrder = festivalJours.map(j => j.key)
+    service.champs_specifiques.creneaux.sort((a, b) => {
+      const di = jourOrder.indexOf(a.jour) - jourOrder.indexOf(b.jour)
+      return di !== 0 ? di : a.heure_debut.localeCompare(b.heure_debut)
+    })
+  }
+  updateServiceField()
+}
+
+// Sélectionner / désélectionner tous les créneaux d'une période pour un jour
+const togglePeriode = (service, jour, slots) => {
+  const allSelected = slots.every(t => isCreneauSelected(service, jour, t))
+  if (allSelected) {
+    if (!service.champs_specifiques) service.champs_specifiques = {}
+    if (!Array.isArray(service.champs_specifiques.creneaux)) service.champs_specifiques.creneaux = []
+    slots.forEach(t => {
+      const idx = service.champs_specifiques.creneaux.findIndex(c => c.jour === jour && c.heure_debut === t)
+      if (idx >= 0) service.champs_specifiques.creneaux.splice(idx, 1)
+    })
+    updateServiceField()
+  } else {
+    slots.forEach(t => { if (!isCreneauSelected(service, jour, t)) toggleCreneau(service, jour, t) })
+  }
+}
+
+// Sélectionner / désélectionner tous les créneaux d'un jour entier
+const toggleJour = (service, jour) => {
+  const allSlots = creneauxPeriodes.flatMap(p => p.slots)
+  const allSelected = allSlots.every(t => isCreneauSelected(service, jour, t))
+  if (allSelected) {
+    if (!service.champs_specifiques) service.champs_specifiques = {}
+    if (!Array.isArray(service.champs_specifiques.creneaux)) service.champs_specifiques.creneaux = []
+    service.champs_specifiques.creneaux = service.champs_specifiques.creneaux.filter(c => c.jour !== jour)
+    updateServiceField()
+  } else {
+    allSlots.forEach(t => { if (!isCreneauSelected(service, jour, t)) toggleCreneau(service, jour, t) })
+  }
+}
+// ===== Fin grille créneaux =====
+
 onMounted(() => {
   loadAuthFromStorage()
 
@@ -1125,6 +1288,10 @@ watch(editingLang, () => {
               <button class="btn btn-primary" @click="addService">
                 {{ $t('prestataireSpace.addService') }}
               </button>
+              <button class="btn btn-save-services" @click="saveServices" :disabled="savingServices" style="margin-left:12px;">
+                <span v-if="savingServices">⏳ {{ $t('prestataireSpace.saving') || 'Enregistrement...' }}</span>
+                <span v-else>💾 {{ $t('prestataireSpace.saveServices') || 'Enregistrer les services' }}</span>
+              </button>
             </div>
             <div class="services-grid" v-if="services.length">
               <div class="service-card" v-for="(s, idx) in services" :key="idx">
@@ -1182,85 +1349,118 @@ watch(editingLang, () => {
                   <span v-else class="price-display free">{{ $t('prestataireSpace.free') }}</span>
                 </div>
 
-                <!-- Champs spécifiques dynamiques selon le type sélectionné -->
-                <div v-if="s.id_type_service && getTypeFields(s.id_type_service).length" class="specific-fields-section">
-                  <label class="specific-fields-title">{{ $t('prestataireSpace.specificFields') }}</label>
-                  <div class="specific-fields-grid">
+                <!-- ===== GRILLE CRÉNEAUX 3 JOURS (uniquement pour type = reservation) ===== -->
+                <div v-if="getTypeName(s.id_type_service) === 'reservation'" class="creneaux-section">
+                  <div class="creneaux-header">
+                    <label class="specific-fields-title">🕐 Créneaux réservables</label>
+                    <span class="creneaux-selected-count">
+                      {{ s.champs_specifiques?.creneaux?.length || 0 }} sélectionné(s)
+                    </span>
+                  </div>
+                  <p class="creneaux-hint">
+                    Cliquez sur les cases pour activer / désactiver un créneau. Chaque colonne correspond à un jour du festival.
+                  </p>
+
+                  <!-- Places max globales -->
+                  <div class="creneaux-places-global">
+                    <label class="creneau-mini-label">👥 Places max par créneau</label>
+                    <input
+                      type="number"
+                      class="input input-specific"
+                      v-model.number="s._creneaux_places_default"
+                      min="1"
+                      placeholder="10"
+                      style="width:70px; display:inline-block; margin-left:8px;"
+                    />
+                    <span class="creneaux-places-hint">(s'applique aux nouveaux créneaux)</span>
+                  </div>
+
+                  <!-- Grille 3 jours -->
+                  <div class="creneaux-3jours-grid">
+                    <!-- En-têtes des jours -->
+                    <div class="creneaux-grid-header">
+                      <div class="creneaux-grid-time-col"></div>
+                      <div
+                        v-for="jour in festivalJours"
+                        :key="jour.key"
+                        class="creneaux-grid-day-header"
+                      >
+                        <span class="day-emoji">{{ jour.emoji }}</span>
+                        <span class="day-label">{{ jour.label }}</span>
+                        <span class="day-count">{{ countCreneauxJour(s, jour.key) }} sél.</span>
+                        <button
+                          type="button"
+                          class="btn-jour-toggle"
+                          @click="toggleJour(s, jour.key)"
+                        >
+                          {{ creneauxPeriodes.flatMap(p => p.slots).every(t => isCreneauSelected(s, jour.key, t)) ? 'Tout ôter' : 'Tout' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Lignes par période -->
                     <div
-                      v-for="field in getTypeFields(s.id_type_service)"
-                      :key="field.key"
-                      class="specific-field-item"
+                      v-for="periode in creneauxPeriodes"
+                      :key="periode.label"
+                      class="creneaux-grid-periode"
                     >
-                      <label class="specific-field-label">
-                        {{ getFieldLabel(field) }}
-                        <span v-if="field.required" class="field-required">{{ $t('prestataireSpace.fieldRequired') }}</span>
-                      </label>
-                      <!-- Boolean -->
-                      <label v-if="field.type === 'boolean'" class="toggle-label specific-toggle">
-                        <input
-                          type="checkbox"
-                          :checked="s.champs_specifiques && s.champs_specifiques[field.key]"
-                          @change="updateSpecificField(s, field.key, $event)"
-                        />
-                        <span :class="{ active: s.champs_specifiques && s.champs_specifiques[field.key] }">
-                          {{ s.champs_specifiques && s.champs_specifiques[field.key] ? '✅' : '❌' }}
-                        </span>
-                      </label>
-                      <!-- Number -->
-                      <input
-                        v-else-if="field.type === 'number'"
-                        type="number"
-                        class="input input-specific"
-                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
-                        @input="updateSpecificField(s, field.key, $event)"
-                        :placeholder="getFieldLabel(field)"
-                        min="0"
-                        step="any"
-                      />
-                      <!-- Date -->
-                      <input
-                        v-else-if="field.type === 'date'"
-                        type="date"
-                        class="input input-specific"
-                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
-                        @input="updateSpecificField(s, field.key, $event)"
-                      />
-                      <!-- Time -->
-                      <input
-                        v-else-if="field.type === 'time'"
-                        type="time"
-                        class="input input-specific"
-                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
-                        @input="updateSpecificField(s, field.key, $event)"
-                      />
-                      <!-- Text (default) -->
-                      <input
-                        v-else
-                        type="text"
-                        class="input input-specific"
-                        :value="s.champs_specifiques ? s.champs_specifiques[field.key] : ''"
-                        @input="updateSpecificField(s, field.key, $event)"
-                        :placeholder="getFieldLabel(field)"
-                      />
+                      <!-- Séparateur de période -->
+                      <div class="creneaux-periode-sep">
+                        <span class="creneaux-periode-sep-label">{{ periode.label }}</span>
+                        <!-- Boutons "Tout / Rien" par période et par jour -->
+                        <div class="creneaux-periode-sep-actions">
+                          <button
+                            v-for="jour in festivalJours"
+                            :key="jour.key"
+                            type="button"
+                            class="btn-periode-toggle"
+                            @click="togglePeriode(s, jour.key, periode.slots)"
+                          >
+                            {{ periode.slots.every(t => isCreneauSelected(s, jour.key, t)) ? '✕' : '✓' }}
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Lignes d'horaires -->
+                      <div
+                        v-for="time in periode.slots"
+                        :key="time"
+                        class="creneaux-grid-row"
+                      >
+                        <div class="creneaux-grid-time-col">
+                          <span class="creneaux-time-label">{{ time }}</span>
+                          <span class="creneaux-time-end">{{ getCreneauEndTime(time) }}</span>
+                        </div>
+                        <button
+                          v-for="jour in festivalJours"
+                          :key="jour.key"
+                          type="button"
+                          class="creneaux-grid-cell"
+                          :class="{ selected: isCreneauSelected(s, jour.key, time) }"
+                          @click="toggleCreneau(s, jour.key, time)"
+                        >
+                          <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-check">✓</span>
+                          <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-places">{{ getCreneauPlaces(s, jour.key, time) }} pl.</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <!-- ===== FIN GRILLE CRÉNEAUX 3 JOURS ===== -->
 
-                <div class="service-toggles">
-                  <label class="toggle-label">
-                    <input type="checkbox" v-model="s.enabled" @change="toggleServiceEnabled(s)" />
-                    <span :class="{ active: s.enabled }">{{ $t('prestataireSpace.enabled') }}</span>
-                  </label>
-                  <label class="toggle-label">
-                    <input type="checkbox" v-model="s.public" @change="toggleServicePublic(s)" />
-                    <span :class="{ active: s.public }">{{ $t('prestataireSpace.public') }}</span>
-                  </label>
-                </div>
+
               </div>
             </div>
             <div v-if="!services.length" class="empty-state">
               <p>{{ $t('prestataireSpace.noServices') }}</p>
               <p class="empty-hint">{{ $t('prestataireSpace.noServicesHint') }}</p>
+            </div>
+            <!-- Bouton enregistrer en bas de la section -->
+            <div v-if="services.length" class="services-save-bottom">
+              <button class="btn btn-save-services" @click="saveServices" :disabled="savingServices">
+                <span v-if="savingServices">⏳ {{ $t('prestataireSpace.saving') || 'Enregistrement...' }}</span>
+                <span v-else>💾 {{ $t('prestataireSpace.saveServices') || 'Enregistrer les services' }}</span>
+              </button>
             </div>
           </div>
 
@@ -1905,6 +2105,39 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 /* services */
 .services-actions {
   margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-save-services {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.btn-save-services:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+}
+
+.btn-save-services:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.services-save-bottom {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .services-grid {
@@ -2105,6 +2338,324 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
 .specific-toggle {
   margin-top: 6px;
 }
+
+/* ===== Grille de sélection de créneaux ===== */
+.creneaux-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(100, 150, 255, 0.07);
+  border-radius: 12px;
+  border: 1px dashed rgba(100, 150, 255, 0.35);
+}
+
+.creneaux-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.creneaux-selected-count {
+  background: rgba(100, 150, 255, 0.2);
+  color: rgba(150, 200, 255, 0.9);
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.creneaux-hint {
+  color: rgba(255,255,255,0.55);
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+}
+
+.creneaux-places-global {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.creneaux-places-hint {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.creneau-mini-label {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.55);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.creneaux-periode-block {
+  margin-bottom: 14px;
+}
+
+.periode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.periode-label {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.btn-periode-toggle {
+  font-size: 0.72rem;
+  color: rgba(150, 200, 255, 0.7);
+  background: transparent;
+  border: 1px solid rgba(100, 150, 255, 0.25);
+  border-radius: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+}
+.btn-periode-toggle:hover {
+  background: rgba(100, 150, 255, 0.15);
+  color: #fff;
+}
+
+.slots-toggle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 64px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  font-family: inherit;
+  transition: all 0.18s ease;
+}
+.slot-toggle-btn:hover {
+  border-color: rgba(100, 150, 255, 0.6);
+  color: #fff;
+  background: rgba(100, 150, 255, 0.1);
+}
+.slot-toggle-btn.selected {
+  background: rgba(100, 150, 255, 0.28);
+  border-color: #6496ff;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(100, 150, 255, 0.3);
+}
+
+.slot-toggle-time {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.slot-toggle-places {
+  font-size: 0.7rem;
+  color: rgba(150, 200, 255, 0.75);
+}
+
+.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 0.82rem !important;
+}
+
+/* ===== Grille créneaux 3 jours ===== */
+.creneaux-3jours-grid {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  background: rgba(0,0,0,0.25);
+}
+
+.creneaux-grid-header {
+  display: grid;
+  grid-template-columns: 80px repeat(3, 1fr);
+  background: rgba(20, 30, 60, 0.7);
+  border-bottom: 2px solid rgba(100, 150, 255, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.creneaux-grid-time-col {
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.creneaux-grid-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border-left: 1px solid rgba(100, 150, 255, 0.2);
+  text-align: center;
+}
+
+.day-emoji {
+  font-size: 1.2rem;
+}
+
+.day-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.day-count {
+  font-size: 0.68rem;
+  color: rgba(150, 200, 255, 0.7);
+  background: rgba(100, 150, 255, 0.15);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.btn-jour-toggle {
+  font-size: 0.65rem;
+  background: rgba(100, 150, 255, 0.15);
+  color: rgba(150, 200, 255, 0.8);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  margin-top: 2px;
+}
+.btn-jour-toggle:hover {
+  background: rgba(100, 150, 255, 0.3);
+  color: #fff;
+}
+
+.creneaux-grid-periode {
+  border-top: 1px solid rgba(100, 150, 255, 0.15);
+}
+
+.creneaux-periode-sep {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  background: rgba(100, 150, 255, 0.07);
+  padding: 5px 10px;
+  gap: 8px;
+}
+
+.creneaux-periode-sep-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200, 220, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.creneaux-periode-sep-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: space-around;
+}
+
+.btn-periode-toggle {
+  font-size: 0.68rem;
+  color: rgba(150, 200, 255, 0.7);
+  background: transparent;
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  border-radius: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  min-width: 28px;
+}
+.btn-periode-toggle:hover {
+  background: rgba(100, 150, 255, 0.15);
+  color: #fff;
+}
+
+.creneaux-grid-row {
+  display: grid;
+  grid-template-columns: 80px repeat(3, 1fr);
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.creneaux-time-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  display: block;
+  text-align: center;
+}
+
+.creneaux-time-end {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.35);
+  display: block;
+  text-align: center;
+}
+
+.creneaux-grid-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  background: rgba(255,255,255,0.025);
+  border: none;
+  border-left: 1px solid rgba(100, 150, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+  color: rgba(255,255,255,0.2);
+}
+.creneaux-grid-cell:hover {
+  background: rgba(100, 150, 255, 0.12);
+  color: #fff;
+}
+.creneaux-grid-cell.selected {
+  background: rgba(100, 150, 255, 0.3);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(100, 150, 255, 0.6);
+}
+
+.cell-check {
+  font-size: 0.9rem;
+  color: #7eb8ff;
+  font-weight: 700;
+}
+
+.cell-places {
+  font-size: 0.62rem;
+  color: rgba(150, 200, 255, 0.8);
+  background: rgba(100, 150, 255, 0.2);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+/* ===== FIN Grille créneaux 3 jours ===== */
 
 .empty-state {
   text-align: center;

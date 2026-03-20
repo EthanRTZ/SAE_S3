@@ -499,7 +499,11 @@
     "selectServiceType": "-- Select a type --",
     "noType": "None (free service)",
     "specificFields": "Specific information",
-    "fieldRequired": "(required)"
+    "fieldRequired": "(required)",
+    "saveServices": "Save services",
+    "servicesSaved": "Services saved successfully!",
+    "servicesSaveError": "Error saving services",
+    "saving": "Saving..."
   },
   "servicesByType": {
     "loading": "Loading services...",

@@ -1,4 +1,4 @@
-const { sequelize, Utilisateur, Prestataire, Artiste, Service, Emplacement, Role, SessionAuthentification, PrestataireEmplacement } = require('../models');
+const { sequelize, Utilisateur, Prestataire, Artiste, Service, Emplacement, Role, SessionAuthentification, PrestataireEmplacement, Billet, ReservationBillet, AvisFestival, Avis } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -189,6 +189,159 @@ exports.getArtistesStats = async (req, res) => {
     } catch (error) {
         console.error('Error fetching artistes stats:', error);
         res.status(500).json({ error: 'Failed to fetch artistes stats' });
+    }
+};
+
+/**
+ * GET /api/stats/reservations - Statistiques des réservations de billets
+ */
+exports.getReservationsStats = async (req, res) => {
+    try {
+        // Total réservations
+        const totalReservations = await ReservationBillet.count();
+
+        // Réservations par type de billet
+        const reservationsParType = await ReservationBillet.findAll({
+            attributes: [
+                [sequelize.col('billet.type_billet'), 'type_billet'],
+                [sequelize.fn('SUM', sequelize.col('quantite')), 'total_quantite'],
+                [sequelize.fn('SUM', sequelize.col('prix_total')), 'total_revenue'],
+                [sequelize.fn('COUNT', sequelize.col('ReservationBillet.id_reservation')), 'nb_reservations']
+            ],
+            include: [{
+                model: Billet,
+                as: 'billet',
+                attributes: []
+            }],
+            group: ['billet.type_billet'],
+            raw: true
+        });
+
+        // Revenu total
+        const revenueResult = await ReservationBillet.findOne({
+            attributes: [
+                [sequelize.fn('SUM', sequelize.col('prix_total')), 'total']
+            ],
+            raw: true
+        });
+
+        // Total tickets vendus
+        const ticketsResult = await ReservationBillet.findOne({
+            attributes: [
+                [sequelize.fn('SUM', sequelize.col('quantite')), 'total']
+            ],
+            raw: true
+        });
+
+        // Billets avec stock
+        const billets = await Billet.findAll({
+            where: { actif: true },
+            attributes: ['type_billet', 'stock_disponible', 'stock_total', 'prix'],
+            raw: true
+        });
+
+        // Construire ticketsParType
+        const ticketsParType = {};
+        reservationsParType.forEach(r => {
+            ticketsParType[r.type_billet] = parseInt(r.total_quantite) || 0;
+        });
+
+        res.json({
+            totalReservations,
+            totalTickets: parseInt(ticketsResult?.total) || 0,
+            totalRevenue: parseFloat(revenueResult?.total) || 0,
+            ticketsParType,
+            reservationsParType,
+            billets
+        });
+    } catch (error) {
+        console.error('Error fetching reservations stats:', error);
+        res.status(500).json({ error: 'Failed to fetch reservations stats' });
+    }
+};
+
+/**
+ * GET /api/stats/avis-festival - Statistiques des avis sur le festival
+ */
+exports.getAvisFestivalStats = async (req, res) => {
+    try {
+        const avis = await AvisFestival.findAll({
+            where: { valide: true },
+            include: [{
+                model: Utilisateur,
+                as: 'utilisateur',
+                attributes: ['nom_utilisateur']
+            }],
+            order: [['date_avis', 'DESC']]
+        });
+
+        const total = avis.length;
+        let somme = 0;
+        const repartition = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+        avis.forEach(a => {
+            somme += a.note;
+            if (repartition[a.note] !== undefined) {
+                repartition[a.note]++;
+            }
+        });
+
+        const moyenne = total > 0 ? somme / total : 0;
+
+        // Derniers avis avec nom d'utilisateur
+        const dernierAvis = avis.slice(0, 20).map(a => ({
+            id: a.id_avis_festival,
+            note: a.note,
+            commentaire: a.commentaire,
+            date: a.date_avis,
+            nom: a.utilisateur?.nom_utilisateur || 'Anonyme'
+        }));
+
+        res.json({
+            totalAvisFestival: total,
+            avisFestivalMoyenne: parseFloat(moyenne.toFixed(2)),
+            repartitionNotesFestival: repartition,
+            dernierAvisFestival: dernierAvis
+        });
+    } catch (error) {
+        console.error('Error fetching avis festival stats:', error);
+        res.status(500).json({ error: 'Failed to fetch avis festival stats' });
+    }
+};
+
+/**
+ * GET /api/stats/avis-prestataires - Statistiques globales des avis prestataires
+ * Retourne le total, la moyenne et la répartition des notes des avis prestataires depuis la BDD
+ */
+exports.getAvisPrestatairesStats = async (req, res) => {
+    try {
+        const avis = await Avis.findAll({
+            where: { valide: true },
+            attributes: ['note'],
+            raw: true
+        });
+
+        const total = avis.length;
+        let somme = 0;
+        const repartition = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+        avis.forEach(a => {
+            somme += a.note;
+            if (repartition[a.note] !== undefined) {
+                repartition[a.note]++;
+            }
+        });
+
+        const moyenne = total > 0 ? somme / total : 0;
+
+        res.json({
+            totalAvis: total,
+            notesMoyenne: parseFloat(moyenne.toFixed(2)),
+            repartitionNotes: repartition
+        });
+    } catch (error) {
+        console.error('Error fetching avis prestataires stats:', error);
+        res.status(500).json({ error: 'Failed to fetch avis prestataires stats' });
     }
 };
 

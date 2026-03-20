@@ -157,8 +157,127 @@
             </div>
           </div>
 
-          <!-- RÉSERVATION -->
-          <div v-if="currentType === 'reservation'" class="modal-form">
+          <!-- ===== RÉSERVATION avec créneaux prédéfinis ===== -->
+          <div v-if="currentType === 'reservation' && hasCreneaux" class="reservation-steps-wrapper">
+
+            <!-- Indicateur d'étapes -->
+            <div class="steps-indicator">
+              <div class="step-dot" :class="{ active: reservationStep >= 1, done: reservationStep > 1 }">1</div>
+              <div class="step-line" :class="{ done: reservationStep > 1 }"></div>
+              <div class="step-dot" :class="{ active: reservationStep >= 2, done: reservationStep > 2 }">2</div>
+              <div class="step-line" :class="{ done: reservationStep > 2 }"></div>
+              <div class="step-dot" :class="{ active: reservationStep >= 3 }">3</div>
+            </div>
+
+            <!-- Étape 1 : Choisir la date du festival -->
+            <div v-if="reservationStep === 1" class="step-section">
+              <h3 class="step-title">
+                <span class="step-number-badge">1</span>
+                Choisir une date
+              </h3>
+              <div class="festival-dates-grid-modal">
+                <button
+                  v-for="date in festivalDates"
+                  :key="date.dateStr"
+                  type="button"
+                  class="festival-date-btn-modal"
+                  :class="{ selected: selectedReservationDate === date.dateStr }"
+                  @click="selectedReservationDate = date.dateStr; reservationStep = 2"
+                >
+                  <span class="fdb-day">{{ date.dayName }}</span>
+                  <span class="fdb-number">{{ date.dayNumber }}</span>
+                  <span class="fdb-month">{{ date.monthName }}</span>
+                </button>
+              </div>
+              <p v-if="!festivalDates.length" class="step-hint">Chargement des dates…</p>
+            </div>
+
+            <!-- Étape 2 : Choisir le créneau -->
+            <div v-if="reservationStep === 2" class="step-section">
+              <h3 class="step-title">
+                <span class="step-number-badge">2</span>
+                Choisir un créneau
+              </h3>
+              <p class="step-hint">📅 {{ selectedReservationDate }}</p>
+              <div class="creneaux-grid-modal">
+                <button
+                  v-for="(creneau, ci) in selectedService.champs_specifiques.creneaux"
+                  :key="ci"
+                  type="button"
+                  class="creneau-btn-modal"
+                  :class="{ selected: selectedCreneau === creneau }"
+                  @click="selectedCreneau = creneau; reservationStep = 3"
+                >
+                  <span class="creneau-time-modal">{{ creneau.heure_debut }} → {{ creneau.heure_fin }}</span>
+                  <span v-if="creneau.label" class="creneau-label-modal">{{ creneau.label }}</span>
+                  <span v-if="creneau.nombre_places" class="creneau-places-modal">{{ creneau.nombre_places }} places</span>
+                </button>
+              </div>
+              <button class="btn-back-step" @click="reservationStep = 1">← Retour</button>
+            </div>
+
+            <!-- Étape 3 : Informations -->
+            <div v-if="reservationStep === 3" class="step-section">
+              <h3 class="step-title">
+                <span class="step-number-badge">3</span>
+                Vos informations
+              </h3>
+
+              <!-- Récap rapide -->
+              <div class="quick-recap">
+                <span>📅 {{ selectedReservationDate }}</span>
+                <span>⏰ {{ selectedCreneau?.heure_debut }} → {{ selectedCreneau?.heure_fin }}</span>
+                <span v-if="selectedCreneau?.label">🏷️ {{ selectedCreneau.label }}</span>
+              </div>
+
+              <div class="modal-form">
+                <div class="form-group">
+                  <label>👤 Nom / Équipe</label>
+                  <input type="text" v-model="reservationInfo.nom" class="form-input" placeholder="Votre nom ou équipe" />
+                </div>
+                <div class="form-group">
+                  <label>📧 Email de contact</label>
+                  <input type="email" v-model="reservationInfo.email" class="form-input" placeholder="votre@email.com" />
+                </div>
+                <div class="form-group">
+                  <label>👥 Nombre de personnes</label>
+                  <input
+                    type="number"
+                    v-model.number="reservationInfo.nombre_personnes"
+                    class="form-input"
+                    min="1"
+                    :max="selectedCreneau?.nombre_places || 99"
+                  />
+                </div>
+              </div>
+              <button class="btn-back-step" @click="reservationStep = 2">← Retour</button>
+            </div>
+
+            <!-- Récap prix (step 3 seulement) -->
+            <div v-if="reservationStep === 3" class="modal-price-recap">
+              <div class="price-line">
+                <span>{{ localizedServiceName(selectedService) }}</span>
+                <span>{{ formatPrix(selectedService?.prix_estime) }}</span>
+              </div>
+              <div class="price-line price-total">
+                <span>{{ $t('prestataireDetail.modal.total') }}</span>
+                <span>{{ formatPrix(computedTotal) }}</span>
+              </div>
+            </div>
+
+            <button
+              v-if="reservationStep === 3"
+              class="btn-validate-modal"
+              :disabled="!canValidateCreneauReservation"
+              @click="addToCart"
+            >
+              🛒 Confirmer la réservation
+            </button>
+          </div>
+          <!-- ===== FIN RÉSERVATION avec créneaux ===== -->
+
+          <!-- RÉSERVATION libre (sans créneaux prédéfinis) -->
+          <div v-else-if="currentType === 'reservation'" class="modal-form">
             <div class="form-group">
               <label>📅 {{ $t('prestataireDetail.modal.date') }}</label>
               <input type="date" v-model="modalForm.date" class="form-input" />
@@ -200,8 +319,8 @@
             </div>
           </div>
 
-          <!-- Récapitulatif prix -->
-          <div class="modal-price-recap">
+          <!-- Récapitulatif prix (commande / location / réservation libre) -->
+          <div v-if="!(currentType === 'reservation' && hasCreneaux)" class="modal-price-recap">
             <div class="price-line">
               <span>{{ localizedServiceName(selectedService) }}</span>
               <span>{{ formatPrix(selectedService?.prix_estime) }}</span>
@@ -220,7 +339,11 @@
             </div>
           </div>
 
-          <button class="btn-validate-modal" @click="addToCart">
+          <button
+            v-if="!(currentType === 'reservation' && hasCreneaux)"
+            class="btn-validate-modal"
+            @click="addToCart"
+          >
             🛒 {{ $t('prestataireDetail.modal.addToCart') }}
           </button>
         </div>
@@ -228,6 +351,7 @@
     </Teleport>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -245,7 +369,7 @@ const typeInfo = ref(null)
 const servicesList = ref([])
 const searchQuery = ref('')
 
-// Modal
+// Modal principal
 const showModal = ref(false)
 const selectedService = ref(null)
 const modalForm = ref({
@@ -256,6 +380,65 @@ const modalForm = ref({
   quantite: 1,
   duree: 1,
 })
+
+// ===== Réservation avec créneaux prédéfinis =====
+const festivalDates = ref([])
+const reservationStep = ref(1)          // 1=date, 2=créneau, 3=infos
+const selectedReservationDate = ref('')
+const selectedCreneau = ref(null)
+const reservationInfo = ref({ nom: '', email: '', nombre_personnes: 1 })
+
+// true si le service sélectionné est de type réservation ET a des créneaux
+const hasCreneaux = computed(() => {
+  return currentType.value === 'reservation' &&
+    Array.isArray(selectedService.value?.champs_specifiques?.creneaux) &&
+    selectedService.value.champs_specifiques.creneaux.length > 0
+})
+
+// Le bouton "Confirmer" de l'étape 3 n'est actif que si date + créneau sont sélectionnés
+const canValidateCreneauReservation = computed(() => {
+  return !!selectedReservationDate.value && !!selectedCreneau.value
+})
+
+// Charger les dates du festival depuis l'API
+const loadFestivalDates = async () => {
+  try {
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/manifestations', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (resp.ok) {
+      const list = await resp.json()
+      const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
+      if (festival) {
+        const debut = new Date(festival.date_debut)
+        const fin = new Date(festival.date_fin)
+        const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+        const dates = []
+        for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) {
+          dates.push({
+            dateStr: d.toISOString().split('T')[0],
+            dayName: dayNames[d.getDay()],
+            dayNumber: d.getDate(),
+            monthName: monthNames[d.getMonth()],
+          })
+        }
+        festivalDates.value = dates
+        return
+      }
+    }
+  } catch (e) {
+    console.error('Erreur chargement festival dates:', e)
+  }
+  // Fallback
+  festivalDates.value = [
+    { dateStr: '2026-08-28', dayName: 'Vendredi', dayNumber: 28, monthName: 'Août' },
+    { dateStr: '2026-08-29', dayName: 'Samedi',   dayNumber: 29, monthName: 'Août' },
+    { dateStr: '2026-08-30', dayName: 'Dimanche', dayNumber: 30, monthName: 'Août' },
+  ]
+}
+// ===== FIN Réservation avec créneaux =====
 
 const currentType = computed(() => route.params.type || '')
 
@@ -326,6 +509,11 @@ const openModal = (service) => {
     quantite: 1,
     duree: 1,
   }
+  // Reset du formulaire étape par étape
+  reservationStep.value = 1
+  selectedReservationDate.value = ''
+  selectedCreneau.value = null
+  reservationInfo.value = { nom: '', email: '', nombre_personnes: 1 }
   showModal.value = true
 }
 
@@ -353,7 +541,20 @@ const addToCart = () => {
   let label = ''
   let details = {}
 
-  if (type === 'reservation') {
+  if (type === 'reservation' && hasCreneaux.value) {
+    // Réservation avec créneau prédéfini
+    const creneau = selectedCreneau.value
+    label = `${nom} — ${selectedReservationDate.value} ${creneau.heure_debut}-${creneau.heure_fin}`
+    details = {
+      date: selectedReservationDate.value,
+      heure_debut: creneau.heure_debut,
+      heure_fin: creneau.heure_fin,
+      label_creneau: creneau.label || '',
+      nombre_personnes: reservationInfo.value.nombre_personnes,
+      nom: reservationInfo.value.nom,
+      email: reservationInfo.value.email,
+    }
+  } else if (type === 'reservation') {
     label = `${nom} — ${modalForm.value.date} ${modalForm.value.heure_debut}-${modalForm.value.heure_fin}`
     details = {
       date: modalForm.value.date,
@@ -386,6 +587,7 @@ const addToCart = () => {
 }
 
 onMounted(() => {
+  loadFestivalDates()
   loadServices().then(() => {
     // Si un service est passé en query param, ouvrir le modal directement
     const serviceId = route.query.service
@@ -398,6 +600,7 @@ onMounted(() => {
   })
 })
 </script>
+
 
 <style scoped>
 .services-type-page {
@@ -806,5 +1009,216 @@ onMounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(252,220,30,0.4);
 }
+.btn-validate-modal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===== Formulaire étape par étape (créneaux) ===== */
+.reservation-steps-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Indicateur d'étapes */
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 4px;
+}
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.5);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.step-dot.active {
+  background: #FCDC1E;
+  border-color: #FCDC1E;
+  color: #1a1a2e;
+}
+.step-dot.done {
+  background: rgba(252,220,30,0.3);
+  border-color: #FCDC1E;
+  color: #FCDC1E;
+}
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255,255,255,0.15);
+  max-width: 60px;
+  transition: background 0.3s ease;
+}
+.step-line.done {
+  background: #FCDC1E;
+}
+
+/* Section d'une étape */
+.step-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+.step-number-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FCDC1E;
+  color: #1a1a2e;
+  font-weight: 900;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-hint {
+  color: rgba(255,255,255,0.55);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Grille des dates du festival */
+.festival-dates-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+.festival-date-btn-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  gap: 4px;
+}
+.festival-date-btn-modal:hover {
+  border-color: rgba(252,220,30,0.6);
+  background: rgba(252,220,30,0.08);
+}
+.festival-date-btn-modal.selected {
+  border-color: #FCDC1E;
+  background: rgba(252,220,30,0.2);
+}
+.fdb-day {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.6);
+}
+.fdb-number {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #FCDC1E;
+  line-height: 1;
+}
+.fdb-month {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Grille des créneaux */
+.creneaux-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.creneau-btn-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.creneau-btn-modal:hover {
+  border-color: rgba(252,220,30,0.6);
+  background: rgba(252,220,30,0.08);
+}
+.creneau-btn-modal.selected {
+  border-color: #FCDC1E;
+  background: rgba(252,220,30,0.2);
+}
+.creneau-time-modal {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #FCDC1E;
+}
+.creneau-label-modal {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+}
+.creneau-places-modal {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.08);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Récap rapide (étape 3) */
+.quick-recap {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: rgba(252,220,30,0.1);
+  border: 1px solid rgba(252,220,30,0.25);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.85);
+}
+
+/* Bouton retour */
+.btn-back-step {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  font-family: inherit;
+}
+.btn-back-step:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+/* ===== FIN formulaire créneaux ===== */
 </style>
 
