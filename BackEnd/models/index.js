@@ -21,6 +21,7 @@ const UtilisateurPrestataire = require('./UtilisateurPrestataire');
 const PrestataireZone = require('./PrestataireZone');
 const TypeService = require('./TypeService');
 const AvisFestival = require('./AvisFestival');
+const ReservationService = require('./ReservationService');
 
 // ========================================
 // DÉFINITION DES ASSOCIATIONS
@@ -219,6 +220,36 @@ Festival.hasMany(AvisFestival, {
   as: 'avisFestival'
 });
 
+// ReservationService <-> Utilisateur
+ReservationService.belongsTo(Utilisateur, {
+  foreignKey: 'id_utilisateur',
+  as: 'utilisateur'
+});
+Utilisateur.hasMany(ReservationService, {
+  foreignKey: 'id_utilisateur',
+  as: 'reservationsService'
+});
+
+// ReservationService <-> Service
+ReservationService.belongsTo(Service, {
+  foreignKey: 'id_service',
+  as: 'service'
+});
+Service.hasMany(ReservationService, {
+  foreignKey: 'id_service',
+  as: 'reservations'
+});
+
+// ReservationService <-> Prestataire
+ReservationService.belongsTo(Prestataire, {
+  foreignKey: 'id_prestataire',
+  as: 'prestataire'
+});
+Prestataire.hasMany(ReservationService, {
+  foreignKey: 'id_prestataire',
+  as: 'reservationsService'
+});
+
 // Export des modèles
 module.exports = {
   sequelize,
@@ -241,6 +272,7 @@ module.exports = {
   UtilisateurPrestataire,
   PrestataireZone,
   TypeService,
-  AvisFestival
+  AvisFestival,
+  ReservationService
 };
 

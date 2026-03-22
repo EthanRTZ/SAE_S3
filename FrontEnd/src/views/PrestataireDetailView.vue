@@ -33,21 +33,6 @@
 
       <!-- Contenu principal -->
       <div class="detail-content">
-        <!-- Section Réservation Terrain de Basket (uniquement pour ce prestataire) -->
-        <section v-if="isBasketPrestataire" class="detail-section reservation-highlight-section">
-          <div class="reservation-highlight">
-            <div class="reservation-highlight-content">
-              <div class="reservation-highlight-icon">🏀</div>
-              <div class="reservation-highlight-text">
-                <h2>{{ $t('prestataireDetail.reserveSlot') }}</h2>
-                <p>{{ $t('prestataireDetail.reserveDesc') }} <strong>28 au 30 août 2026</strong> ! Réservez un créneau d'une heure pour vous et vos amis (2 à 10 joueurs).</p>
-              </div>
-            </div>
-            <router-link to="/reservation-basket" class="btn-reserve-large">
-              <span>🎫</span> {{ $t('prestataireDetail.reserveNow') }}
-            </router-link>
-          </div>
-        </section>
 
         <!-- Description WYSIWYG -->
         <section v-if="prestataire.description" class="detail-section">
@@ -75,6 +60,7 @@
 
               <!-- Bouton d'achat adapté au type -->
               <button
+                v-if="service.champs_specifiques?.enabled !== false"
                 class="btn-buy-service"
                 :class="service.typeName ? 'btn-type-' + service.typeName : 'btn-type-default'"
                 @click="goToServicePage(service)"
@@ -83,6 +69,13 @@
                 <span v-else-if="service.typeName === 'commande'">🛒 {{ $t('prestataireDetail.orderNow') }}</span>
                 <span v-else-if="service.typeName === 'location'">🔧 {{ $t('prestataireDetail.rentNow') }}</span>
                 <span v-else>🛒 {{ $t('prestataireDetail.orderNow') }}</span>
+              </button>
+              <button
+                v-else
+                class="btn-buy-service btn-disabled"
+                disabled
+              >
+                🚫 Non réservable
               </button>
             </div>
           </div>
@@ -463,15 +456,6 @@ const goToServicePage = (service) => {
     }
   })
 }
-
-// Vérifier si c'est le prestataire "Terrain de basket"
-const isBasketPrestataire = computed(() => {
-  if (!prestataire.value) return false
-  const nom = prestataire.value.nom?.toLowerCase() || ''
-  return nom.includes('terrain de basket') ||
-         nom.includes('basket') ||
-         nom === 'terrain de basket'
-})
 </script>
 
 <style scoped>
@@ -772,6 +756,16 @@ const isBasketPrestataire = computed(() => {
 .btn-type-location {
   background: linear-gradient(135deg, #2196F3 0%, #64B5F6 100%);
   color: #fff;
+}
+.btn-buy-service.btn-disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-buy-service.btn-disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Modal */

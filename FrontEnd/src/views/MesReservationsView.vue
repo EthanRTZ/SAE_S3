@@ -89,72 +89,6 @@
                 </p>
               </div>
 
-              <!-- Modification date + créneau (réservation basket) -->
-              <div v-if="resa.type === 'basket'" class="change-day-panel">
-                <label class="change-day-label">
-                  {{ $t('mesReservations.changeBasketDateTime') }}
-                </label>
-
-                <div class="basket-change-grid">
-                  <div class="basket-change-field">
-                    <label :for="`basket-date-${resa.id}`" class="change-day-sublabel">
-                      {{ $t('mesReservations.newDate') }}
-                    </label>
-                    <select
-                      :id="`basket-date-${resa.id}`"
-                      v-model="basketDateSelections[resa.id]"
-                      class="change-day-select"
-                      @change="onBasketDateChanged(resa)"
-                    >
-                      <option
-                        v-for="d in festivalDateOptions"
-                        :key="d.dateStr"
-                        :value="d.dateStr"
-                      >
-                        {{ d.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="basket-change-field">
-                    <label :for="`basket-slot-${resa.id}`" class="change-day-sublabel">
-                      {{ $t('mesReservations.newSlot') }}
-                    </label>
-                    <select
-                      :id="`basket-slot-${resa.id}`"
-                      v-model="basketSlotSelections[resa.id]"
-                      class="change-day-select"
-                    >
-                      <option
-                        v-for="slot in getAvailableBasketSlots(resa)"
-                        :key="slot.time"
-                        :value="slot.time"
-                        :disabled="!slot.available"
-                      >
-                        {{ slot.time }}{{ !slot.available ? ` (${$t('mesReservations.slotTaken')})` : '' }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  class="btn-change-day btn-change-basket"
-                  :disabled="Boolean(basketChangeLoadingById[resa.id])"
-                  @click="onChangeBasketDateTime(resa)"
-                >
-                  {{ basketChangeLoadingById[resa.id]
-                    ? $t('mesReservations.changingDay')
-                    : $t('mesReservations.changeDay') }}
-                </button>
-
-                <p v-if="basketChangeErrorById[resa.id]" class="change-day-error">
-                  {{ basketChangeErrorById[resa.id] }}
-                </p>
-                <p v-if="basketChangeSuccessById[resa.id]" class="change-day-success">
-                  {{ basketChangeSuccessById[resa.id] }}
-                </p>
-              </div>
             </li>
           </ul>
 
@@ -185,6 +119,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { billetsService } from '@/services/billetsService'
+import { reservationServiceService } from '@/services/reservationServiceService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -204,18 +139,6 @@ const dayChangeLoadingById = ref({})
 const dayChangeErrorById = ref({})
 const dayChangeSuccessById = ref({})
 
-// ─── Basket date/slot change ──────────────────────────────────────────────────
-const basketDateSelections = ref({})
-const basketSlotSelections = ref({})
-const basketChangeLoadingById = ref({})
-const basketChangeErrorById = ref({})
-const basketChangeSuccessById = ref({})
-
-const ALL_BASKET_SLOTS = [
-  '09:00','10:00','11:00','12:00',
-  '13:00','14:00','15:00','16:00','17:00',
-  '18:00','19:00','20:00','21:00'
-]
 
 // Festival dates (pour la sélection basket)
 const festivalDateOptions = ref([
@@ -338,20 +261,58 @@ const loadFestivalDates = async () => {
 }
 
 const getAllReservations = async () => {
+  const results = []
+
+  // 1. Réservations de billets
   try {
     const list = await billetsService.getMyReservations()
-    return (Array.isArray(list) ? list : []).map(resa => ({
-      id: resa.id_reservation,
-      type: resa?.billet?.type_billet || resa.type_billet || resa.type,
-      quantity: resa.quantite,
-      optionLabel: '',
-      displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
-      date: resa.date_utilisation,
-      createdAt: resa.date_reservation
-    }))
+    ;(Array.isArray(list) ? list : []).forEach(resa => {
+      results.push({
+        id: resa.id_reservation,
+        _source: 'billet',
+        type: resa?.billet?.type_billet || resa.type_billet || resa.type,
+        quantity: resa.quantite,
+        optionLabel: '',
+        displayLabel: resa?.billet?.label_fr || resa?.billet?.label_en || '',
+        date: resa.date_utilisation,
+        createdAt: resa.date_reservation
+      })
+    })
   } catch (e) {
-    return []
+    console.error('Erreur chargement réservations billets:', e)
   }
+
+  // 2. Réservations de services
+  try {
+    const serviceList = await reservationServiceService.getMyReservations()
+    ;(Array.isArray(serviceList) ? serviceList : []).forEach(resa => {
+      const details = resa.details || {}
+      const svc = resa.service || {}
+      const typeName = svc.typeService?.nom || details.serviceType || 'service'
+      const typeIcon = typeName === 'reservation' ? '📅' : typeName === 'commande' ? '🛒' : typeName === 'location' ? '🔧' : '🛠️'
+
+      results.push({
+        id: `svc-${resa.id_reservation_service}`,
+        _source: 'service',
+        _serviceResaId: resa.id_reservation_service,
+        type: 'service',
+        serviceType: typeName,
+        quantity: resa.quantite,
+        optionLabel: '',
+        displayLabel: `${typeIcon} ${details.nom || svc.nom_service_fr || 'Service'}`,
+        date: details.date || null,
+        slot: details.heure_debut ? `${details.heure_debut} - ${details.heure_fin}` : null,
+        prix: resa.prix_total,
+        prestataire: details.prestataire || resa.prestataire?.nom || '',
+        statut: resa.statut,
+        createdAt: resa.date_reservation
+      })
+    })
+  } catch (e) {
+    console.error('Erreur chargement réservations services:', e)
+  }
+
+  return results
 }
 
 const getUsedPlacesByDay = (type, excludedReservationId = null) => {
@@ -420,6 +381,13 @@ const loadReservations = async () => {
 }
 
 const getReservationIcon = (resa) => {
+  if (resa.type === 'service') {
+    const st = resa.serviceType
+    if (st === 'reservation') return '📅'
+    if (st === 'commande') return '🛒'
+    if (st === 'location') return '🔧'
+    return '🛠️'
+  }
   switch (resa.type) {
     case 'basket':
       return '🏀'
@@ -451,6 +419,8 @@ const formatReservationTitle = (resa) => {
       return t('mesReservations.camping')
     case 'basket':
       return t('mesReservations.basket')
+    case 'service':
+      return resa.nom || 'Service'
     default:
       return t('mesReservations.reservation')
   }
@@ -459,8 +429,25 @@ const formatReservationTitle = (resa) => {
 const formatReservationMeta = (resa) => {
   const parts = []
 
+  // Pour les réservations de service
+  if (resa.type === 'service') {
+    if (resa.prestataire) {
+      parts.push(`📍 ${resa.prestataire}`)
+    }
+    if (resa.date) {
+      parts.push(`📅 ${resa.date}`)
+    }
+    if (resa.slot) {
+      parts.push(`⏰ ${resa.slot}`)
+    }
+    if (resa.prix) {
+      parts.push(`💰 ${Number(resa.prix).toFixed(2)}€`)
+    }
+    if (resa.statut) {
+      parts.push(resa.statut === 'réservé' ? '✅ Réservé' : resa.statut)
+    }
   // Pour les réservations de basket
-  if (resa.type === 'basket') {
+  } else if (resa.type === 'basket') {
     if (resa.date) {
       try {
         const date = new Date(resa.date)
@@ -528,7 +515,13 @@ const onDeleteSelectedReservations = async () => {
     const idsToDelete = new Set(selectedReservationIds.value)
 
     for (const id of idsToDelete) {
-      await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+      // Vérifier si c'est une réservation de service (id commence par "svc-")
+      const resa = reservations.value.find(r => r.id === id)
+      if (resa && resa._source === 'service' && resa._serviceResaId) {
+        await reservationServiceService.deleteReservation(resa._serviceResaId)
+      } else {
+        await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+      }
     }
 
     reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
@@ -626,127 +619,8 @@ onMounted(async () => {
   } else {
     await Promise.all([loadOneDayStocks(), loadFestivalDates()])
     loadReservations()
-    initBasketSelections()
   }
 })
-
-// ─── Basket : fonctions de modification de date + créneau ─────────────────
-
-const getOtherBasketReservations = (excludedId = null) => {
-  try {
-    const fromMain = reservations.value.filter(r => r.type === 'basket' && r.id !== excludedId)
-    const fromBasket = reservations.value.filter(r => r.type === 'service')
-    const mainDates = new Set(fromMain.map(r => `${r.date}|${r.slot}`))
-    const uniqueBasket = fromBasket.filter(r => !mainDates.has(`${r.date}|${r.slot}`))
-    return [...fromMain, ...uniqueBasket]
-  } catch (_) {
-    return []
-  }
-}
-
-const getAvailableBasketSlots = (resa) => {
-  const selectedDateForResa = basketDateSelections.value[resa.id] || resa.date
-  const others = getOtherBasketReservations(resa.id)
-  return ALL_BASKET_SLOTS.map(time => {
-    const taken = others.some(r =>
-      String(r.date || '').trim() === String(selectedDateForResa).trim() &&
-      String(r.slot || '').trim() === String(time).trim()
-    )
-    return { time, available: !taken }
-  })
-}
-
-const onBasketDateChanged = (resa) => {
-  // Réinitialiser le créneau quand la date change
-  basketSlotSelections.value = { ...basketSlotSelections.value, [resa.id]: '' }
-}
-
-const initBasketSelections = () => {
-  const nextDate = { ...basketDateSelections.value }
-  const nextSlot = { ...basketSlotSelections.value }
-  reservations.value.forEach(r => {
-    if (r.type === 'basket') {
-      if (!nextDate[r.id]) nextDate[r.id] = r.date || ''
-      if (!nextSlot[r.id]) nextSlot[r.id] = r.slot || ''
-    }
-  })
-  basketDateSelections.value = nextDate
-  basketSlotSelections.value = nextSlot
-}
-
-const onChangeBasketDateTime = async (reservation) => {
-  const id = reservation.id
-  const newDate = basketDateSelections.value[id]
-  const newSlot = basketSlotSelections.value[id]
-
-  basketChangeErrorById.value = { ...basketChangeErrorById.value, [id]: '' }
-  basketChangeSuccessById.value = { ...basketChangeSuccessById.value, [id]: '' }
-
-  if (!newDate || !newSlot) {
-    basketChangeErrorById.value = {
-      ...basketChangeErrorById.value,
-      [id]: t('mesReservations.selectDateSlot')
-    }
-    return
-  }
-
-  if (newDate === reservation.date && newSlot === reservation.slot) {
-    basketChangeErrorById.value = {
-      ...basketChangeErrorById.value,
-      [id]: t('mesReservations.dateSlotUnchanged')
-    }
-    return
-  }
-
-  // Vérifier que le créneau est disponible
-  const slots = getAvailableBasketSlots(reservation)
-  const chosenSlot = slots.find(s => s.time === newSlot)
-  if (!chosenSlot || !chosenSlot.available) {
-    basketChangeErrorById.value = {
-      ...basketChangeErrorById.value,
-      [id]: t('mesReservations.slotTaken')
-    }
-    return
-  }
-
-  basketChangeLoadingById.value = { ...basketChangeLoadingById.value, [id]: true }
-
-  try {
-    const endHour = parseInt(newSlot.split(':')[0]) + 1
-    const newEndTime = `${endHour.toString().padStart(2, '0')}:${newSlot.split(':')[1]}`
-
-    // Mettre à jour via l'API
-    const token = localStorage.getItem('authToken')
-    await fetch(`/api/billets/reservations/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ date: newDate, slot: newSlot, endTime: newEndTime })
-    })
-
-    // Mettre à jour le state local
-    reservations.value = reservations.value.map(item => {
-      if (item.id !== id) return item
-      return { ...item, date: newDate, slot: newSlot, endTime: newEndTime }
-    })
-
-    // Émettre un événement pour que BasketReservationView se rafraîchisse
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('basket-reservations-updated'))
-    }
-
-    basketChangeSuccessById.value = {
-      ...basketChangeSuccessById.value,
-      [id]: t('mesReservations.dateSlotUpdated')
-    }
-  } catch (e) {
-    basketChangeErrorById.value = {
-      ...basketChangeErrorById.value,
-      [id]: t('mesReservations.dateSlotUpdateError')
-    }
-  } finally {
-    basketChangeLoadingById.value = { ...basketChangeLoadingById.value, [id]: false }
-  }
-}
 </script>
 
 <style scoped>

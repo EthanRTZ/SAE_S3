@@ -46,28 +46,7 @@
           <p class="section-subtitle">{{ $t('basketReservation.duration') }}</p>
 
           <div class="time-periods">
-            <div class="time-period">
-              <h3 class="period-title">{{ $t('basketReservation.morning') }}</h3>
-              <div class="slots-row">
-                <button
-                  v-for="slot in morningSlots"
-                  :key="slot.time"
-                  type="button"
-                  class="slot-btn"
-                  :class="{
-                    selected: selectedSlot === slot.time,
-                    unavailable: !slot.available
-                  }"
-                  :disabled="!slot.available"
-                  @click="selectSlot(slot.time)"
-                >
-                  <span class="slot-time">{{ slot.time }}</span>
-                  <span class="slot-status">{{ slot.available ? '✓' : '✗' }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="time-period">
+            <div v-if="afternoonSlots.length > 0" class="time-period">
               <h3 class="period-title">{{ $t('basketReservation.afternoon') }}</h3>
               <div class="slots-row">
                 <button
@@ -88,11 +67,32 @@
               </div>
             </div>
 
-            <div class="time-period">
+            <div v-if="eveningSlots.length > 0" class="time-period">
               <h3 class="period-title">{{ $t('basketReservation.evening') }}</h3>
               <div class="slots-row">
                 <button
                   v-for="slot in eveningSlots"
+                  :key="slot.time"
+                  type="button"
+                  class="slot-btn"
+                  :class="{
+                    selected: selectedSlot === slot.time,
+                    unavailable: !slot.available
+                  }"
+                  :disabled="!slot.available"
+                  @click="selectSlot(slot.time)"
+                >
+                  <span class="slot-time">{{ slot.time }}</span>
+                  <span class="slot-status">{{ slot.available ? '✓' : '✗' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="nightSlots.length > 0" class="time-period">
+              <h3 class="period-title">{{ $t('basketReservation.night') }}</h3>
+              <div class="slots-row">
+                <button
+                  v-for="slot in nightSlots"
                   :key="slot.time"
                   type="button"
                   class="slot-btn"
@@ -353,10 +353,17 @@ watch(locale, () => {
   loadFestivalInfo()
 })
 
-// Créneaux horaires par période
-const morningHours = ['09:00', '10:00', '11:00', '12:00']
-const afternoonHours = ['13:00', '14:00', '15:00', '16:00', '17:00']
-const eveningHours = ['18:00', '19:00', '20:00', '21:00']
+// Créneaux valides par date (identiques à PrestataireView)
+const festivalJoursSlots = {
+  '2026-08-28': ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'], // Vendredi
+  '2026-08-29': ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'], // Samedi
+  '2026-08-30': ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00']  // Dimanche
+}
+
+// Périodes identiques à PrestataireView
+const afternoonHours = ['13:00','14:00','15:00','16:00','17:00']
+const eveningHours   = ['18:00','19:00','20:00','21:00','22:00','23:00']
+const nightHours     = ['00:00','01:00','02:00']
 
 // Charger les réservations existantes
 const getExistingReservations = () => {
@@ -444,18 +451,21 @@ const isSlotAvailable = (date, time) => {
   return result
 }
 
-// Créneaux avec disponibilité par période
+// Créneaux avec disponibilité par période (filtrés par les slots valides du jour)
 const getSlotsWithAvailability = (hours) => {
   if (!selectedDate.value) return []
-  return hours.map(time => ({
-    time,
-    available: isSlotAvailable(selectedDate.value, time)
-  }))
+  const validSlots = festivalJoursSlots[selectedDate.value] || []
+  return hours
+    .filter(h => validSlots.includes(h))
+    .map(time => ({
+      time,
+      available: isSlotAvailable(selectedDate.value, time)
+    }))
 }
 
-const morningSlots = computed(() => getSlotsWithAvailability(morningHours))
 const afternoonSlots = computed(() => getSlotsWithAvailability(afternoonHours))
-const eveningSlots = computed(() => getSlotsWithAvailability(eveningHours))
+const eveningSlots   = computed(() => getSlotsWithAvailability(eveningHours))
+const nightSlots     = computed(() => getSlotsWithAvailability(nightHours))
 
 // CORRECTION: Format de la date sélectionnée avec vérification
 const formatSelectedDate = computed(() => {
@@ -497,7 +507,7 @@ const decrementPlayers = () => {
 // Calculer l'heure de fin
 const getEndTime = (startTime) => {
   const [hours, minutes] = startTime.split(':').map(Number)
-  const endHours = hours + 1
+  const endHours = (hours + 1) % 24
   return `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 

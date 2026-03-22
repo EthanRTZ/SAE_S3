@@ -126,6 +126,7 @@
 
           <!-- Bouton d'achat -->
           <button
+            v-if="service.champs_specifiques?.enabled !== false"
             class="btn-buy-service"
             :class="'btn-type-' + currentType"
             @click="openModal(service)"
@@ -133,6 +134,13 @@
             <span v-if="currentType === 'reservation'">📅 {{ $t('prestataireDetail.bookNow') }}</span>
             <span v-else-if="currentType === 'commande'">🛒 {{ $t('prestataireDetail.orderNow') }}</span>
             <span v-else-if="currentType === 'location'">🔧 {{ $t('prestataireDetail.rentNow') }}</span>
+          </button>
+          <button
+            v-else
+            class="btn-buy-service btn-disabled"
+            disabled
+          >
+            🚫 Non réservable
           </button>
         </div>
       </div>
@@ -177,19 +185,19 @@
               </h3>
               <div class="festival-dates-grid-modal">
                 <button
-                  v-for="date in festivalDates"
+                  v-for="date in festivalDatesAvailable"
                   :key="date.dateStr"
                   type="button"
                   class="festival-date-btn-modal"
                   :class="{ selected: selectedReservationDate === date.dateStr }"
-                  @click="selectedReservationDate = date.dateStr; reservationStep = 2"
+                  @click="selectedReservationDate = date.dateStr; selectedCreneau = null; reservationStep = 2"
                 >
                   <span class="fdb-day">{{ date.dayName }}</span>
                   <span class="fdb-number">{{ date.dayNumber }}</span>
                   <span class="fdb-month">{{ date.monthName }}</span>
                 </button>
               </div>
-              <p v-if="!festivalDates.length" class="step-hint">Chargement des dates…</p>
+              <p v-if="!festivalDatesAvailable.length" class="step-hint">Aucune date disponible pour ce service.</p>
             </div>
 
             <!-- Étape 2 : Choisir le créneau -->
@@ -201,7 +209,7 @@
               <p class="step-hint">📅 {{ selectedReservationDate }}</p>
               <div class="creneaux-grid-modal">
                 <button
-                  v-for="(creneau, ci) in selectedService.champs_specifiques.creneaux"
+                  v-for="(creneau, ci) in creneauxForSelectedDate"
                   :key="ci"
                   type="button"
                   class="creneau-btn-modal"
@@ -213,6 +221,7 @@
                   <span v-if="creneau.nombre_places" class="creneau-places-modal">{{ creneau.nombre_places }} places</span>
                 </button>
               </div>
+              <p v-if="!creneauxForSelectedDate.length" class="step-hint">Aucun créneau disponible ce jour.</p>
               <button class="btn-back-step" @click="reservationStep = 1">← Retour</button>
             </div>
 
@@ -395,6 +404,77 @@ const hasCreneaux = computed(() => {
     selectedService.value.champs_specifiques.creneaux.length > 0
 })
 
+// Clé du jour correspondant à la date sélectionnée (ex: 'vendredi', 'samedi', 'dimanche')
+const selectedJourKey = computed(() => {
+  if (!selectedReservationDate.value) return ''
+  const found = festivalDates.value.find(d => d.dateStr === selectedReservationDate.value)
+  return found ? found.dayName.toLowerCase() : ''
+})
+
+// Horaires valides par jour (identiques à PrestataireView)
+const validSlotsByDay = {
+  'vendredi': ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'],
+  'samedi':   ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00'],
+  'dimanche': ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'],
+}
+
+// Convertit une heure "HH:MM" en minutes, en traitant 00:00-04:59 comme après minuit (24h+)
+const timeToSortMinutes = (timeStr) => {
+  if (!timeStr) return 0
+  const [h, m] = timeStr.split(':').map(Number)
+  // Les heures entre 00:00 et 04:59 sont considérées comme après minuit
+  const adjustedH = h < 5 ? h + 24 : h
+  return adjustedH * 60 + (m || 0)
+}
+
+// Trie les créneaux par heure de début (gère les heures après minuit)
+const sortCreneaux = (creneaux) => {
+  return [...creneaux].sort((a, b) => timeToSortMinutes(a.heure_debut) - timeToSortMinutes(b.heure_debut))
+}
+
+// Créneaux filtrés pour le jour sélectionné
+// Supporte l'ancien format (sans 'jour') et le nouveau format (avec 'jour')
+const creneauxForSelectedDate = computed(() => {
+  const creneaux = selectedService.value?.champs_specifiques?.creneaux
+  if (!Array.isArray(creneaux) || !creneaux.length) return []
+
+  const hasJourField = creneaux.some(c => c.jour)
+
+  if (hasJourField) {
+    // Nouveau format : filtrer strictement par le jour sélectionné
+    if (!selectedJourKey.value) return []
+    return sortCreneaux(creneaux.filter(c => c.jour === selectedJourKey.value))
+  }
+
+  // Ancien format (pas de champ 'jour') : filtrer par les horaires valides du jour sélectionné
+  if (selectedJourKey.value) {
+    const validSlots = validSlotsByDay[selectedJourKey.value]
+    if (validSlots) {
+      const filtered = creneaux.filter(c => validSlots.includes(c.heure_debut))
+      if (filtered.length > 0) return sortCreneaux(filtered)
+    }
+  }
+
+  // Dernier recours : afficher tous les créneaux triés
+  return sortCreneaux(creneaux)
+})
+
+// Dates du festival sur lesquelles le service a au moins un créneau
+const festivalDatesAvailable = computed(() => {
+  if (!hasCreneaux.value) return festivalDates.value
+  const creneaux = selectedService.value?.champs_specifiques?.creneaux || []
+  // Si aucun créneau n'a de champ 'jour' (ancien format) → afficher tous les jours
+  const hasJourField = creneaux.some(c => c.jour)
+  if (!hasJourField) return festivalDates.value
+  // Nouveau format : afficher uniquement les jours ayant des créneaux
+  const filtered = festivalDates.value.filter(d => {
+    const jourKey = d.dayName.toLowerCase()
+    return creneaux.some(c => c.jour === jourKey)
+  })
+  // Sécurité : si le filtre vide tout, afficher quand même tous les jours
+  return filtered.length > 0 ? filtered : festivalDates.value
+})
+
 // Le bouton "Confirmer" de l'étape 3 n'est actif que si date + créneau sont sélectionnés
 const canValidateCreneauReservation = computed(() => {
   return !!selectedReservationDate.value && !!selectedCreneau.value
@@ -574,6 +654,7 @@ const addToCart = () => {
     type: 'service',
     serviceType: type,
     id_service: service.id_service || null,
+    id_prestataire: service.prestataire?.id_prestataire || service.id_prestataire || null,
     label,
     nom,
     prestataire: prestaNom,
@@ -586,18 +667,19 @@ const addToCart = () => {
   alert(t('prestataireDetail.modal.addedToCart'))
 }
 
-onMounted(() => {
-  loadFestivalDates()
-  loadServices().then(() => {
-    // Si un service est passé en query param, ouvrir le modal directement
-    const serviceId = route.query.service
-    if (serviceId && servicesList.value.length) {
-      const found = servicesList.value.find(s => String(s.id_service) === String(serviceId))
-      if (found) {
-        openModal(found)
-      }
+onMounted(async () => {
+  // Charger festival dates ET services en parallèle, attendre les deux
+  // avant d'ouvrir le modal (évite la race condition sur festivalDates)
+  await Promise.all([loadFestivalDates(), loadServices()])
+
+  // Si un service est passé en query param, ouvrir le modal directement
+  const serviceId = route.query.service
+  if (serviceId && servicesList.value.length) {
+    const found = servicesList.value.find(s => String(s.id_service) === String(serviceId))
+    if (found) {
+      openModal(found)
     }
-  })
+  }
 })
 </script>
 
@@ -858,6 +940,16 @@ onMounted(() => {
 .btn-type-location {
   background: linear-gradient(135deg, #2196F3 0%, #64B5F6 100%);
   color: #fff;
+}
+.btn-buy-service.btn-disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-buy-service.btn-disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Modal */

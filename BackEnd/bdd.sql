@@ -6,6 +6,7 @@
 
 -- Suppression des tables existantes (dans l'ordre pour éviter les conflits de clés étrangères)
 DROP TABLE IF EXISTS avis_festival CASCADE;
+DROP TABLE IF EXISTS reservation_service CASCADE;
 DROP TABLE IF EXISTS reservation_billet CASCADE;
 DROP TABLE IF EXISTS billets CASCADE;
 DROP TABLE IF EXISTS avis CASCADE;
@@ -303,6 +304,24 @@ CREATE TABLE reservation_billet (
                                     statut VARCHAR(20) DEFAULT 'réservé', -- 'réservé', 'payé', 'utilisé', 'annulé'
                                     prix_total NUMERIC(10,2) NOT NULL,
                                     transaction_id VARCHAR(100), -- ID de transaction paiement
+                                    date_paiement TIMESTAMP
+);
+
+-- ============================================
+-- TABLE : reservation_service
+-- Réservations de services par les utilisateurs
+-- ============================================
+CREATE TABLE reservation_service (
+                                    id_reservation_service SERIAL PRIMARY KEY,
+                                    id_utilisateur INT NOT NULL REFERENCES utilisateurs(id_utilisateur) ON DELETE CASCADE,
+                                    id_service INT NOT NULL REFERENCES services(id_service) ON DELETE CASCADE,
+                                    id_prestataire INT NOT NULL REFERENCES prestataire(id_prestataire) ON DELETE CASCADE,
+                                    quantite INT NOT NULL DEFAULT 1 CHECK (quantite > 0),
+                                    details JSONB DEFAULT '{}',
+                                    prix_total NUMERIC(10,2),
+                                    statut VARCHAR(20) DEFAULT 'réservé',
+                                    transaction_id VARCHAR(100),
+                                    date_reservation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                     date_paiement TIMESTAMP
 );
 

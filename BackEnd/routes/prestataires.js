@@ -1,5 +1,6 @@
 const express = require('express');
 const ctrl = require('../controllers/prestatairesController');
+const { ReservationService, Service, Utilisateur, TypeService } = require('../models');
 const router = express.Router();
 
 /**
@@ -366,6 +367,45 @@ router.post('/:id/emplacements', ctrl.assignEmplacementToPrestataire);
  *         description: Association non trouvée
  */
 router.delete('/:id/emplacements/:idEmplacement', ctrl.removeEmplacementFromPrestataire);
+
+/**
+ * @openapi
+ * /prestataires/{id}/reservations:
+ *   get:
+ *     tags:
+ *       - Prestataires
+ *     summary: Récupère les réservations de services d'un prestataire
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Liste des réservations de services
+ */
+router.get('/:id/reservations', async (req, res, next) => {
+  try {
+    const reservations = await ReservationService.findAll({
+      where: { id_prestataire: req.params.id },
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          include: [{ model: TypeService, as: 'typeService' }]
+        },
+        {
+          model: Utilisateur,
+          as: 'utilisateur',
+          attributes: ['id_utilisateur', 'nom_utilisateur', 'email']
+        }
+      ],
+      order: [['date_reservation', 'DESC']]
+    });
+    res.json(reservations);
+  } catch (err) { next(err); }
+});
 
 module.exports = router;
 

@@ -157,7 +157,7 @@ const loadPrestataireInfo = async () => {
       nom: typeof s.nom === 'string' ? { fr: s.nom, en: '' } : (s.nom || { fr: s.nom_service_fr || '', en: s.nom_service_en || '' }),
       description: typeof s.description === 'string' ? { fr: s.description, en: '' } : (s.description || { fr: s.description_fr || '', en: s.description_en || '' }),
       prix: s.prix !== undefined ? s.prix : (s.prix_estime !== undefined ? parseFloat(s.prix_estime) || 0 : 0),
-      enabled: s.enabled !== undefined ? s.enabled : true,
+      enabled: s.champs_specifiques?.enabled !== undefined ? s.champs_specifiques.enabled : (s.enabled !== undefined ? s.enabled : true),
       public: s.public !== undefined ? s.public : true,
       id_type_service: s.id_type_service || null,
       champs_specifiques: s.champs_specifiques || {},
@@ -232,7 +232,7 @@ const saveServices = async () => {
       description: s.description,
       prix: s.prix,
       id_type_service: s.id_type_service || null,
-      champs_specifiques: s.champs_specifiques || {}
+      champs_specifiques: { ...(s.champs_specifiques || {}), enabled: s.enabled !== false }
     }))
 
     const resp = await fetch(`/api/prestataires/${prest.id_prestataire}/services`, {
@@ -258,7 +258,7 @@ const saveServices = async () => {
         nom: { fr: s.nom_service_fr || '', en: s.nom_service_en || '' },
         description: { fr: s.description_fr || '', en: s.description_en || '' },
         prix: s.prix_estime !== undefined && s.prix_estime !== null ? parseFloat(s.prix_estime) || 0 : 0,
-        enabled: true,
+        enabled: s.champs_specifiques?.enabled !== false,
         public: true,
         id_type_service: s.id_type_service || null,
         champs_specifiques: s.champs_specifiques || {},
@@ -905,12 +905,34 @@ const loadReservations = async () => {
       const list = await resp.json()
       const prest = (Array.isArray(list) ? list : []).find(p => p.nom === prestataireNom.value)
       if (prest && prest.id_prestataire) {
-        // Essayer de charger les réservations spécifiques au prestataire
+        // Charger les réservations de services du prestataire
         try {
           const resaResp = await fetch(`/api/prestataires/${prest.id_prestataire}/reservations`, { headers })
           if (resaResp.ok) {
             const data = await resaResp.json()
-            reservations.value = Array.isArray(data) ? data : []
+            // Mapper les données API au format attendu par le template
+            reservations.value = (Array.isArray(data) ? data : []).map(resa => {
+              const details = resa.details || {}
+              const svc = resa.service || {}
+              const user = resa.utilisateur || {}
+              const typeName = svc.typeService?.nom || details.serviceType || 'reservation'
+              return {
+                id: resa.id_reservation_service,
+                id_reservation: resa.id_reservation_service,
+                service: details.nom || svc.nom_service_fr || 'Service',
+                serviceType: typeName,
+                date: details.date || resa.date_reservation,
+                slot: details.heure_debut ? `${details.heure_debut} - ${details.heure_fin}` : null,
+                nom: details.nom || user.nom_utilisateur || '',
+                email: details.email || user.email || '',
+                details: details,
+                nbJoueurs: details.nombre_personnes || resa.quantite,
+                prix: resa.prix_total,
+                statut: resa.statut === 'réservé' ? 'en_attente' : resa.statut,
+                createdAt: resa.date_reservation,
+                prestataire: details.prestataire || ''
+              }
+            })
             return
           }
         } catch (e) { /* pas de route spécifique */ }
@@ -934,7 +956,7 @@ const updateReservationStatus = async (resa, newStatus) => {
     const token = localStorage.getItem('authToken')
     const resaId = resa.id_reservation || resa.id
     if (resaId) {
-      await fetch(`/api/billets/reservations/${resaId}`, {
+      await fetch(`/api/services/reservations/${resaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ statut: newStatus })
@@ -1020,22 +1042,80 @@ const getTypeName = (typeId) => {
 }
 
 // ===== Grille de sélection de créneaux (3 jours du festival) =====
-const festivalJours = [
-  { key: 'vendredi', label: 'Vendredi 15', emoji: '🎪' },
-  { key: 'samedi',   label: 'Samedi 16',   emoji: '🎵' },
-  { key: 'dimanche', label: 'Dimanche 17', emoji: '🎸' }
-]
+// Les labels sont chargés dynamiquement depuis l'API festival (voir loadFestivalJours)
+const festivalJours = ref([
+  {
+    key: 'vendredi',
+    label: 'Vendredi 28 Août',
+    emoji: '🎪',
+    slots: ['15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00']
+  },
+  {
+    key: 'samedi',
+    label: 'Samedi 29 Août',
+    emoji: '🎵',
+    slots: ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00','01:00','02:00']
+  },
+  {
+    key: 'dimanche',
+    label: 'Dimanche 30 Août',
+    emoji: '🎸',
+    slots: ['13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00']
+  }
+])
 
+// Charger les vraies dates du festival pour mettre à jour les labels
+const loadFestivalJours = async () => {
+  try {
+    const token = localStorage.getItem('authToken')
+    const resp = await fetch('/api/manifestations', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (!resp.ok) return
+    const list = await resp.json()
+    const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
+    if (!festival?.date_debut) return
+
+    const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+    const jourKeys = ['vendredi','samedi','dimanche']
+    const debut = new Date(festival.date_debut)
+    const fin = new Date(festival.date_fin)
+    const dates = []
+    for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) {
+      const jourKey = dayNames[d.getDay()].toLowerCase()
+      dates.push({ key: jourKey, dayNumber: d.getDate(), monthName: monthNames[d.getMonth()] })
+    }
+    // Mettre à jour les labels de festivalJours avec les vraies dates
+    festivalJours.value = festivalJours.value.map(jour => {
+      const found = dates.find(d => d.key === jour.key)
+      if (found) {
+        return { ...jour, label: `${jour.key.charAt(0).toUpperCase() + jour.key.slice(1)} ${found.dayNumber} ${found.monthName}` }
+      }
+      return jour
+    })
+  } catch (e) {
+    console.error('Erreur chargement dates festival pour créneaux:', e)
+  }
+}
+
+// Toutes les périodes (union des 3 jours)
 const creneauxPeriodes = [
-  { label: '🌅 Matin',     slots: ['09:00', '10:00', '11:00', '12:00'] },
-  { label: '☀️ Après-midi', slots: ['13:00', '14:00', '15:00', '16:00', '17:00'] },
-  { label: '🌙 Soir',      slots: ['18:00', '19:00', '20:00', '21:00'] }
+  { label: '☀️ Après-midi', slots: ['13:00','14:00','15:00','16:00','17:00'] },
+  { label: '🌙 Soir',       slots: ['18:00','19:00','20:00','21:00','22:00','23:00'] },
+  { label: '🌃 Nuit',       slots: ['00:00','01:00','02:00'] }
 ]
 
-// Calcule l'heure de fin (+ 1 heure)
+// Vérifie si un créneau est dans les horaires du festival pour ce jour
+const isCreneauValide = (jour, time) => {
+  const jourData = festivalJours.value.find(j => j.key === jour)
+  return jourData ? jourData.slots.includes(time) : false
+}
+
+// Calcule l'heure de fin (+ 1 heure, modulo 24)
 const getCreneauEndTime = (startTime) => {
   const [h, m] = startTime.split(':').map(Number)
-  return `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return `${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
 // Vérifie si un créneau (jour + heure) est sélectionné
@@ -1054,6 +1134,14 @@ const countCreneauxJour = (service, jour) => {
   return (service.champs_specifiques?.creneaux || []).filter(c => c.jour === jour).length
 }
 
+// Convertit une heure "HH:MM" en minutes pour le tri (00:00-04:59 = après minuit)
+const timeToSortMinutes = (timeStr) => {
+  if (!timeStr) return 0
+  const [h, m] = timeStr.split(':').map(Number)
+  const adjustedH = h < 5 ? h + 24 : h
+  return adjustedH * 60 + (m || 0)
+}
+
 // Active / désactive un créneau (toggle) avec la dimension jour
 const toggleCreneau = (service, jour, time) => {
   if (!service.champs_specifiques) service.champs_specifiques = {}
@@ -1070,11 +1158,12 @@ const toggleCreneau = (service, jour, time) => {
       heure_fin: getCreneauEndTime(time),
       nombre_places: service._creneaux_places_default || 10
     })
-    // Trier par jour puis par heure
-    const jourOrder = festivalJours.map(j => j.key)
+    // Trier par jour puis par heure (gère les heures après minuit)
+    const jourOrder = festivalJours.value.map(j => j.key)
     service.champs_specifiques.creneaux.sort((a, b) => {
       const di = jourOrder.indexOf(a.jour) - jourOrder.indexOf(b.jour)
-      return di !== 0 ? di : a.heure_debut.localeCompare(b.heure_debut)
+      if (di !== 0) return di
+      return timeToSortMinutes(a.heure_debut) - timeToSortMinutes(b.heure_debut)
     })
   }
   updateServiceField()
@@ -1096,17 +1185,18 @@ const togglePeriode = (service, jour, slots) => {
   }
 }
 
-// Sélectionner / désélectionner tous les créneaux d'un jour entier
+// Sélectionner / désélectionner tous les créneaux valides d'un jour entier
 const toggleJour = (service, jour) => {
-  const allSlots = creneauxPeriodes.flatMap(p => p.slots)
-  const allSelected = allSlots.every(t => isCreneauSelected(service, jour, t))
+  const jourData = festivalJours.value.find(j => j.key === jour)
+  const validSlots = jourData ? jourData.slots : []
+  const allSelected = validSlots.length > 0 && validSlots.every(t => isCreneauSelected(service, jour, t))
   if (allSelected) {
     if (!service.champs_specifiques) service.champs_specifiques = {}
     if (!Array.isArray(service.champs_specifiques.creneaux)) service.champs_specifiques.creneaux = []
     service.champs_specifiques.creneaux = service.champs_specifiques.creneaux.filter(c => c.jour !== jour)
     updateServiceField()
   } else {
-    allSlots.forEach(t => { if (!isCreneauSelected(service, jour, t)) toggleCreneau(service, jour, t) })
+    validSlots.forEach(t => { if (!isCreneauSelected(service, jour, t)) toggleCreneau(service, jour, t) })
   }
 }
 // ===== Fin grille créneaux =====
@@ -1123,6 +1213,7 @@ onMounted(() => {
   loadStatsNotes()
   loadReservations()
   loadTypesService()
+  loadFestivalJours()  // Charger les vraies dates du festival pour les labels de créneaux
 
   window.addEventListener('emplacements-updated', loadPrestataireInfo)
   window.addEventListener('demandes-updated', loadPrestataireInfo)
@@ -1326,6 +1417,16 @@ watch(editingLang, () => {
                   </select>
                 </div>
 
+                <!-- Toggle réservable -->
+                <div class="service-enabled-toggle">
+                  <label class="toggle-label">
+                    <input type="checkbox" :checked="s.enabled" @change="toggleServiceEnabled(s)" />
+                    <span :class="{ active: s.enabled }">
+                      {{ s.enabled ? '✅ Réservable par les visiteurs' : '❌ Non réservable (masqué)' }}
+                    </span>
+                  </label>
+                </div>
+
                 <textarea
                   class="textarea" 
                   :value="s.description[editingLang] || ''" 
@@ -1393,7 +1494,7 @@ watch(editingLang, () => {
                           class="btn-jour-toggle"
                           @click="toggleJour(s, jour.key)"
                         >
-                          {{ creneauxPeriodes.flatMap(p => p.slots).every(t => isCreneauSelected(s, jour.key, t)) ? 'Tout ôter' : 'Tout' }}
+                          {{ jour.slots.every(t => isCreneauSelected(s, jour.key, t)) ? 'Tout ôter' : 'Tout' }}
                         </button>
                       </div>
                     </div>
@@ -1414,9 +1515,10 @@ watch(editingLang, () => {
                             :key="jour.key"
                             type="button"
                             class="btn-periode-toggle"
-                            @click="togglePeriode(s, jour.key, periode.slots)"
+                            :disabled="!periode.slots.some(t => isCreneauValide(jour.key, t))"
+                            @click="togglePeriode(s, jour.key, periode.slots.filter(t => isCreneauValide(jour.key, t)))"
                           >
-                            {{ periode.slots.every(t => isCreneauSelected(s, jour.key, t)) ? '✕' : '✓' }}
+                            {{ periode.slots.filter(t => isCreneauValide(jour.key, t)).every(t => isCreneauSelected(s, jour.key, t)) && periode.slots.some(t => isCreneauValide(jour.key, t)) ? '✕' : '✓' }}
                           </button>
                         </div>
                       </div>
@@ -1436,11 +1538,18 @@ watch(editingLang, () => {
                           :key="jour.key"
                           type="button"
                           class="creneaux-grid-cell"
-                          :class="{ selected: isCreneauSelected(s, jour.key, time) }"
-                          @click="toggleCreneau(s, jour.key, time)"
+                          :class="{
+                            selected: isCreneauSelected(s, jour.key, time),
+                            disabled: !isCreneauValide(jour.key, time)
+                          }"
+                          :disabled="!isCreneauValide(jour.key, time)"
+                          @click="isCreneauValide(jour.key, time) && toggleCreneau(s, jour.key, time)"
                         >
-                          <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-check">✓</span>
-                          <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-places">{{ getCreneauPlaces(s, jour.key, time) }} pl.</span>
+                          <template v-if="isCreneauValide(jour.key, time)">
+                            <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-check">✓</span>
+                            <span v-if="isCreneauSelected(s, jour.key, time)" class="cell-places">{{ getCreneauPlaces(s, jour.key, time) }} pl.</span>
+                          </template>
+                          <span v-else class="cell-na">—</span>
                         </button>
                       </div>
                     </div>
@@ -2245,6 +2354,14 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   gap: 12px;
 }
 
+.service-enabled-toggle {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 .type-label {
   font-weight: 600;
   color: #FCDC1E;
@@ -2640,6 +2757,21 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   background: rgba(100, 150, 255, 0.3);
   color: #fff;
   box-shadow: inset 0 0 0 2px rgba(100, 150, 255, 0.6);
+}
+
+.creneaux-grid-cell.disabled {
+  background: rgba(0,0,0,0.15);
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.creneaux-grid-cell.disabled:hover {
+  background: rgba(0,0,0,0.15);
+  color: rgba(255,255,255,0.2);
+}
+
+.cell-na {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.2);
 }
 
 .cell-check {

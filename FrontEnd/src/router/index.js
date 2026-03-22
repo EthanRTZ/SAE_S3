@@ -12,7 +12,6 @@ import PanierView from "@/views/PanierView.vue";
 import PaymentView from "@/views/PaymentView.vue";
 import MerchView from "@/views/MerchView.vue";
 import AvisView from "@/views/AvisView.vue";
-import BasketReservationView from "@/views/BasketReservationView.vue";
 
 const routes = [
     {
@@ -49,11 +48,6 @@ const routes = [
         path: '/reservation',
         name: 'reservation',
         component: ReservationView,
-    },
-    {
-        path: '/reservation-basket',
-        name: 'reservation-basket',
-        component: BasketReservationView,
     },
     {
         path: '/mes-reservations',

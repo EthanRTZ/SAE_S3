@@ -1,6 +1,86 @@
 const express = require('express');
 const ctrl = require('../controllers/servicesController');
+const { ReservationService, Service, Prestataire, TypeService } = require('../models');
+const simpleAuth = require('../middleware/simpleAuth');
 const router = express.Router();
+
+// ─── Réservations de services ──────────────────────────────────────────────
+
+// GET /api/services/reservations/me - Réservations de l'utilisateur connecté
+router.get('/reservations/me', simpleAuth, async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Non authentifié' });
+
+    const reservations = await ReservationService.findAll({
+      where: { id_utilisateur: userId },
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          include: [{ model: TypeService, as: 'typeService' }]
+        },
+        { model: Prestataire, as: 'prestataire' }
+      ],
+      order: [['date_reservation', 'DESC']]
+    });
+    res.json(reservations);
+  } catch (err) { next(err); }
+});
+
+// POST /api/services/reservations - Créer une réservation de service
+router.post('/reservations', simpleAuth, async (req, res, next) => {
+  try {
+    const {
+      id_utilisateur,
+      id_service,
+      id_prestataire,
+      quantite,
+      details,
+      prix_total,
+      transaction_id
+    } = req.body;
+
+    const userId = id_utilisateur || req.user?.id;
+    if (!userId) return res.status(400).json({ error: 'Utilisateur requis' });
+    if (!id_service) return res.status(400).json({ error: 'Service requis' });
+    if (!id_prestataire) return res.status(400).json({ error: 'Prestataire requis' });
+
+    const reservation = await ReservationService.create({
+      id_utilisateur: userId,
+      id_service,
+      id_prestataire,
+      quantite: Number(quantite) || 1,
+      details: details || {},
+      prix_total: prix_total ? Number(prix_total) : null,
+      transaction_id,
+      statut: 'réservé',
+      date_paiement: new Date()
+    });
+
+    res.status(201).json(reservation);
+  } catch (err) { next(err); }
+});
+
+// PUT /api/services/reservations/:id - Modifier une réservation de service
+router.put('/reservations/:id', simpleAuth, async (req, res, next) => {
+  try {
+    const resa = await ReservationService.findByPk(req.params.id);
+    if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
+    await resa.update(req.body);
+    res.json(resa);
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/services/reservations/:id - Supprimer une réservation de service
+router.delete('/reservations/:id', simpleAuth, async (req, res, next) => {
+  try {
+    const resa = await ReservationService.findByPk(req.params.id);
+    if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
+    await resa.destroy();
+    res.json({ message: 'Réservation supprimée' });
+  } catch (err) { next(err); }
+});
 
 /**
  * @openapi

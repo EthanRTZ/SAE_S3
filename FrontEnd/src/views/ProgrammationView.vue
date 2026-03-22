@@ -108,9 +108,9 @@ export default {
   computed: {
     days() {
       return [
-        { label: this.$t('programmation.days.friday'), date: '15/06', opening: '15:00', closing: '03:00' },
-        { label: this.$t('programmation.days.saturday'), date: '16/06', opening: '13:00', closing: '03:00' },
-        { label: this.$t('programmation.days.sunday'), date: '17/06', opening: '13:00', closing: '00:00' },
+        { label: this.$t('programmation.days.friday'), date: '28/08', opening: '15:00', closing: '03:00' },
+        { label: this.$t('programmation.days.saturday'), date: '29/08', opening: '13:00', closing: '03:00' },
+        { label: this.$t('programmation.days.sunday'), date: '30/08', opening: '13:00', closing: '00:00' },
       ]
     },
     currentSchedule() {

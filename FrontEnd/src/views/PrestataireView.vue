@@ -85,12 +85,6 @@
             </ul>
           </div>
 
-          <!-- Bouton de réservation pour le prestataire Terrain de basket -->
-          <div v-if="isBasketPrestataire(p)" class="reservation-cta" @click.stop.prevent>
-            <router-link to="/reservation-basket" class="btn-reserve">
-              🏀 {{ $t('prestataire.reserveSlot') }}
-            </router-link>
-          </div>
 
           <div class="contacts" @click.stop>
             <a v-if="p.site" :href="p.site" target="_blank" rel="noopener" class="link">{{ $t('prestataire.website') }}</a>
@@ -243,12 +237,6 @@ export default {
       }
     },
 
-    isBasketPrestataire(prestataire) {
-      const nom = prestataire.nom?.toLowerCase() || ''
-      return nom.includes('terrain de basket') ||
-             nom.includes('basket') ||
-             nom === 'terrain de basket'
-    },
   }
 }
 </script>
