@@ -30,8 +30,9 @@ const selectedUser = ref(null)
 const isCreatingUser = ref(false)
 const newUser = ref({
   email: '',
+  nom_utilisateur: '',
   password: '',
-  role: 'user',
+  role: 'public',
   prestataireNom: ''
 })
 
@@ -366,51 +367,88 @@ const selectPresentationSection = (sectionId) => {
 }
 
 
-const saveUser = async () => {
+const saveUser = async (userData) => {
   if (isCreatingUser.value) {
     // Créer un nouvel utilisateur
-    if (!newUser.value.email || !newUser.value.password) {
-      alert('Email et mot de passe sont obligatoires')
+    if (!userData.email || !userData.nom_utilisateur || !userData.password) {
+      alert('Email, nom d\'utilisateur et mot de passe sont obligatoires')
       return
     }
 
     // Vérifier si l'email existe déjà
-    if (users.value.some(u => u.email === newUser.value.email)) {
+    if (users.value.some(u => u.email === userData.email)) {
       alert('Cet email existe déjà')
       return
     }
 
-    users.value.push({ ...newUser.value })
+    // Vérifier si le nom d'utilisateur existe déjà
+    if (users.value.some(u => u.nom_utilisateur === userData.nom_utilisateur)) {
+      alert('Ce nom d\'utilisateur existe déjà')
+      return
+    }
+
     // Créer via l'API
     try {
       const token = localStorage.getItem('authToken')
-      await fetch('/api/auth/register', {
+      // Transformer les données pour le backend
+      const apiPayload = {
+        nom_utilisateur: userData.nom_utilisateur, // ✅ Utiliser le nom saisi par l'utilisateur
+        email: userData.email,
+        mot_de_passe: userData.password,
+        role: userData.role || 'public'
+      }
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(newUser.value)
+        body: JSON.stringify(apiPayload)
       })
-    } catch (e) { console.error('Erreur création utilisateur API:', e) }
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Erreur création utilisateur API:', errorData)
+        alert('Erreur lors de la création: ' + (errorData.error || 'Erreur inconnue'))
+        return
+      }
+    } catch (e) { console.error('Erreur création utilisateur API:', e); alert('Erreur réseau'); return }
+
+    // Rafraîchir la liste des utilisateurs
+    await reloadUsers()
     alert('Utilisateur créé avec succès!')
     changeSection('users')
   } else if (selectedUser.value) {
     // Modifier un utilisateur existant
-    const index = users.value.findIndex(u => u.email === selectedUser.value.email)
-    if (index !== -1) {
-      users.value[index] = { ...selectedUser.value }
-      // Mettre à jour via l'API
-      try {
-        const token = localStorage.getItem('authToken')
-        const userId = selectedUser.value.id_utilisateur || selectedUser.value.id
-        if (userId) {
-          await fetch(`/api/utilisateurs/${userId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-            body: JSON.stringify(selectedUser.value)
-          })
-        }
-      } catch (e) { console.error('Erreur modification utilisateur API:', e) }
-      alert('Utilisateur modifié avec succès!')
+    const userId = selectedUser.value.id_utilisateur || selectedUser.value.id
+    if (!userId) {
+      alert('Erreur: ID utilisateur non trouvé')
+      return
     }
+    // Mettre à jour via l'API
+    try {
+      const token = localStorage.getItem('authToken')
+      // Transformer les données pour le backend
+      const apiPayload = {
+        nom_utilisateur: userData.nom_utilisateur || userData.email.split('@')[0],
+        email: userData.email
+      }
+      if (userData.password && userData.password.trim()) {
+        apiPayload.mot_de_passe = userData.password
+      }
+      const response = await fetch(`/api/utilisateurs/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(apiPayload)
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Erreur modification utilisateur API:', errorData)
+        alert('Erreur lors de la modification: ' + (errorData.error || 'Erreur inconnue'))
+        return
+      }
+    } catch (e) { console.error('Erreur modification utilisateur API:', e); alert('Erreur réseau'); return }
+
+    // Rafraîchir la liste des utilisateurs
+    await reloadUsers()
+    alert('Utilisateur modifié avec succès!')
+    changeSection('users')
   }
 }
 
@@ -1187,8 +1225,9 @@ const startCreateUser = () => {
   isCreatingUser.value = true
   newUser.value = {
     email: '',
+    nom_utilisateur: '',
     password: '',
-    role: 'user',
+    role: 'public',
     prestataireNom: ''
   }
   currentSection.value = 'user-detail'

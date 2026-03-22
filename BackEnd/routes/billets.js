@@ -92,12 +92,17 @@ router.post('/reservations', simpleAuth, async (req, res, next) => {
       ]
     });
 
+    // Ajouter les infos de sélection (jour/option) pour l'email si le front les a envoyées
+    const reservationPayload = reservationComplete ? reservationComplete.toJSON() : reservation;
+    if (req.body.optionLabel) reservationPayload.optionLabel = req.body.optionLabel;
+    if (Array.isArray(req.body.selectedDays)) reservationPayload.selectedDays = req.body.selectedDays;
+
     if (reservationComplete?.utilisateur?.email) {
       try {
         await sendReservationConfirmation({
           to: reservationComplete.utilisateur.email,
           userName: reservationComplete.utilisateur.nom_utilisateur,
-          reservation: reservationComplete.toJSON(),
+          reservation: reservationPayload,
           billet: reservationComplete.billet.toJSON()
         });
         console.log(`Email de confirmation envoyé à ${reservationComplete.utilisateur.email}`);

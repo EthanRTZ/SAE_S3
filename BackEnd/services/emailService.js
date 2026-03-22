@@ -25,6 +25,33 @@ async function sendReservationConfirmation({ to, userName, reservation, billet }
       return { success: false, error: 'Destinataire manquant' };
     }
 
+    const formatDate = (value) => {
+      try {
+        return new Date(value).toLocaleDateString('fr-FR');
+      } catch (_) {
+        return value;
+      }
+    };
+
+    // Déterminer les jours sélectionnés à afficher dans l'email
+    const selectedDays = [];
+    if (reservation?.date_utilisation) {
+      selectedDays.push(formatDate(reservation.date_utilisation));
+    }
+    if (reservation?.optionLabel) {
+      selectedDays.push(reservation.optionLabel);
+    }
+    if (Array.isArray(reservation?.jours_selectionnes)) {
+      selectedDays.push(...reservation.jours_selectionnes.map(formatDate));
+    }
+    if (Array.isArray(reservation?.selectedDays)) {
+      selectedDays.push(...reservation.selectedDays.map(formatDate));
+    }
+
+    const selectedDaysHtml = selectedDays.length
+      ? `<div class="detail-row"><span class="detail-label">Jour(s) sélectionné(s) :</span> ${[...new Set(selectedDays)].join(', ')}</div>`
+      : '';
+
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -135,6 +162,8 @@ async function sendReservationConfirmation({ to, userName, reservation, billet }
                 <div class="detail-row">
                   <span class="detail-label">Billet :</span> ${billet.nom_billet || billet.label_fr || billet.label_en || ''}
                 </div>
+
+                ${selectedDaysHtml}
                 
                 <div class="detail-row">
                   <span class="detail-label">Quantité :</span> ${reservation.quantite}

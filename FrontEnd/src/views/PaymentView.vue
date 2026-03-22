@@ -259,7 +259,6 @@ import { useRouter } from 'vue-router'
 import { usePanierStore } from '@/stores/panier'
 import { useI18n } from 'vue-i18n'
 import { billetsService } from '@/services/billetsService'
-import { reservationServiceService } from '@/services/reservationServiceService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -530,41 +529,21 @@ const onSubmit = async () => {
 
       // Sauvegarder chaque article du panier comme réservation via l'API
       for (const item of panierStore.items) {
-        if (item.type === 'service') {
-          // Réservation de service
-          await reservationServiceService.createReservation({
-            id_utilisateur: authUser.value.id,
-            id_service: item.id_service,
-            id_prestataire: item.id_prestataire,
-            quantite: Number(item.quantity) || 1,
-            prix_total: Number(item.prix) || 0,
-            transaction_id: order.id,
-            details: {
-              ...item.details,
-              serviceType: item.serviceType,
-              label: item.label,
-              nom: item.nom,
-              prestataire: item.prestataire
-            }
-          })
-        } else {
-          // Réservation de billet
-          const billet = billetsByType.value[normalizeType(item.type)]
-          if (!billet) {
-            console.warn('Billet introuvable pour le type', item.type)
-            continue
-          }
-          const quantity = Number(item.quantity) || 1
-          const prixUnitaire = Number(billet.prix) || 0
-          await billetsService.createReservation({
-            id_utilisateur: authUser.value.id,
-            id_billet: billet.id_billet,
-            quantite: quantity,
-            prix_total: prixUnitaire * quantity,
-            transaction_id: order.id,
-            date_utilisation: item.date || null
-          })
+        const billet = billetsByType.value[normalizeType(item.type)]
+        if (!billet) {
+          console.warn('Billet introuvable pour le type', item.type)
+          continue
         }
+        const quantity = Number(item.quantity) || 1
+        const prixUnitaire = Number(billet.prix) || 0
+        await billetsService.createReservation({
+          id_utilisateur: authUser.value.id,
+          id_billet: billet.id_billet,
+          quantite: quantity,
+          prix_total: prixUnitaire * quantity,
+          transaction_id: order.id,
+          date_utilisation: item.date || null
+        })
       }
 
       panierStore.clearPanierAfterPayment()
