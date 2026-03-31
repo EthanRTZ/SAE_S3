@@ -49,5 +49,31 @@ function jwtAuthMiddleware(req, res, next) {
   }
 }
 
-module.exports = jwtAuthMiddleware;
+/**
+ * Middleware de vérification de rôle
+ *
+ * À utiliser APRÈS jwtAuthMiddleware (req.user doit être déjà renseigné).
+ * Accepte une liste de rôles autorisés.
+ *
+ * Exemple : requireRole('admin', 'organisateur')
+ */
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Non authentifié',
+        message: 'Authentification requise pour accéder à cette ressource.'
+      });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: 'Accès refusé',
+        message: 'Vous n\'avez pas les permissions nécessaires pour cette action.'
+      });
+    }
+    next();
+  };
+}
 
+module.exports = jwtAuthMiddleware;
+module.exports.requireRole = requireRole;

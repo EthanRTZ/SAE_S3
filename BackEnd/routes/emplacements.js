@@ -1,5 +1,6 @@
 const express = require('express');
 const ctrl = require('../controllers/emplacementsController');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 /**
@@ -156,7 +157,7 @@ router.get('/:id', ctrl.getEmplacementById);
  *       401:
  *         description: Non authentifié
  */
-router.post('/', ctrl.createEmplacement);
+router.post('/', requireRole('admin', 'organisateur'), ctrl.createEmplacement);
 
 /**
  * @openapi
@@ -214,7 +215,7 @@ router.post('/', ctrl.createEmplacement);
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', ctrl.updateEmplacement);
+router.put('/:id', requireRole('admin', 'organisateur'), ctrl.updateEmplacement);
 
 /**
  * @openapi
@@ -237,7 +238,7 @@ router.put('/:id', ctrl.updateEmplacement);
  *       404:
  *         description: Emplacement non trouvé
  */
-router.delete('/:id', ctrl.deleteEmplacement);
+router.delete('/:id', requireRole('admin', 'organisateur'), ctrl.deleteEmplacement);
 
 module.exports = router;
 

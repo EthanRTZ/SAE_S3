@@ -1,6 +1,8 @@
 const express = require('express');
 const ctrl = require('../controllers/prestatairesController');
 const { ReservationService, Service, Utilisateur, TypeService } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
+const simpleAuth = require('../middleware/simpleAuth');
 const router = express.Router();
 
 /**
@@ -102,7 +104,7 @@ router.get('/:id', ctrl.getPrestataireById);
  *       401:
  *         description: Non authentifié
  */
-router.post('/', ctrl.createPrestataire);
+router.post('/', requireRole('admin', 'organisateur', 'prestataire'), ctrl.createPrestataire);
 
 /**
  * @openapi
@@ -158,7 +160,7 @@ router.post('/', ctrl.createPrestataire);
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', ctrl.updatePrestataire);
+router.put('/:id', requireRole('admin', 'organisateur', 'prestataire'), ctrl.updatePrestataire);
 
 /**
  * @openapi
@@ -181,7 +183,7 @@ router.put('/:id', ctrl.updatePrestataire);
  *       404:
  *         description: Prestataire non trouvé
  */
-router.delete('/:id', ctrl.deletePrestataire);
+router.delete('/:id', requireRole('admin', 'organisateur'), ctrl.deletePrestataire);
 
 /**
  * @openapi
@@ -271,7 +273,7 @@ router.get('/:id/services', ctrl.getPrestataireServices);
  *       404:
  *         description: Prestataire non trouvé
  */
-router.put('/:id/services', ctrl.syncPrestataireServices);
+router.put('/:id/services', requireRole('admin', 'organisateur', 'prestataire'), ctrl.syncPrestataireServices);
 
 /**
  * @openapi
@@ -335,7 +337,7 @@ router.get('/:id/emplacements', ctrl.getPrestataireEmplacements);
  *       404:
  *         description: Prestataire ou emplacement non trouvé
  */
-router.post('/:id/emplacements', ctrl.assignEmplacementToPrestataire);
+router.post('/:id/emplacements', requireRole('admin', 'organisateur'), ctrl.assignEmplacementToPrestataire);
 
 /**
  * @openapi
@@ -366,7 +368,7 @@ router.post('/:id/emplacements', ctrl.assignEmplacementToPrestataire);
  *       404:
  *         description: Association non trouvée
  */
-router.delete('/:id/emplacements/:idEmplacement', ctrl.removeEmplacementFromPrestataire);
+router.delete('/:id/emplacements/:idEmplacement', requireRole('admin', 'organisateur'), ctrl.removeEmplacementFromPrestataire);
 
 /**
  * @openapi
@@ -385,7 +387,7 @@ router.delete('/:id/emplacements/:idEmplacement', ctrl.removeEmplacementFromPres
  *       200:
  *         description: Liste des réservations de services
  */
-router.get('/:id/reservations', async (req, res, next) => {
+router.get('/:id/reservations', simpleAuth, requireRole('admin', 'organisateur', 'prestataire'), async (req, res, next) => {
   try {
     const reservations = await ReservationService.findAll({
       where: { id_prestataire: req.params.id },

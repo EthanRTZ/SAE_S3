@@ -2,6 +2,7 @@ const express = require('express');
 const { Billet, ReservationBillet, Utilisateur } = require('../models');
 const sequelize = require('../config/database');
 const simpleAuth = require('../middleware/simpleAuth');
+const { requireRole } = require('../middleware/simpleAuth');
 const { sendReservationConfirmation } = require('../services/emailService');
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/reservations/me', simpleAuth, async (req, res, next) => {
 });
 
 // GET /api/billets/reservations/user/:userId - Réservations d'un utilisateur
-router.get('/reservations/user/:userId', async (req, res, next) => {
+router.get('/reservations/user/:userId', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const reservations = await ReservationBillet.findAll({
       where: { id_utilisateur: req.params.userId },
@@ -138,7 +139,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/billets
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const billet = await Billet.create(req.body);
     res.status(201).json(billet);
@@ -146,7 +147,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/billets/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const billet = await Billet.findByPk(req.params.id);
     if (!billet) return res.status(404).json({ error: 'Billet non trouvé' });
@@ -156,7 +157,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/billets/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const billet = await Billet.findByPk(req.params.id);
     if (!billet) return res.status(404).json({ error: 'Billet non trouvé' });
@@ -168,7 +169,7 @@ router.delete('/:id', async (req, res, next) => {
 // ─── Réservations ────────────────────────────────────────────────────────────
 
 // GET /api/billets/reservations/user/:userId - Réservations d'un utilisateur
-router.get('/reservations/user/:userId', async (req, res, next) => {
+router.get('/reservations/user/:userId', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const reservations = await ReservationBillet.findAll({
       where: { id_utilisateur: req.params.userId },
@@ -180,7 +181,7 @@ router.get('/reservations/user/:userId', async (req, res, next) => {
 });
 
 // POST /api/billets/reservations - Créer une réservation et décrémenter le stock
-router.post('/reservations', async (req, res, next) => {
+router.post('/reservations', simpleAuth, async (req, res, next) => {
   const t = await sequelize.transaction();
   try {
     const { id_utilisateur, id_billet, quantite, date_utilisation, prix_total, transaction_id } = req.body;
@@ -222,7 +223,7 @@ router.post('/reservations', async (req, res, next) => {
 });
 
 // PUT /api/billets/reservations/:id
-router.put('/reservations/:id', async (req, res, next) => {
+router.put('/reservations/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const resa = await ReservationBillet.findByPk(req.params.id);
     if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
@@ -232,7 +233,7 @@ router.put('/reservations/:id', async (req, res, next) => {
 });
 
 // PATCH /api/billets/reservations/:id/date - Modifier le jour d'une réservation
-router.patch('/reservations/:id/date', async (req, res, next) => {
+router.patch('/reservations/:id/date', simpleAuth, async (req, res, next) => {
   try {
     const resa = await ReservationBillet.findByPk(req.params.id, {
       include: [{ model: Billet, as: 'billet' }]

@@ -2,6 +2,7 @@ const express = require('express');
 const ctrl = require('../controllers/servicesController');
 const { ReservationService, Service, Prestataire, TypeService } = require('../models');
 const simpleAuth = require('../middleware/simpleAuth');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 // ─── Réservations de services ──────────────────────────────────────────────
@@ -63,7 +64,7 @@ router.post('/reservations', simpleAuth, async (req, res, next) => {
 });
 
 // PUT /api/services/reservations/:id - Modifier une réservation de service
-router.put('/reservations/:id', simpleAuth, async (req, res, next) => {
+router.put('/reservations/:id', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const resa = await ReservationService.findByPk(req.params.id);
     if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
@@ -73,7 +74,7 @@ router.put('/reservations/:id', simpleAuth, async (req, res, next) => {
 });
 
 // DELETE /api/services/reservations/:id - Supprimer une réservation de service
-router.delete('/reservations/:id', simpleAuth, async (req, res, next) => {
+router.delete('/reservations/:id', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const resa = await ReservationService.findByPk(req.params.id);
     if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
@@ -213,7 +214,7 @@ router.get('/:id', ctrl.getServiceById);
  *       401:
  *         description: Non authentifié
  */
-router.post('/', ctrl.createService);
+router.post('/', requireRole('admin', 'organisateur', 'prestataire'), ctrl.createService);
 
 /**
  * @openapi
@@ -271,7 +272,7 @@ router.post('/', ctrl.createService);
  *       404:
  *         description: Service non trouvé
  */
-router.put('/:id', ctrl.updateService);
+router.put('/:id', requireRole('admin', 'organisateur', 'prestataire'), ctrl.updateService);
 
 /**
  * @openapi
@@ -294,7 +295,7 @@ router.put('/:id', ctrl.updateService);
  *       404:
  *         description: Service non trouvé
  */
-router.delete('/:id', ctrl.deleteService);
+router.delete('/:id', requireRole('admin', 'organisateur', 'prestataire'), ctrl.deleteService);
 
 
 module.exports = router;

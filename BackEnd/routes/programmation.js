@@ -1,5 +1,6 @@
 const express = require('express');
 const { Programmation, Artiste, Scene } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 // GET /api/programmation - Toute la programmation avec artistes et scènes
@@ -65,7 +66,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/programmation
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const prog = await Programmation.create(req.body);
     res.status(201).json(prog);
@@ -73,7 +74,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/programmation/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const prog = await Programmation.findByPk(req.params.id);
     if (!prog) return res.status(404).json({ error: 'Programmation non trouvée' });
@@ -83,7 +84,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/programmation/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const prog = await Programmation.findByPk(req.params.id);
     if (!prog) return res.status(404).json({ error: 'Programmation non trouvée' });

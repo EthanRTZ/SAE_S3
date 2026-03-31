@@ -1,5 +1,6 @@
 const express = require('express');
 const { AvisFestival, Utilisateur } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 // GET /api/avis-festival - Tous les avis sur le festival
@@ -71,7 +72,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // DELETE /api/avis-festival/:id - Supprimer un avis
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const avis = await AvisFestival.findByPk(req.params.id);
     if (!avis) return res.status(404).json({ error: 'Avis non trouvé' });

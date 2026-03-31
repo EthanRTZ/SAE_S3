@@ -12,6 +12,7 @@ import PanierView from "@/views/PanierView.vue";
 import PaymentView from "@/views/PaymentView.vue";
 import MerchView from "@/views/MerchView.vue";
 import AvisView from "@/views/AvisView.vue";
+import { useAuthStore } from '@/stores/auth.js';
 
 const routes = [
     {
@@ -83,6 +84,7 @@ const routes = [
         path: '/admin',
         name: 'admin',
         component: AdminView,
+        meta: { requiresAdmin: true },
     },
     {
         path: '/avis',
@@ -109,6 +111,18 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAdmin) {
+    const auth = useAuthStore()
+    // Charger depuis le localStorage si pas encore fait
+    if (!auth.user) auth.loadFromStorage()
+    if (!auth.isAdmin) {
+      return next({ name: 'home' })
+    }
+  }
+  next()
 })
 
 export default router

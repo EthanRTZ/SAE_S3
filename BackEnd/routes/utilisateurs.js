@@ -1,5 +1,6 @@
 const express = require('express');
 const ctrl = require('../controllers/utilisateursController');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 /**
@@ -35,7 +36,7 @@ const router = express.Router();
  *       401:
  *         description: Non authentifié
  */
-router.get('/', ctrl.getAllUtilisateurs);
+router.get('/', requireRole('admin', 'organisateur'), ctrl.getAllUtilisateurs);
 
 /**
  * @openapi
@@ -66,7 +67,12 @@ router.get('/', ctrl.getAllUtilisateurs);
  *       401:
  *         description: Non authentifié
  */
-router.get('/:id', ctrl.getUtilisateurById);
+router.get('/:id', (req, res, next) => {
+  const isAdmin = ['admin', 'organisateur'].includes(req.user?.role);
+  const isSelf = req.user?.id === parseInt(req.params.id, 10);
+  if (!isAdmin && !isSelf) return res.status(403).json({ error: 'Accès refusé' });
+  next();
+}, ctrl.getUtilisateurById);
 
 /**
  * @openapi
@@ -109,7 +115,12 @@ router.get('/:id', ctrl.getUtilisateurById);
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', ctrl.updateUtilisateur);
+router.put('/:id', (req, res, next) => {
+  const isAdmin = ['admin', 'organisateur'].includes(req.user?.role);
+  const isSelf = req.user?.id === parseInt(req.params.id, 10);
+  if (!isAdmin && !isSelf) return res.status(403).json({ error: 'Accès refusé' });
+  next();
+}, ctrl.updateUtilisateur);
 
 /**
  * @openapi
@@ -136,7 +147,7 @@ router.put('/:id', ctrl.updateUtilisateur);
  *       401:
  *         description: Non authentifié
  */
-router.delete('/:id', ctrl.deleteUtilisateur);
+router.delete('/:id', requireRole('admin', 'organisateur'), ctrl.deleteUtilisateur);
 
 module.exports = router;
 

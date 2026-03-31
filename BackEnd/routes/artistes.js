@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/artistesController');
+const { requireRole } = require('../middleware/simpleAuth');
 
 /**
  * @openapi
@@ -99,7 +100,7 @@ router.get('/:id', ctrl.getArtisteById);
  *       401:
  *         description: Non authentifié
  */
-router.post('/', ctrl.createArtiste);
+router.post('/', requireRole('admin', 'organisateur'), ctrl.createArtiste);
 
 /**
  * @openapi
@@ -141,7 +142,7 @@ router.post('/', ctrl.createArtiste);
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', ctrl.updateArtiste);
+router.put('/:id', requireRole('admin', 'organisateur'), ctrl.updateArtiste);
 
 /**
  * @openapi
@@ -168,7 +169,7 @@ router.put('/:id', ctrl.updateArtiste);
  *       401:
  *         description: Non authentifié
  */
-router.delete('/:id', ctrl.deleteArtiste);
+router.delete('/:id', requireRole('admin', 'organisateur'), ctrl.deleteArtiste);
 
 module.exports = router;
 

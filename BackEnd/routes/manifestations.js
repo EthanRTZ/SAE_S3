@@ -1,5 +1,6 @@
 const express = require('express');
 const { Festival } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
 
 const router = express.Router();
 
@@ -127,7 +128,7 @@ router.get('/:id', async (req, res, next) => {
  *       401:
  *         description: Non authentifié
  */
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const created = await Festival.create(req.body);
     res.status(201).json(created);
@@ -167,7 +168,7 @@ router.post('/', async (req, res, next) => {
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const row = await Festival.findByPk(req.params.id);
     if (!row) return res.status(404).json({ error: 'Manifestation non trouvée' });
@@ -204,7 +205,7 @@ router.put('/:id', async (req, res, next) => {
  *       401:
  *         description: Non authentifié
  */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const row = await Festival.findByPk(req.params.id);
     if (!row) return res.status(404).json({ error: 'Manifestation non trouvée' });

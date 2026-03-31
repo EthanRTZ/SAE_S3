@@ -1,5 +1,6 @@
 const express = require('express');
 const { Zone, Equipement, Emplacement } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 // GET /api/zones - Toutes les zones
@@ -20,7 +21,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/zones
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const zone = await Zone.create(req.body);
     res.status(201).json(zone);
@@ -28,7 +29,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/zones/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const zone = await Zone.findByPk(req.params.id);
     if (!zone) return res.status(404).json({ error: 'Zone non trouvée' });
@@ -38,7 +39,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/zones/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const zone = await Zone.findByPk(req.params.id);
     if (!zone) return res.status(404).json({ error: 'Zone non trouvée' });

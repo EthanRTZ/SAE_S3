@@ -1,5 +1,6 @@
 const express = require('express');
 const { Avis, Utilisateur, Prestataire } = require('../models');
+const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
 // GET /api/avis - Tous les avis (avec filtre optionnel par prestataire)
@@ -91,7 +92,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/avis/:id - Modérer un avis
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const avis = await Avis.findByPk(req.params.id);
     if (!avis) return res.status(404).json({ error: 'Avis non trouvé' });
@@ -101,7 +102,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/avis/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
     const avis = await Avis.findByPk(req.params.id);
     if (!avis) return res.status(404).json({ error: 'Avis non trouvé' });

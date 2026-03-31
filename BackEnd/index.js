@@ -7,6 +7,7 @@ const setupSwagger = require('./swagger');
 
 // Import du middleware de sécurisation simple (S3)
 const simpleAuth = require('./middleware/simpleAuth');
+const { requireRole } = require('./middleware/simpleAuth');
 
 // Import des routes
 const routesAuth = require('./routes/auth');
@@ -93,9 +94,9 @@ app.use('/api/emplacements', (req, res, next) => {
 
 // Routes protégées (middleware de sécurisation appliqué sur tous les verbes)
 app.use('/api/utilisateurs', simpleAuth, routesUtilisateurs);
-app.use('/api/roles', simpleAuth, routesRoles);
+app.use('/api/roles', simpleAuth, requireRole('admin', 'organisateur'), routesRoles);
 app.use('/api/services', simpleAuth, routesServ);
-app.use('/api/stats', simpleAuth, routesStats);
+app.use('/api/stats', simpleAuth, requireRole('admin', 'organisateur'), routesStats);
 
 app.use((err, req, res, next) => {
   console.error(err);
