@@ -9,10 +9,11 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { SessionAuthentification } = require('../models');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'votre_secret_jwt_changez_moi';
 
-function jwtAuthMiddleware(req, res, next) {
+async function jwtAuthMiddleware(req, res, next) {
   // Récupérer le token depuis le header OU la query string
   const token = (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null)
                 || req.query.session;
@@ -28,6 +29,26 @@ function jwtAuthMiddleware(req, res, next) {
   // Vérifier et décoder le token JWT
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Vérifier que la session est toujours active en base de données
+    const session = await SessionAuthentification.findOne({
+      where: { token, actif: true }
+    });
+
+    if (!session) {
+      return res.status(401).json({
+        error: 'Session révoquée',
+        message: 'Votre session a été invalidée, veuillez vous reconnecter.'
+      });
+    }
+
+    if (session.date_expiration && new Date(session.date_expiration) < new Date()) {
+      return res.status(401).json({
+        error: 'Session expirée',
+        message: 'Votre session a expiré, veuillez vous reconnecter.'
+      });
+    }
+
     // Attacher les infos utilisateur à la requête
     req.user = {
       id: decoded.id,
