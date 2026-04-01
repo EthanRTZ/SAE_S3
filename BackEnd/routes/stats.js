@@ -91,10 +91,52 @@ router.get('/emplacements', ctrl.getEmplacementsStats);
  */
 router.get('/artistes', ctrl.getArtistesStats);
 
+/**
+ * @openapi
+ * /stats/reservations:
+ *   get:
+ *     tags:
+ *       - Stats
+ *     summary: Statistiques des réservations
+ *     description: Récupère les indicateurs liés aux réservations de billets et services
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistiques des réservations
+ */
 router.get('/reservations', ctrl.getReservationsStats);
 
+/**
+ * @openapi
+ * /stats/avis-festival:
+ *   get:
+ *     tags:
+ *       - Stats
+ *     summary: Statistiques des avis festival
+ *     description: Récupère les moyennes et répartitions des avis sur le festival
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistiques des avis festival
+ */
 router.get('/avis-festival', ctrl.getAvisFestivalStats);
 
+/**
+ * @openapi
+ * /stats/avis-prestataires:
+ *   get:
+ *     tags:
+ *       - Stats
+ *     summary: Statistiques des avis prestataires
+ *     description: Récupère les statistiques de notation des prestataires
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistiques des avis prestataires
+ */
 router.get('/avis-prestataires', ctrl.getAvisPrestatairesStats);
 
 module.exports = router;

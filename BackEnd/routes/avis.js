@@ -3,6 +3,27 @@ const { Avis, Utilisateur, Prestataire } = require('../models');
 const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
+/**
+ * @openapi
+ * /avis:
+ *   get:
+ *     tags:
+ *       - Avis
+ *     summary: Liste les avis
+ *     description: Liste les avis avec filtres optionnels id_prestataire et valide
+ *     parameters:
+ *       - in: query
+ *         name: id_prestataire
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: valide
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Liste des avis
+ */
 // GET /api/avis - Tous les avis (avec filtre optionnel par prestataire)
 router.get('/', async (req, res, next) => {
   try {
@@ -22,6 +43,25 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /avis/prestataire/{nomOuId}:
+ *   get:
+ *     tags:
+ *       - Avis
+ *     summary: Liste les avis d'un prestataire
+ *     parameters:
+ *       - in: path
+ *         name: nomOuId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Avis et statistiques du prestataire
+ *       404:
+ *         description: Prestataire non trouvé
+ */
 // GET /api/avis/prestataire/:nomOuId - Avis d'un prestataire par nom ou id
 router.get('/prestataire/:nomOuId', async (req, res, next) => {
   try {
@@ -62,6 +102,25 @@ router.get('/prestataire/:nomOuId', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /avis/{id}:
+ *   get:
+ *     tags:
+ *       - Avis
+ *     summary: Détail d'un avis
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Détail de l'avis
+ *       404:
+ *         description: Avis non trouvé
+ */
 // GET /api/avis/:id
 router.get('/:id', async (req, res, next) => {
   try {
@@ -76,6 +135,19 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /avis:
+ *   post:
+ *     tags:
+ *       - Avis
+ *     summary: Crée un avis
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Avis créé
+ */
 // POST /api/avis - Créer un avis
 router.post('/', async (req, res, next) => {
   try {
@@ -91,6 +163,27 @@ router.post('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /avis/{id}:
+ *   put:
+ *     tags:
+ *       - Avis
+ *     summary: Met à jour/modère un avis
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Avis mis à jour
+ *       404:
+ *         description: Avis non trouvé
+ */
 // PUT /api/avis/:id - Modérer un avis
 router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -101,6 +194,27 @@ router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) 
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /avis/{id}:
+ *   delete:
+ *     tags:
+ *       - Avis
+ *     summary: Supprime un avis
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Avis supprimé
+ *       404:
+ *         description: Avis non trouvé
+ */
 // DELETE /api/avis/:id
 router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {

@@ -1,6 +1,5 @@
 const express = require('express');
 const { Billet, ReservationBillet, Utilisateur } = require('../models');
-const sequelize = require('../config/database');
 const simpleAuth = require('../middleware/simpleAuth');
 const { requireRole } = require('../middleware/simpleAuth');
 const { sendReservationConfirmation } = require('../services/emailService');
@@ -8,6 +7,19 @@ const router = express.Router();
 
 // ─── Réservations ────────────────────────────────────────────────────────────
 
+/**
+ * @openapi
+ * /billets/reservations/me:
+ *   get:
+ *     tags:
+ *       - Billets
+ *     summary: Réservations de l'utilisateur connecté
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des réservations
+ */
 // GET /api/billets/reservations/me - Réservations de l'utilisateur connecté
 router.get('/reservations/me', simpleAuth, async (req, res, next) => {
   try {
@@ -23,6 +35,27 @@ router.get('/reservations/me', simpleAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/reservations/user/{userId}:
+ *   get:
+ *     tags:
+ *       - Billets
+ *     summary: Réservations d'un utilisateur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Liste des réservations utilisateur
+ *       403:
+ *         description: Accès interdit
+ */
 // GET /api/billets/reservations/user/:userId - Réservations d'un utilisateur
 router.get('/reservations/user/:userId', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -35,6 +68,19 @@ router.get('/reservations/user/:userId', simpleAuth, requireRole('admin', 'organ
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/reservations:
+ *   post:
+ *     tags:
+ *       - Billets
+ *     summary: Crée une réservation de billet
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Réservation créée
+ */
 // POST /api/billets/reservations - Créer une réservation
 router.post('/reservations', simpleAuth, async (req, res, next) => {
   try {
@@ -118,6 +164,17 @@ router.post('/reservations', simpleAuth, async (req, res, next) => {
 
 // ─── Billets/Forfaits ─────────────────────────────────────────────────────────
 
+/**
+ * @openapi
+ * /billets:
+ *   get:
+ *     tags:
+ *       - Billets
+ *     summary: Liste des billets actifs
+ *     responses:
+ *       200:
+ *         description: Liste des billets
+ */
 // GET /api/billets - Tous les billets/forfaits
 router.get('/', async (req, res, next) => {
   try {
@@ -129,6 +186,25 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/{id}:
+ *   get:
+ *     tags:
+ *       - Billets
+ *     summary: Détail d'un billet
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Détail du billet
+ *       404:
+ *         description: Billet non trouvé
+ */
 // GET /api/billets/:id
 router.get('/:id', async (req, res, next) => {
   try {
@@ -138,6 +214,19 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets:
+ *   post:
+ *     tags:
+ *       - Billets
+ *     summary: Crée un billet
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Billet créé
+ */
 // POST /api/billets
 router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -146,6 +235,27 @@ router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) =>
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/{id}:
+ *   put:
+ *     tags:
+ *       - Billets
+ *     summary: Met à jour un billet
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Billet mis à jour
+ *       404:
+ *         description: Billet non trouvé
+ */
 // PUT /api/billets/:id
 router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -156,6 +266,27 @@ router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) 
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/{id}:
+ *   delete:
+ *     tags:
+ *       - Billets
+ *     summary: Supprime un billet
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Billet supprimé
+ *       404:
+ *         description: Billet non trouvé
+ */
 // DELETE /api/billets/:id
 router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -166,62 +297,27 @@ router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, nex
   } catch (err) { next(err); }
 });
 
-// ─── Réservations ────────────────────────────────────────────────────────────
-
-// GET /api/billets/reservations/user/:userId - Réservations d'un utilisateur
-router.get('/reservations/user/:userId', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
-  try {
-    const reservations = await ReservationBillet.findAll({
-      where: { id_utilisateur: req.params.userId },
-      include: [{ model: Billet, as: 'billet' }],
-      order: [['date_reservation', 'DESC']]
-    });
-    res.json(reservations);
-  } catch (err) { next(err); }
-});
-
-// POST /api/billets/reservations - Créer une réservation et décrémenter le stock
-router.post('/reservations', simpleAuth, async (req, res, next) => {
-  const t = await sequelize.transaction();
-  try {
-    const { id_utilisateur, id_billet, quantite, date_utilisation, prix_total, transaction_id } = req.body;
-    if (!id_utilisateur || !id_billet || !quantite || !prix_total) {
-      await t.rollback();
-      return res.status(400).json({ error: 'Champs requis manquants' });
-    }
-
-    // Vérifier que le billet existe et a assez de stock
-    const billet = await Billet.findByPk(id_billet, { transaction: t, lock: t.LOCK.UPDATE });
-    if (!billet) {
-      await t.rollback();
-      return res.status(404).json({ error: 'Billet non trouvé' });
-    }
-    if (billet.stock_disponible < quantite) {
-      await t.rollback();
-      return res.status(400).json({ error: 'Stock insuffisant', stock_disponible: billet.stock_disponible });
-    }
-
-    // Créer la réservation
-    const reservation = await ReservationBillet.create({
-      id_utilisateur, id_billet, quantite,
-      date_utilisation, prix_total, transaction_id,
-      statut: 'réservé',
-      date_paiement: new Date()
-    }, { transaction: t });
-
-    // Décrémenter le stock disponible
-    await billet.update({
-      stock_disponible: billet.stock_disponible - quantite
-    }, { transaction: t });
-
-    await t.commit();
-    res.status(201).json(reservation);
-  } catch (err) {
-    await t.rollback();
-    next(err);
-  }
-});
-
+/**
+ * @openapi
+ * /billets/reservations/{id}:
+ *   put:
+ *     tags:
+ *       - Billets
+ *     summary: Met à jour une réservation
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Réservation mise à jour
+ *       404:
+ *         description: Réservation non trouvée
+ */
 // PUT /api/billets/reservations/:id
 router.put('/reservations/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -232,6 +328,27 @@ router.put('/reservations/:id', requireRole('admin', 'organisateur'), async (req
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/reservations/{id}/date:
+ *   patch:
+ *     tags:
+ *       - Billets
+ *     summary: Modifie la date d'utilisation d'une réservation
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Réservation mise à jour
+ *       404:
+ *         description: Réservation non trouvée
+ */
 // PATCH /api/billets/reservations/:id/date - Modifier le jour d'une réservation
 router.patch('/reservations/:id/date', simpleAuth, async (req, res, next) => {
   try {
