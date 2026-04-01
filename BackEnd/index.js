@@ -1,4 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({
+  path: path.resolve(__dirname, '.env'),
+  override: true
+});
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -95,7 +99,10 @@ app.use('/api/emplacements', (req, res, next) => {
 // Routes protégées (middleware de sécurisation appliqué sur tous les verbes)
 app.use('/api/utilisateurs', simpleAuth, routesUtilisateurs);
 app.use('/api/roles', simpleAuth, requireRole('admin', 'organisateur'), routesRoles);
-app.use('/api/services', simpleAuth, routesServ);
+app.use('/api/services', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return simpleAuth(req, res, next);
+}, routesServ);
 app.use('/api/stats', simpleAuth, requireRole('admin', 'organisateur'), routesStats);
 
 app.use((err, req, res, next) => {
