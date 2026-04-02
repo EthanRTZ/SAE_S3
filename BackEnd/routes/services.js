@@ -7,6 +7,30 @@ const router = express.Router();
 
 // ─── Réservations de services ──────────────────────────────────────────────
 
+/**
+ * @openapi
+ * /services/reservations/me:
+ *   get:
+ *     tags:
+ *       - Services
+ *     summary: Mes réservations de services
+ *     description: Retourne les réservations du user authentifié.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Réservations utilisateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       401:
+ *         description: Non authentifié
+ *       500:
+ *         description: Erreur serveur
+ */
 // GET /api/services/reservations/me - Réservations de l'utilisateur connecté
 router.get('/reservations/me', simpleAuth, async (req, res, next) => {
   try {
@@ -29,6 +53,50 @@ router.get('/reservations/me', simpleAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /services/reservations:
+ *   post:
+ *     tags:
+ *       - Services
+ *     summary: Créer une réservation de service
+ *     description: Crée une nouvelle réservation liée à un service.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id_service
+ *               - id_prestataire
+ *             properties:
+ *               id_utilisateur:
+ *                 type: integer
+ *               id_service:
+ *                 type: integer
+ *               id_prestataire:
+ *                 type: integer
+ *               quantite:
+ *                 type: integer
+ *               details:
+ *                 type: object
+ *               prix_total:
+ *                 type: number
+ *               transaction_id:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Réservation créée
+ *       400:
+ *         description: Données invalides
+ *       401:
+ *         description: Non authentifié
+ *       500:
+ *         description: Erreur serveur
+ */
 // POST /api/services/reservations - Créer une réservation de service
 router.post('/reservations', simpleAuth, async (req, res, next) => {
   try {
@@ -63,6 +131,37 @@ router.post('/reservations', simpleAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /services/reservations/{id}:
+ *   put:
+ *     tags:
+ *       - Services
+ *     summary: Modifier une réservation de service
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Réservation modifiée
+ *       404:
+ *         description: Réservation non trouvée
+ *       403:
+ *         description: Accès refusé (admin/organisateur requis)
+ *       500:
+ *         description: Erreur serveur
+ */
 // PUT /api/services/reservations/:id - Modifier une réservation de service
 router.put('/reservations/:id', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -73,6 +172,31 @@ router.put('/reservations/:id', simpleAuth, requireRole('admin', 'organisateur')
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /services/reservations/{id}:
+ *   delete:
+ *     tags:
+ *       - Services
+ *     summary: Supprimer une réservation de service
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Réservation supprimée
+ *       404:
+ *         description: Réservation non trouvée
+ *       403:
+ *         description: Accès refusé (admin/organisateur requis)
+ *       500:
+ *         description: Erreur serveur
+ */
 // DELETE /api/services/reservations/:id - Supprimer une réservation de service
 router.delete('/reservations/:id', simpleAuth, requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {

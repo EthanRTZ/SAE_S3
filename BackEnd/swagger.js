@@ -64,6 +64,9 @@ const options = {
       { name: 'Rôles', description: 'Gestion des rôles' },
       { name: 'Stats', description: 'Statistiques' },
       { name: 'Manifestations', description: 'Gestion des manifestations' },
+      { name: 'Programmation', description: 'Gestion de la programmation du festival' },
+      { name: 'Scènes', description: 'Gestion des scènes' },
+      { name: 'Avis Festival', description: 'Gestion des avis sur le festival' },
     ],
   },
   apis: ['./routes/*.js'], // Chemin vers les fichiers contenant les annotations
