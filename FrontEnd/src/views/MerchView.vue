@@ -1,8 +1,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { usePanierStore } from '@/stores/panier'
+import ServicesByTypeSection from '@/components/services/ServicesByTypeSection.vue'
 
 const { t, locale } = useI18n()
+const route = useRoute()
+const panier = usePanierStore()
+
+/** Id service à ouvrir en modal selon ?service=&type= (lien depuis fiche prestataire) */
+const merchOpenByType = computed(() => {
+  const typ = String(route.query.type || '')
+  const sid = route.query.service
+  if (sid == null || sid === '') {
+    return { reservation: null, commande: null, location: null }
+  }
+  return {
+    reservation: typ === 'reservation' ? sid : null,
+    commande: typ === 'commande' ? sid : null,
+    location: typ === 'location' ? sid : null
+  }
+})
 
 const fallbackProducts = [
   {
@@ -84,10 +103,10 @@ const stockText = (stock) => {
   return t('merch.inStock')
 }
 
-const stockClass = (stock) => {
-  if (stock === 0) return 'stock stock-out'
-  if (stock <= 5) return 'stock stock-low'
-  return 'stock stock-ok'
+const stockLevelClass = (stock) => {
+  if (stock === 0) return 'stock-out'
+  if (stock <= 5) return 'stock-low'
+  return 'stock-ok'
 }
 
 const mediaStyle = (product) => {
@@ -131,6 +150,9 @@ const fetchProducts = async () => {
         const merchServices = merchPrestataires.flatMap(p =>
           (p.services || []).map((s, idx) => ({
             id: `merch-${s.id_service || idx}`,
+            id_service: s.id_service ?? null,
+            id_prestataire: p.id_prestataire ?? null,
+            prestataireNom: p.nom || '',
             name: s.nom_service_fr || s.nom || s.nom_service_en || 'Produit',
             price: parseFloat(s.prix_estime) || 0,
             sizes: s.champs_specifiques?.tailles || ['Taille unique'],
@@ -155,6 +177,52 @@ const fetchProducts = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+/** Taille sélectionnée par produit (clé = product.id) */
+const selectedMerchSize = ref({})
+
+const sizesFor = (product) => {
+  const s = product.sizes
+  return Array.isArray(s) && s.length ? s : ['Taille unique']
+}
+
+const selectedSize = (product) => {
+  const key = product.id
+  const list = sizesFor(product)
+  const pick = selectedMerchSize.value[key]
+  if (pick && list.includes(pick)) return pick
+  return list[0]
+}
+
+const setMerchSize = (product, value) => {
+  selectedMerchSize.value = { ...selectedMerchSize.value, [product.id]: value }
+}
+
+const addMerchToCart = (product) => {
+  if (product.stock === 0) return
+  const taille = selectedSize(product)
+  const unit = parseFloat(product.price) || 0
+  const presta = product.prestataireNom || 'Boutique officielle'
+
+  panier.addItem({
+    type: 'merch',
+    nom: product.name,
+    label: `${product.name} — ${taille}`,
+    displayLabel: product.name,
+    optionLabel: taille ? `📏 ${taille}` : undefined,
+    prestataire: presta,
+    prix: unit,
+    quantity: 1,
+    details: {
+      taille,
+      productId: String(product.id),
+      id_service: product.id_service ?? null,
+      id_prestataire: product.id_prestataire ?? null
+    }
+  })
+
+  alert(t('merch.addedToCart'))
 }
 
 onMounted(fetchProducts)
@@ -200,6 +268,17 @@ onMounted(fetchProducts)
             <header class="card-header">
               <div>
                 <h3>{{ product.name }}</h3>
+                <div v-if="sizesFor(product).length > 1" class="merch-size-row">
+                  <label class="merch-size-label" :for="`size-${product.id}`">{{ t('merch.size') }}</label>
+                  <select
+                    :id="`size-${product.id}`"
+                    class="merch-size-select"
+                    :value="selectedSize(product)"
+                    @change="setMerchSize(product, $event.target.value)"
+                  >
+                    <option v-for="sz in sizesFor(product)" :key="sz" :value="sz">{{ sz }}</option>
+                  </select>
+                </div>
               </div>
               <div class="price-block">
                 <small>{{ t('merch.from') }}</small>
@@ -208,17 +287,43 @@ onMounted(fetchProducts)
             </header>
 
             <footer class="card-footer">
-              <span :class="stockClass(product.stock)">{{ stockText(product.stock) }}</span>
+              <span class="stock" :class="stockLevelClass(product.stock)">{{ stockText(product.stock) }}</span>
               <button
                 type="button"
                 class="cta"
                 :disabled="product.stock === 0"
+                @click="addMerchToCart(product)"
               >
                 {{ product.stock === 0 ? t('merch.ctaDisabled') : t('merch.cta') }}
               </button>
             </footer>
           </div>
         </article>
+      </div>
+    </section>
+
+    <section id="boutique-services-externes" class="external-services">
+      <div class="external-header">
+        <h2>{{ t('merch.externalServicesTitle') }}</h2>
+        <p>{{ t('merch.externalServicesDesc') }}</p>
+      </div>
+
+      <div class="embedded-services-stack">
+        <ServicesByTypeSection
+          type="reservation"
+          embedded
+          :open-service-id="merchOpenByType.reservation"
+        />
+        <ServicesByTypeSection
+          type="commande"
+          embedded
+          :open-service-id="merchOpenByType.commande"
+        />
+        <ServicesByTypeSection
+          type="location"
+          embedded
+          :open-service-id="merchOpenByType.location"
+        />
       </div>
     </section>
   </div>
@@ -349,6 +454,32 @@ onMounted(fetchProducts)
   letter-spacing: -0.2px;
 }
 
+.merch-size-row {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.merch-size-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c8d1ff;
+}
+
+.merch-size-select {
+  width: 100%;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(252, 220, 30, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f6f7ff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .price-block {
   min-width: 110px;
   text-align: right;
@@ -375,18 +506,6 @@ onMounted(fetchProducts)
 
 .stock {
   font-weight: 800;
-}
-
-.stock-ok {
-  color: #86efac;
-}
-
-.stock-low {
-  color: #fbbf24;
-}
-
-.stock-out {
-  color: #f87171;
 }
 
 .cta {
@@ -488,6 +607,30 @@ onMounted(fetchProducts)
   color: #cbd5ff;
   padding: 40px 0;
   font-weight: 700;
+}
+
+.external-services {
+  max-width: 1180px;
+  margin: 28px auto 0;
+  padding: 0 6px;
+}
+
+.external-header h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  color: #fcdc1e;
+}
+
+.external-header p {
+  margin-top: 8px;
+  color: #d5dcff;
+}
+
+.embedded-services-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 18px;
 }
 
 @media (max-width: 640px) {

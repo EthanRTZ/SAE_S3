@@ -51,6 +51,11 @@
                     <span v-if="item.details.caution"> • 💳 Caution {{ item.details.caution }}€</span>
                   </span>
                 </p>
+                <p v-else-if="item.type === 'merch'" class="item-merch-info">
+                  <span v-if="item.prestataire">🏪 {{ item.prestataire }}</span>
+                  <span v-if="item.optionLabel"> • {{ item.optionLabel }}</span>
+                  <span v-if="item.prix != null"> • {{ formatMerchPrice(item.prix) }}</span>
+                </p>
                 <p v-else class="item-quantity">{{ $t('panier.quantity') }} {{ item.quantity }}</p>
               </div>
               <button
@@ -134,9 +139,17 @@ const formatItemTitle = (item) => {
       return t('panier.basket')
     case 'service':
       return item.nom || item.label || t('panier.service')
+    case 'merch':
+      return item.nom || item.displayLabel || item.label || t('panier.merch')
     default:
       return t('panier.item')
   }
+}
+
+const formatMerchPrice = (val) => {
+  const n = Number(val)
+  if (Number.isNaN(n)) return ''
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
 }
 
 const removeItem = (itemId) => {

@@ -193,7 +193,8 @@
     "camping": "Emplacement de camping",
     "basket": "🏀 Terrain de Basket",
     "item": "Article",
-    "service": "Service"
+    "service": "Service",
+    "merch": "Boutique / merch"
   },
   "login": {
     "title": "Connexion",
@@ -537,6 +538,10 @@
     "from": "À partir de",
     "ctaDisabled": "Indisponible",
     "cta": "Ajouter",
-    "empty": "Aucun article pour le moment."
+    "empty": "Aucun article pour le moment.",
+    "size": "Taille",
+    "addedToCart": "Article ajouté au panier.",
+    "externalServicesTitle": "Services externes",
+    "externalServicesDesc": "Réservations, commandes et locations des prestataires : tout est disponible ici, avec le même parcours que sur les pages dédiées (panier, créneaux, etc.)."
   }
 }

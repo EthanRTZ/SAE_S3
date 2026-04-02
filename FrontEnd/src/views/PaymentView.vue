@@ -140,9 +140,9 @@
                   value="card"
                   v-model="paymentMethod"
                 />
-                <div class="method-content">
+                <span class="method-content">
                   <span class="method-name">{{ $t('payment.creditCard') }}</span>
-                </div>
+                </span>
               </label>
 
               <label class="payment-method" :class="{ active: paymentMethod === 'paypal' }">
@@ -152,9 +152,9 @@
                   value="paypal"
                   v-model="paymentMethod"
                 />
-                <div class="method-content">
+                <span class="method-content">
                   <span class="method-name">{{ $t('payment.paypal') }}</span>
-                </div>
+                </span>
               </label>
             </div>
 
@@ -338,6 +338,8 @@ const formatItemTitle = (item) => {
       return t('panier.basket')
     case 'service':
       return item.nom || item.label || t('panier.service')
+    case 'merch':
+      return item.nom || item.displayLabel || item.label || t('panier.merch')
     default:
       return t('panier.item')
   }
@@ -797,10 +799,6 @@ h1 {
   align-items: center;
   gap: 10px;
   width: 100%;
-}
-
-.method-icon {
-  font-size: 1.5rem;
 }
 
 .method-name {
