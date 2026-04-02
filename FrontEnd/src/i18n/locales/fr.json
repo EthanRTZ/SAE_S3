@@ -215,6 +215,7 @@
   "register": {
     "title": "Créer un compte",
     "subtitle": "Accédez à la billetterie en quelques secondes",
+    "username": "Nom d'utilisateur",
     "email": "Email",
     "password": "Mot de passe",
     "confirmPassword": "Confirmation du mot de passe",
@@ -232,6 +233,7 @@
     "passwordRules": "Le mot de passe doit contenir 6 caractères et un chiffre.",
     "passwordMismatch": "Les mots de passe ne correspondent pas.",
     "emailExists": "Un compte existe déjà avec cet email.",
+    "usernameExists": "Ce nom d'utilisateur est déjà pris.",
     "success": "Compte créé avec succès ! Redirection...",
     "createError": "Impossible de créer le compte pour le moment."
   },

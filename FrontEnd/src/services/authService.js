@@ -21,11 +21,11 @@ export async function login(email, motDePasse) {
 
 /**
  * Inscription d'un nouvel utilisateur.
- * @param {{ email: string, password: string, nom?: string }} payload
+ * @param {{ username: string, email: string, password: string }} payload
  */
-export async function register({ email, password, nom }) {
+export async function register({ username, email, password }) {
   const data = await api.post('/auth/register', {
-    nom_utilisateur: nom || email.split('@')[0],
+    nom_utilisateur: username,
     email,
     mot_de_passe: password,
   })

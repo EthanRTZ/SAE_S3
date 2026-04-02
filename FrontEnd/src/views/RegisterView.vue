@@ -5,6 +5,17 @@
       <p class="subtitle">{{ $t('register.subtitle') }}</p>
       <form @submit.prevent="onSubmit">
         <div class="input-group">
+          <label for="username">{{ $t('register.username') }}</label>
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="4" stroke="#FCDC1E" stroke-width="1.6"/>
+              <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#FCDC1E" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input id="username" type="text" v-model.trim="username" required placeholder="Nom d'utilisateur" />
+        </div>
+
+        <div class="input-group">
           <label for="email">{{ $t('register.email') }}</label>
           <span class="input-icon" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -112,6 +123,7 @@ import { useI18n } from 'vue-i18n'
 import { register } from '@/services/authService.js'
 
 const { t } = useI18n()
+const username = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -128,7 +140,7 @@ const onSubmit = async () => {
   error.value = ''
   success.value = ''
 
-  if (!email.value || !password.value || !confirmPassword.value) {
+  if (!username.value || !email.value || !password.value || !confirmPassword.value) {
     error.value = t('register.fillFields')
     return
   }
@@ -152,6 +164,7 @@ const onSubmit = async () => {
   try {
     // Inscription via l'API backend (connecte automatiquement)
     await register({
+      username: username.value,
       email: email.value,
       password: password.value,
     })
@@ -159,7 +172,14 @@ const onSubmit = async () => {
     success.value = t('register.success')
     setTimeout(() => router.push('/'), 500)
   } catch (e) {
-    error.value = e.message || t('register.createError')
+    // Gestion des erreurs spécifiques
+    if (e.message && e.message.includes('Username already exists')) {
+      error.value = t('register.usernameExists')
+    } else if (e.message && e.message.includes('Email already exists')) {
+      error.value = t('register.emailExists')
+    } else {
+      error.value = e.message || t('register.createError')
+    }
   } finally {
     loading.value = false
   }

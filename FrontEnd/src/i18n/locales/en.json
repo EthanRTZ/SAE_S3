@@ -215,6 +215,7 @@
   "register": {
     "title": "Create account",
     "subtitle": "Access booking in seconds",
+    "username": "Username",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -232,6 +233,7 @@
     "passwordRules": "Password must contain 6 characters and a number.",
     "passwordMismatch": "Passwords do not match.",
     "emailExists": "An account already exists with this email.",
+    "usernameExists": "This username is already taken.",
     "success": "Account created successfully! Redirecting...",
     "createError": "Unable to create account at this time."
   },

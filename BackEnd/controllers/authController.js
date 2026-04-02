@@ -25,6 +25,13 @@ exports.register = async (req, res) => {
             return res.status(409).json({ error: 'Email already exists' });
         }
 
+        // Vérifier si le nom d'utilisateur existe déjà
+        const usernameExists = await Utilisateur.findOne({ where: { nom_utilisateur } });
+
+        if (usernameExists) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+
         // Récupérer l'ID du rôle (par défaut: public)
         const roleName = role || 'public';
         const roleRecord = await Role.findOne({ where: { nom_rôle: roleName } });
