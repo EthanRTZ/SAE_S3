@@ -539,6 +539,10 @@
     "from": "À partir de",
     "ctaDisabled": "Indisponible",
     "cta": "Ajouter",
-    "empty": "Aucun article pour le moment."
+    "empty": "Aucun article pour le moment.",
+    "size": "Taille",
+    "addedToCart": "Article ajouté au panier !",
+    "externalServicesTitle": "Services & Réservations",
+    "externalServicesDesc": "Réservez des activités, commandez ou louez du matériel directement depuis la boutique."
   }
 }

@@ -539,6 +539,10 @@
     "from": "From",
     "ctaDisabled": "Unavailable",
     "cta": "Add",
-    "empty": "No items available right now."
+    "empty": "No items available right now.",
+    "size": "Size",
+    "addedToCart": "Item added to cart!",
+    "externalServicesTitle": "Services & Bookings",
+    "externalServicesDesc": "Book activities, order or rent equipment directly from the shop."
   }
 }

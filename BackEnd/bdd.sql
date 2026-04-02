@@ -903,15 +903,141 @@ INSERT INTO prestataire_emplacement (id_prestataire, id_emplacement, date_demand
 ON CONFLICT (id_prestataire, id_emplacement) DO NOTHING;
 
 -- ============================================
--- AVIS (basés sur avis.json - exemples pour quelques prestataires)
+-- AVIS (avis des festivaliers sur tous les prestataires)
 -- ============================================
 INSERT INTO avis (id_utilisateur, id_prestataire, note, commentaire, date_avis) VALUES
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 5, 'Super tacos, rapide et parfait entre deux concerts !', '2025-01-15 18:30:00'),
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 4, 'Très bon, juste un peu d''attente mais ça valait le coup.', '2025-01-15 20:10:00'),
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 5, 'Les tacos sont délicieux et les portions généreuses !', '2025-01-16 12:45:00'),
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 3, 'Correct, mais j''aurais aimé plus d''options végétariennes.', '2025-01-16 19:20:00'),
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 4, 'Bonne couverture réseau, j''ai pu streamer tous les concerts.', '2025-01-15 17:05:00'),
-                                                                                    ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 5, 'Wi-Fi gratuit au top, ça change la vie sur le site du festival.', '2025-01-16 15:22:00');
+  -- OTacos (id_prestataire = 1)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 5, 'Super tacos, rapide et parfait entre deux concerts !', '2025-08-28 18:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 4, 'Très bon, juste un peu d''attente mais ça valait le coup.', '2025-08-28 20:10:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 5, 'Les tacos sont délicieux et les portions généreuses !', '2025-08-29 12:45:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'), 3, 'Correct, mais j''aurais aimé plus d''options végétariennes.', '2025-08-29 19:20:00'),
+
+  -- Free (id_prestataire = 2)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 4, 'Bonne couverture réseau, j''ai pu streamer tous les concerts.', '2025-08-28 17:05:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 5, 'Wi-Fi gratuit au top, ça change la vie sur le site du festival.', '2025-08-29 15:22:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Free'), 4, 'Réseau stable même en plein concert, bravo !', '2025-08-29 22:00:00'),
+
+  -- Allianz (id_prestataire = 3)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz'), 4, 'Stand de prévention intéressant, les conseils sur la sécurité routière sont utiles.', '2025-08-28 16:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz'), 5, 'Très bonne initiative de sensibilisation, l''équipe était sympa et pédagogue.', '2025-08-29 14:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'heetch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Allianz'), 3, 'Bien mais le stand était un peu perdu dans le festival.', '2025-08-30 11:00:00'),
+
+  -- Poliakov (id_prestataire = 4)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'), 5, 'Les cocktails étaient incroyables, ambiance parfaite au bar !', '2025-08-28 22:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'), 4, 'Super bar avec des cocktails originaux. Un peu cher mais ça vaut le coup.', '2025-08-29 23:15:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bagels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'), 5, 'Le bar le plus populaire du festival, et pour cause !', '2025-08-30 00:45:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'lipton@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'), 3, 'Cocktails bons mais file d''attente trop longue le samedi soir.', '2025-08-30 01:20:00'),
+
+  -- Jack Daniel''s (id_prestataire = 5)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s'), 5, 'La dégustation whisky était top, l''espace est super bien aménagé.', '2025-08-28 21:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s'), 4, 'Ambiance chaleureuse et cocktails bien dosés. Un vrai plus pour le festival.', '2025-08-29 20:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pizza@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s'), 5, 'Jack & Coca parfait après une journée de festival !', '2025-08-30 19:00:00'),
+
+  -- Red Bull (id_prestataire = 6)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'), 5, 'Espace Red Bull au top, les animations étaient géniales !', '2025-08-28 19:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'), 4, 'Boissons rafraîchissantes et stand bien décoré. Parfait pour recharger les batteries.', '2025-08-29 16:45:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'basket@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'), 5, 'Coup de boost indispensable pendant le festival, merci Red Bull !', '2025-08-29 23:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'coiffure@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'), 4, 'Bonne énergie au stand, service rapide et pas trop cher.', '2025-08-30 15:00:00'),
+
+  -- Heetch (id_prestataire = 7)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Heetch'), 5, 'Super service de navettes ! Sécurisant pour le retour de nuit.', '2025-08-29 02:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Heetch'), 4, 'Chauffeurs sympas et tarifs corrects. Bonne initiative pour la sécurité.', '2025-08-30 03:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'nouilles@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Heetch'), 3, 'Bien mais pas assez de voitures disponibles le dimanche soir.', '2025-08-30 23:45:00'),
+
+  -- Decathlon (id_prestataire = 8)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'), 4, 'Location de matériel au top, les prix sont raisonnables.', '2025-08-28 14:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'), 5, 'Stand très bien achalandé, j''ai trouvé tout ce qu''il me fallait pour le camping.', '2025-08-28 11:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'merch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'), 4, 'Pratique d''avoir un Decathlon sur place pour les oublis de camping.', '2025-08-29 10:15:00'),
+
+  -- Veolia (id_prestataire = 9)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Veolia'), 4, 'Points d''eau bien répartis sur le site, c''est essentiel sous la chaleur.', '2025-08-29 15:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Veolia'), 5, 'Gestion des déchets impeccable, le site est resté propre tout le week-end.', '2025-08-30 10:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Veolia'), 4, 'Bon travail sur le recyclage, les poubelles de tri étaient bien signalées.', '2025-08-30 12:00:00'),
+
+  -- Securitas (id_prestataire = 10)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas'), 5, 'Agents de sécurité très pros et toujours aimables, bravo !', '2025-08-28 23:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas'), 5, 'Contrôle d''accès efficace, on se sent en sécurité sur le site.', '2025-08-29 18:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'free@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Securitas'), 4, 'Bonne gestion des flux de personnes. Professionnels et discrets.', '2025-08-30 14:00:00'),
+
+  -- Deezer (id_prestataire = 11)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 5, 'L''espace Deezer était génial, les playlists en avant-première c''est top !', '2025-08-28 16:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 4, 'Bon espace d''écoute, j''ai découvert plein de nouveaux artistes.', '2025-08-29 13:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jbl@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 5, 'Excellente idée les playlists du festival, tout le monde en parlait.', '2025-08-29 17:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'happn@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 4, 'Stand sympa mais un peu petit pour le nombre de visiteurs.', '2025-08-30 16:00:00'),
+
+  -- Happn (id_prestataire = 12)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn'), 4, 'L''espace chill Happn était super pour se poser entre deux concerts.', '2025-08-28 20:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn'), 3, 'Concept sympa mais l''activation matchmaking manquait un peu d''animation.', '2025-08-29 19:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Happn'), 5, 'J''ai rencontré plein de gens cool grâce à Happn, super activation !', '2025-08-30 18:00:00'),
+
+  -- Jägermeister (id_prestataire = 13)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jägermeister'), 5, 'Les Jäger bombs étaient parfaites, le bar avait une super ambiance !', '2025-08-28 23:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jägermeister'), 4, 'Cocktails Jäger originaux, bonne déco et musique au bar.', '2025-08-29 22:45:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'poliakov@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Jägermeister'), 4, 'Bonne concurrence entre bars, ça motive ! Leur stand était bien fait.', '2025-08-30 00:30:00'),
+
+  -- Ricard (id_prestataire = 14)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ricard'), 4, 'Un bon pastis bien frais sous le soleil, que demander de mieux ?', '2025-08-29 17:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ricard'), 5, 'Les cocktails anisés étaient originaux et rafraîchissants. Top !', '2025-08-30 18:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jackdaniels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ricard'), 3, 'Pas fan de pastis perso, mais le stand était bien animé.', '2025-08-29 21:00:00'),
+
+  -- JBL (id_prestataire = 15)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'JBL'), 5, 'La qualité sonore des scènes était exceptionnelle grâce à JBL !', '2025-08-28 21:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'JBL'), 5, 'Son impeccable sur toutes les scènes. Partenaire audio de qualité.', '2025-08-29 20:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'deezer@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'JBL'), 4, 'L''espace démo avec les enceintes portables était très cool.', '2025-08-30 15:30:00'),
+
+  -- Pepsi (id_prestataire = 16)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi'), 4, 'Bien frais et service rapide, idéal pour se désaltérer.', '2025-08-29 15:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi'), 4, 'Stand propre et bien tenu, les boissons étaient à bonne température.', '2025-08-30 14:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi'), 5, 'Un Pepsi avec un tacos, le combo parfait du festival !', '2025-08-28 19:30:00'),
+
+  -- Lipton (id_prestataire = 17)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton'), 5, 'Thé glacé parfait pour la chaleur de l''après-midi ! Prix corrects.', '2025-08-29 14:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton'), 4, 'Bonne alternative aux sodas, le Ice Tea pêche était délicieux.', '2025-08-30 16:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'coiffure@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton'), 4, 'Rafraîchissant et pas cher, j''en ai bu tous les jours.', '2025-08-30 13:30:00'),
+
+  -- Bagels & Co (id_prestataire = 18)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'), 5, 'Meilleurs bagels que j''ai mangés ! Le saumon-cream cheese est une tuerie.', '2025-08-29 12:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'), 4, 'Bagels frais et copieux, parfait pour un repas rapide.', '2025-08-28 13:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'securitas@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'), 5, 'J''ai pris un bagel tous les jours pendant mes pauses, excellent !', '2025-08-30 12:45:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'free@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'), 3, 'Bon mais un peu cher pour la quantité. Le goût est là quand même.', '2025-08-29 13:15:00'),
+
+  -- Pizza Festival (id_prestataire = 19)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival'), 5, 'Pizzas au feu de bois incroyables ! La margherita était parfaite.', '2025-08-28 19:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival'), 4, 'Très bonnes pizzas, un peu d''attente mais cuisson au feu de bois oblige.', '2025-08-29 20:15:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival'), 5, 'La calzone était énorme et délicieuse, je recommande à fond !', '2025-08-30 19:45:00'),
+
+  -- Ail et fines herbes (id_prestataire = 20)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes'), 4, 'Cuisine gastronomique surprenante pour un festival, bravo le chef !', '2025-08-29 13:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes'), 5, 'Plats raffinés et savoureux, un vrai restaurant dans un festival.', '2025-08-30 13:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'veolia@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes'), 4, 'Un peu plus cher que les autres stands mais la qualité est là.', '2025-08-29 14:00:00'),
+
+  -- Nouilles Express (id_prestataire = 21)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express'), 4, 'Wok de nouilles copieux et savoureux, bon rapport qualité-prix.', '2025-08-28 20:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express'), 5, 'Les nouilles sautées au poulet sont un régal ! Cuisson au wok devant vous.', '2025-08-29 19:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'allianz@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express'), 4, 'Plats chauds et bien épicés, parfait le soir quand il fait frais.', '2025-08-30 20:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express'), 3, 'Bon mais la portion aurait pu être un peu plus grande.', '2025-08-29 21:00:00'),
+
+  -- Coiffure Festival (id_prestataire = 22)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival'), 5, 'Coupe stylée et rapide ! Le coiffeur était super sympa et talentueux.', '2025-08-29 15:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival'), 4, 'Bonne idée d''avoir un stand coiffure au festival, résultat au top.', '2025-08-30 16:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'happn@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival'), 5, 'J''ai fait des tresses pour le festival, tout le monde m''a complimenté !', '2025-08-28 17:30:00'),
+
+  -- Merch Golden Coast (id_prestataire = 23)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'), 5, 'T-shirts de qualité et designs magnifiques, j''ai tout acheté !', '2025-08-28 17:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'), 4, 'Bons goodies mais certains articles étaient déjà en rupture le dimanche.', '2025-08-30 11:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'decathlon@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'), 5, 'La casquette Golden Coast est devenue mon accessoire préféré !', '2025-08-29 14:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'ricard@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'), 4, 'Super souvenirs du festival, les hoodies sont très confortables.', '2025-08-30 17:00:00'),
+
+  -- Arcade Zone (id_prestataire = 24)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone'), 5, 'Les bornes d''arcade c''était génial entre les concerts ! Retour en enfance.', '2025-08-28 16:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone'), 4, 'Bonne idée, les jeux rétro ajoutent une vraie touche fun au festival.', '2025-08-29 15:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'basket@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone'), 5, 'Pac-Man et Street Fighter au festival, que demander de plus ?!', '2025-08-30 16:00:00'),
+
+  -- Basket 3x3 (id_prestataire = 25)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'), 5, 'Terrain de basket au milieu du festival, c''est trop bien ! Ambiance de folie.', '2025-08-29 17:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'), 4, 'Super animation sportive, le tournoi était hyper bien organisé.', '2025-08-30 16:30:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'redbull@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'), 5, 'Le combo Red Bull + basket c''est la meilleure idée du festival !', '2025-08-29 18:00:00'),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'decathlon@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'), 4, 'Bonne ambiance sur le terrain, dommage qu''il n''y ait qu''un seul terrain.', '2025-08-30 15:30:00');
 
 -- ============================================
 -- AVIS FESTIVAL (notes sur le festival lui-même)

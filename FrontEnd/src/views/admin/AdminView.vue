@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, toRaw, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAdminAuth } from '@/composables/admin/useAdminAuth'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminDashboard from '@/components/admin/AdminDashboard.vue'
@@ -18,8 +19,31 @@ import AdminUserDetail from '@/components/admin/AdminUserDetail.vue'
 const chartCanvas = ref(null)
 let chartInstance = null
 
+const router = useRouter()
 const { authUser, loading, isAdmin, adminEmail, loadAuthFromStorage, checkAdminAccess } = useAdminAuth()
 const currentSection = ref('dashboard')
+
+// ─── Gestion centralisée des erreurs 401 ─────────────────────────────────
+/**
+ * Fetch authentifié : redirige vers /login si le serveur répond 401.
+ * Remplace les appels bruts à `fetch` dans tout le composant.
+ */
+const authFetch = async (url, options = {}) => {
+  const token = localStorage.getItem('authToken')
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  }
+  const resp = await fetch(url, { ...options, headers })
+  if (resp.status === 401) {
+    console.warn('⚠️ Session expirée ou invalide – redirection vers /login')
+    localStorage.removeItem('authToken')
+    window.dispatchEvent(new Event('auth-changed'))
+    router.push({ name: 'login', query: { redirect: '/admin' } })
+    throw new Error('Non authentifié – session expirée')
+  }
+  return resp
+}
 const prestataires = ref([])
 const prestatairesOriginaux = ref([])
 const customPrestataires = ref({})
@@ -58,15 +82,13 @@ const historiqueDemandes = computed(() => {
 // Charger les demandes d'emplacement depuis l'API
 const loadDemandesEmplacement = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const resp = await fetch('/api/emplacements', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
+    const resp = await authFetch('/api/emplacements')
     if (resp.ok) {
       const list = await resp.json()
       demandesEmplacement.value = (Array.isArray(list) ? list : []).filter(e => e.statut === 'en_attente')
     }
   } catch (e) {
+    if (e.message.includes('Non authentifié')) return
     console.error('Erreur chargement demandes', e)
     demandesEmplacement.value = []
   }
@@ -75,10 +97,7 @@ const loadDemandesEmplacement = async () => {
 // Charger les emplacements attribués depuis l'API
 const loadEmplacementsAttribues = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const resp = await fetch('/api/emplacements', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
+    const resp = await authFetch('/api/emplacements')
     if (resp.ok) {
       const list = await resp.json()
       const attribues = {}
@@ -90,6 +109,7 @@ const loadEmplacementsAttribues = async () => {
       emplacementsAttribues.value = attribues
     }
   } catch (e) {
+    if (e.message.includes('Non authentifié')) return
     console.error('Erreur chargement emplacements attribués', e)
     emplacementsAttribues.value = {}
   }
@@ -100,13 +120,11 @@ const accepterDemande = async (demande) => {
   if (!confirm(`Accepter la demande de ${demande.prestataireNom} pour l'emplacement ${demande.coordonnees} ?`)) return
 
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-
     // Mettre à jour l'emplacement via l'API
     if (demande.id_emplacement) {
-      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
-        method: 'PUT', headers,
+      await authFetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statut: 'pris', prestataireNom: demande.prestataireNom })
       })
     }
@@ -131,12 +149,10 @@ const refuserDemande = async (demande) => {
   if (raison === null) return
 
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-
     if (demande.id_emplacement) {
-      await fetch(`/api/emplacements/${demande.id_emplacement}`, {
-        method: 'PUT', headers,
+      await authFetch(`/api/emplacements/${demande.id_emplacement}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statut: 'libre', raison_refus: raison })
       })
     }
@@ -156,17 +172,15 @@ const assignerEmplacement = async (prestataireNom, coords) => {
   if (!confirm(`Assigner l'emplacement ${coords} à ${prestataireNom} ?`)) return
 
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-
     // Trouver l'emplacement correspondant via l'API
-    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const empResp = await authFetch('/api/emplacements')
     if (empResp.ok) {
       const list = await empResp.json()
       const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
       if (emp) {
-        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
-          method: 'PUT', headers,
+        await authFetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ statut: 'pris', prestataireNom })
         })
       }
@@ -187,17 +201,15 @@ const libererEmplacementAdmin = async (prestataireNom) => {
   if (!confirm(`Libérer l'emplacement de ${prestataireNom} ?`)) return
 
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-
     // Trouver l'emplacement attribué à ce prestataire via l'API
-    const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const empResp = await authFetch('/api/emplacements')
     if (empResp.ok) {
       const list = await empResp.json()
       const emp = (Array.isArray(list) ? list : []).find(e => e.prestataireNom === prestataireNom && e.statut === 'pris')
       if (emp) {
-        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
-          method: 'PUT', headers,
+        await authFetch(`/api/emplacements/${emp.id_emplacement}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ statut: 'libre', prestataireNom: null })
         })
       }
@@ -389,17 +401,15 @@ const saveUser = async (userData) => {
 
     // Créer via l'API
     try {
-      const token = localStorage.getItem('authToken')
-      // Transformer les données pour le backend
       const apiPayload = {
         nom_utilisateur: userData.nom_utilisateur, // ✅ Utiliser le nom saisi par l'utilisateur
         email: userData.email,
         mot_de_passe: userData.password,
         role: userData.role || 'public'
       }
-      const response = await fetch('/api/auth/register', {
+      const response = await authFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload)
       })
       if (!response.ok) {
@@ -423,7 +433,6 @@ const saveUser = async (userData) => {
     }
     // Mettre à jour via l'API
     try {
-      const token = localStorage.getItem('authToken')
       // Transformer les données pour le backend
       const apiPayload = {
         nom_utilisateur: userData.nom_utilisateur || userData.email.split('@')[0],
@@ -432,9 +441,9 @@ const saveUser = async (userData) => {
       if (userData.password && userData.password.trim()) {
         apiPayload.mot_de_passe = userData.password
       }
-      const response = await fetch(`/api/utilisateurs/${userId}`, {
+      const response = await authFetch(`/api/utilisateurs/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload)
       })
       if (!response.ok) {
@@ -470,10 +479,8 @@ const deleteUser = async () => {
 
     // Supprimer via l'API
     if (userId) {
-      const token = localStorage.getItem('authToken')
-      await fetch(`/api/utilisateurs/${userId}`, {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      await authFetch(`/api/utilisateurs/${userId}`, {
+        method: 'DELETE'
       })
     }
 
@@ -496,13 +503,10 @@ const deleteUser = async () => {
 // AJOUT: Fonction pour recharger les utilisateurs
 const reloadUsers = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
     // Essayer l'API d'abord
     let usedApi = false
     try {
-      const resp = await fetch('/api/utilisateurs', { headers })
+      const resp = await authFetch('/api/utilisateurs')
       if (resp.ok) {
         const data = await resp.json()
         users.value = Array.isArray(data) ? data.map(u => ({
@@ -513,10 +517,12 @@ const reloadUsers = async () => {
         usedApi = true
       }
     } catch (e) {
+      if (e.message.includes('Non authentifié')) throw e
       console.error('Erreur chargement utilisateurs API:', e)
     }
     console.log('✅ Utilisateurs rechargés:', users.value.length)
   } catch (e) {
+    if (e.message.includes('Non authentifié')) throw e
     console.error('Erreur rechargement utilisateurs', e)
   }
 }
@@ -533,9 +539,6 @@ const loadData = async () => {
     await reloadUsers()
 
     // Charger les autres données via API puis fallback JSON
-    const token = localStorage.getItem('authToken')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
     let prestataireData = { prestataires: [] }
     let zonesData = { zones: [] }
     let emplacementsData = { emplacements: [] }
@@ -544,10 +547,10 @@ const loadData = async () => {
     // Essayer l'API
     try {
       const [prestatairesResp, zonesResp, emplacementsResp, avisResp] = await Promise.all([
-        fetch('/api/prestataires', { headers }),
-        fetch('/api/zones', { headers }),
-        fetch('/api/emplacements', { headers }),
-        fetch('/api/avis', { headers })
+        authFetch('/api/prestataires'),
+        authFetch('/api/zones'),
+        authFetch('/api/emplacements'),
+        authFetch('/api/avis')
       ])
       if (prestatairesResp.ok) {
         const list = await prestatairesResp.json()
@@ -615,7 +618,7 @@ const loadData = async () => {
     let totalPrestatairesDB = 0
     let totalServicesDB = 0
     try {
-      const dashResp = await fetch('/api/stats/dashboard', { headers })
+      const dashResp = await authFetch('/api/stats/dashboard')
       if (dashResp.ok) {
         const dashData = await dashResp.json()
         totalUsersDB = dashData.totalUtilisateurs || 0
@@ -632,7 +635,7 @@ const loadData = async () => {
     let totalRevenue = 0
     let ticketsStats = { oneDay: 0, twoDays: 0, threeDays: 0, parking: 0, camping: 0 }
     try {
-      const resaResp = await fetch('/api/stats/reservations', { headers })
+      const resaResp = await authFetch('/api/stats/reservations')
       if (resaResp.ok) {
         const resaData = await resaResp.json()
         totalReservations = resaData.totalReservations || 0
@@ -649,7 +652,7 @@ const loadData = async () => {
     let notesMoyenne = 0
     let repartitionNotes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     try {
-      const avisPresResp = await fetch('/api/stats/avis-prestataires', { headers })
+      const avisPresResp = await authFetch('/api/stats/avis-prestataires')
       if (avisPresResp.ok) {
         const avisPresData = await avisPresResp.json()
         totalAvis = avisPresData.totalAvis || 0
@@ -666,7 +669,7 @@ const loadData = async () => {
     let repartitionNotesFestival = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     let dernierAvisFestival = []
     try {
-      const avisFestResp = await fetch('/api/stats/avis-festival', { headers })
+      const avisFestResp = await authFetch('/api/stats/avis-festival')
       if (avisFestResp.ok) {
         const avisFestData = await avisFestResp.json()
         totalAvisFestival = avisFestData.totalAvisFestival || 0
@@ -700,7 +703,7 @@ const loadData = async () => {
       let festivalData = null
 
       try {
-        const resp = await fetch('/api/manifestations', { headers })
+        const resp = await authFetch('/api/manifestations')
         if (resp.ok) {
           const list = await resp.json()
           const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
@@ -751,10 +754,8 @@ const loadData = async () => {
 // GARDER CETTE VERSION UNIQUEMENT
 const loadEmplacements = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
     try {
-      const resp = await fetch('/api/emplacements', { headers })
+      const resp = await authFetch('/api/emplacements')
       if (resp.ok) {
         const list = await resp.json()
         emplacements.value = (Array.isArray(list) ? list : []).map(e => ({
@@ -771,13 +772,11 @@ const loadEmplacements = async () => {
 
 const loadProgrammation = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
     let data = null
 
     // Essayer l'API
     try {
-      const resp = await fetch('/api/programmation', { headers })
+      const resp = await authFetch('/api/programmation')
       if (resp.ok) {
         const apiData = await resp.json()
         if (apiData.stages && apiData.schedules) {
@@ -806,20 +805,14 @@ const loadProgrammation = async () => {
 const savePresentation = async () => {
   try {
     const presentationToSave = JSON.parse(JSON.stringify(toRaw(festivalPresentation.value)));
-    const token = localStorage.getItem('authToken')
-    const resp = await fetch('/api/manifestations', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
+    const resp = await authFetch('/api/manifestations')
     if (resp.ok) {
       const list = await resp.json()
       const festival = Array.isArray(list) ? (list.find(f => f.actif) || list[0]) : null
       if (festival) {
-        await fetch(`/api/manifestations/${festival.id_festival}`, {
+        await authFetch(`/api/manifestations/${festival.id_festival}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description_fr: presentationToSave.fr?.description || presentationToSave.fr?.footerDescription || '',
             description_en: presentationToSave.en?.description || presentationToSave.en?.footerDescription || '',
@@ -873,8 +866,19 @@ onMounted(() => {
   loadAuthFromStorage()
   if (!checkAdminAccess()) return
 
+  // Vérifier que le token existe avant de charger les données protégées
+  const token = localStorage.getItem('authToken')
+  if (!token) {
+    console.warn('⚠️ Aucun token trouvé – redirection vers /login')
+    router.push({ name: 'login', query: { redirect: '/admin' } })
+    return
+  }
+
   loadData().then(async () => {
     await computeAvisStatsForPrestataires()
+  }).catch(e => {
+    if (e.message?.includes('Non authentifié')) return // déjà redirigé
+    console.error('Erreur loadData:', e)
   })
 
   // MODIFICATION: Écouter les mises à jour en temps réel
@@ -997,10 +1001,9 @@ const resetPrestataire = async () => {
     const id = original.id_prestataire
     if (id) {
       try {
-        const token = localStorage.getItem('authToken')
-        await fetch(`/api/prestataires/${id}`, {
+        await authFetch(`/api/prestataires/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description_fr: original.description?.fr || original.description_fr || '',
             description_en: original.description?.en || original.description_en || '',
@@ -1048,10 +1051,9 @@ const savePrestataireChanges = async (updatedPrestataire) => {
   const id = prestataireToSave.id_prestataire
   if (id) {
     try {
-      const token = localStorage.getItem('authToken')
-      await fetch(`/api/prestataires/${id}`, {
+      await authFetch(`/api/prestataires/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description_fr: dataToSave.description.fr,
           description_en: dataToSave.description.en,
@@ -1108,18 +1110,12 @@ const saveSingleService = async ({ prestataire, service, index }) => {
   }
 
   try {
-    const token = localStorage.getItem('authToken')
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    }
-
     const serviceId = service?.id_service
     const url = serviceId ? `/api/services/${serviceId}` : '/api/services'
     const method = serviceId ? 'PUT' : 'POST'
-    const resp = await fetch(url, {
+    const resp = await authFetch(url, {
       method,
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
 
@@ -1279,10 +1275,9 @@ const cancelEdit = () => {
 // AJOUT: Fonction saveProgrammation manquante
 const saveProgrammation = async () => {
   try {
-    const token = localStorage.getItem('authToken')
-    const resp = await fetch('/api/programmation', {
+    const resp = await authFetch('/api/programmation', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(programmation.value)
     })
     if (!resp.ok) throw new Error('Erreur sauvegarde')
@@ -1297,13 +1292,11 @@ const saveProgrammation = async () => {
 // AJOUT: Fonction computeAvisStatsForPrestataires manquante
 const computeAvisStatsForPrestataires = async () => {
   const statsArray = []
-  const token = localStorage.getItem('authToken')
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
   // Charger tous les avis depuis l'API
   let allAvisMap = {}
   try {
-    const resp = await fetch('/api/avis', { headers })
+    const resp = await authFetch('/api/avis')
     if (resp.ok) {
       const list = await resp.json()
       ;(Array.isArray(list) ? list : []).forEach(a => {
