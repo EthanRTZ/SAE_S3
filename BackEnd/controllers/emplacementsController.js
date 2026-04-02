@@ -1,4 +1,4 @@
-const { Emplacement, Prestataire } = require('../models');
+const { Emplacement, Prestataire, PrestataireEmplacement } = require('../models');
 
 /**
  * GET /api/emplacements - Récupérer tous les emplacements
@@ -114,7 +114,8 @@ exports.updateEmplacement = async (req, res) => {
             moyens_logistiques,
             surface_volume,
             nombre_prises,
-            acces_eau
+            acces_eau,
+            prestataireNom
         } = req.body;
 
         const emplacement = await Emplacement.findByPk(id);
@@ -136,6 +137,40 @@ exports.updateEmplacement = async (req, res) => {
             nombre_prises: nombre_prises !== undefined ? nombre_prises : emplacement.nombre_prises,
             acces_eau: acces_eau !== undefined ? acces_eau : emplacement.acces_eau
         });
+
+        // Gérer le lien prestataire_emplacement
+        if (prestataireNom) {
+            // Trouver le prestataire par nom
+            const prestataire = await Prestataire.findOne({ where: { nom: prestataireNom } });
+            if (prestataire) {
+                // Vérifier si un lien existe déjà
+                const existingLink = await PrestataireEmplacement.findOne({
+                    where: { id_prestataire: prestataire.id_prestataire, id_emplacement: emplacement.id_emplacement }
+                });
+
+                const linkStatut = statut === 'pris' ? 'approuvé' : (statut === 'en_attente' ? 'en_attente' : 'demandé');
+
+                if (existingLink) {
+                    await existingLink.update({
+                        statut: linkStatut,
+                        date_attribution: statut === 'pris' ? new Date() : existingLink.date_attribution
+                    });
+                } else {
+                    await PrestataireEmplacement.create({
+                        id_prestataire: prestataire.id_prestataire,
+                        id_emplacement: emplacement.id_emplacement,
+                        date_demande: new Date(),
+                        date_attribution: statut === 'pris' ? new Date() : null,
+                        statut: linkStatut
+                    });
+                }
+            }
+        } else if (prestataireNom === null && statut === 'libre') {
+            // Supprimer tous les liens prestataire pour cet emplacement
+            await PrestataireEmplacement.destroy({
+                where: { id_emplacement: emplacement.id_emplacement }
+            });
+        }
 
         res.json(emplacement);
     } catch (error) {

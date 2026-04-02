@@ -111,22 +111,15 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, savedPosition) {
-    if (to.hash) {
-      return { el: to.hash, behavior: 'smooth' }
-    }
-    if (savedPosition) return savedPosition
-    return { top: 0 }
-  },
 })
 
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAdmin) {
     const auth = useAuthStore()
-    // Charger depuis le localStorage si pas encore fait
-    if (!auth.user) auth.loadFromStorage()
+    // Toujours recharger depuis le localStorage pour avoir les données les plus récentes
+    auth.loadFromStorage()
     if (!auth.isAdmin) {
-      return next({ name: 'home' })
+      return next({ name: 'login', query: { redirect: to.fullPath } })
     }
   }
   next()

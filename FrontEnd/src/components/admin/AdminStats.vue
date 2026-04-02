@@ -296,6 +296,37 @@ watch(() => props.avisStatsParPrestataire, (newVal) => {
               <div class="detail-info-box">
                 <p>💡 Ces statistiques sont basées sur les avis saisis par les festivaliers directement sur la page du prestataire.</p>
               </div>
+
+              <!-- Liste de tous les avis -->
+              <div v-if="selectedPrestataireStats.avis && selectedPrestataireStats.avis.length > 0" class="detail-avis-list">
+                <h4>💬 Tous les avis ({{ selectedPrestataireStats.avis.length }})</h4>
+                <div class="detail-comments-list">
+                  <div
+                    v-for="(avis, idx) in selectedPrestataireStats.avis"
+                    :key="idx"
+                    class="detail-comment-card"
+                  >
+                    <div class="detail-comment-header">
+                      <div class="detail-comment-left">
+                        <span class="detail-comment-author">👤 {{ avis.nom_utilisateur || 'Anonyme' }}</span>
+                        <div class="detail-comment-stars">
+                          <span
+                            v-for="i in 5"
+                            :key="i"
+                            class="comment-star"
+                            :class="{ filled: i <= avis.note }"
+                          >★</span>
+                        </div>
+                      </div>
+                      <span class="detail-comment-date" v-if="avis.date">
+                        {{ new Date(avis.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                      </span>
+                    </div>
+                    <p class="detail-comment-text" v-if="avis.commentaire">{{ avis.commentaire }}</p>
+                    <p class="detail-comment-text no-comment" v-else>Pas de commentaire</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -850,6 +881,81 @@ watch(() => props.avisStatsParPrestataire, (newVal) => {
   font-size: 0.9rem;
   margin: 0;
   line-height: 1.6;
+}
+
+/* Liste des avis prestataire */
+.detail-avis-list {
+  margin-top: 8px;
+}
+
+.detail-avis-list h4 {
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.detail-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.detail-comment-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+  transition: all 0.2s ease;
+}
+
+.detail-comment-card:hover {
+  border-color: rgba(252, 220, 30, 0.2);
+}
+
+.detail-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.detail-comment-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-comment-author {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.detail-comment-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.detail-comment-date {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.detail-comment-text {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.detail-comment-text.no-comment {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Festival Stats */

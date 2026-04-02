@@ -3,37 +3,6 @@ const { Programmation, Artiste, Scene } = require('../models');
 const { requireRole } = require('../middleware/simpleAuth');
 const router = express.Router();
 
-/**
- * @openapi
- * /programmation:
- *   get:
- *     tags:
- *       - Programmation
- *     summary: Récupérer la programmation du festival
- *     description: Retourne la programmation formatée par scènes et jours, ainsi que les données brutes.
- *     responses:
- *       200:
- *         description: Programmation récupérée
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stages:
- *                   type: array
- *                   items:
- *                     type: object
- *                 schedules:
- *                   type: array
- *                   items:
- *                     type: object
- *                 raw:
- *                   type: array
- *                   items:
- *                     type: object
- *       500:
- *         description: Erreur serveur
- */
 // GET /api/programmation - Toute la programmation avec artistes et scènes
 router.get('/', async (req, res, next) => {
   try {
@@ -82,27 +51,6 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/**
- * @openapi
- * /programmation/{id}:
- *   get:
- *     tags:
- *       - Programmation
- *     summary: Détail d'un élément de programmation
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Élément trouvé
- *       404:
- *         description: Programmation non trouvée
- *       500:
- *         description: Erreur serveur
- */
 // GET /api/programmation/:id
 router.get('/:id', async (req, res, next) => {
   try {
@@ -117,29 +65,6 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/**
- * @openapi
- * /programmation:
- *   post:
- *     tags:
- *       - Programmation
- *     summary: Créer un élément de programmation
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: Élément créé
- *       403:
- *         description: Accès refusé (admin/organisateur requis)
- *       500:
- *         description: Erreur serveur
- */
 // POST /api/programmation
 router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -148,37 +73,6 @@ router.post('/', requireRole('admin', 'organisateur'), async (req, res, next) =>
   } catch (err) { next(err); }
 });
 
-/**
- * @openapi
- * /programmation/{id}:
- *   put:
- *     tags:
- *       - Programmation
- *     summary: Modifier un élément de programmation
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Élément modifié
- *       404:
- *         description: Programmation non trouvée
- *       403:
- *         description: Accès refusé (admin/organisateur requis)
- *       500:
- *         description: Erreur serveur
- */
 // PUT /api/programmation/:id
 router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {
@@ -189,31 +83,6 @@ router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) 
   } catch (err) { next(err); }
 });
 
-/**
- * @openapi
- * /programmation/{id}:
- *   delete:
- *     tags:
- *       - Programmation
- *     summary: Supprimer un élément de programmation
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Élément supprimé
- *       404:
- *         description: Programmation non trouvée
- *       403:
- *         description: Accès refusé (admin/organisateur requis)
- *       500:
- *         description: Erreur serveur
- */
 // DELETE /api/programmation/:id
 router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
   try {

@@ -193,8 +193,7 @@
     "camping": "Camping spot",
     "basket": "🏀 Basketball Court",
     "item": "Item",
-    "service": "Service",
-    "merch": "Merch store"
+    "service": "Service"
   },
   "login": {
     "title": "Login",
@@ -538,10 +537,6 @@
     "from": "From",
     "ctaDisabled": "Unavailable",
     "cta": "Add",
-    "empty": "No items available right now.",
-    "size": "Size",
-    "addedToCart": "Item added to cart.",
-    "externalServicesTitle": "External services",
-    "externalServicesDesc": "Bookings, orders and rentals from providers: everything is available here, with the same flow as on the dedicated pages (cart, time slots, etc.)."
+    "empty": "No items available right now."
   }
 }

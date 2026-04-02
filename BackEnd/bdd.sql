@@ -477,10 +477,7 @@ INSERT INTO prestataire (nom, type_prestataire, description_fr, description_en, 
                                                                                                                                      ('Coiffure Festival', 'Services / Bien-être', 'Stand de coiffure et coupe', 'Haircut and styling stand', 'contact@coiffure.fr', '+33 1 23 45 67 80', 'https://coiffure-festival.fr', '/media/prestataires/coiffure.png'),
                                                                                                                                      ('Merch Golden Coast', 'Merchandising', 'Boutique officielle du festival', 'Official festival store', 'merch@goldencoast.com', '+33 1 34 56 78 91', 'https://goldencoast.com/merch', '/media/prestataires/merch.png'),
                                                                                                                                      ('Arcade Zone', 'Divertissement', 'Borne d''arcade et jeux rétro', 'Arcade machines and retro games', 'contact@arcadezone.fr', '+33 1 45 67 89 02', 'https://arcadezone.fr', '/media/prestataires/arcade.png'),
-                                                                                                                                     ('Basket 3x3', 'Sport / Animation', 'Terrain de basket 3x3', '3x3 basketball court', 'contact@basket3x3.fr', '+33 1 56 78 90 13', 'https://basket3x3.fr', '/media/prestataires/basket.png'),
-                                                                                                                                     ('Merch', 'Commerces & Équipements', 'Vêtements et accessoires à l''effigie d''une marque ou d''un artiste.', 'Clothing and accessories featuring a brand or artist.', NULL, NULL, NULL, '/media/prestataires/merch.png'),
-                                                                                                                                     ('Pizza', 'Restauration', 'Plat italien à base de pâte, sauce tomate et garnitures.', 'Italian dish made with dough, tomato sauce and toppings.', NULL, NULL, NULL, '/media/prestataires/pizza.png'),
-                                                                                                                                     ('Bagels', 'Restauration', 'Pain en forme d''anneau, souvent garni.', 'Ring-shaped bread, often filled.', NULL, NULL, NULL, '/media/prestataires/bagels.png');
+                                                                                                                                     ('Basket 3x3', 'Sport / Animation', 'Terrain de basket 3x3', '3x3 basketball court', 'contact@basket3x3.fr', '+33 1 56 78 90 13', 'https://basket3x3.fr', '/media/prestataires/basket.png');
 
 -- Mise à jour des sponsors des scènes (après insertion des prestataires)
 UPDATE scenes SET id_prestataire_sponsor = (SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer') WHERE nom = 'ZERO GRAVITY';
@@ -513,30 +510,30 @@ INSERT INTO type_service (nom, label_fr, label_en, description_fr, description_e
 -- ============================================
 INSERT INTO services (id_prestataire, id_type_service, nom_service_fr, nom_service_en, description_fr, description_en, prix_estime, champs_specifiques) VALUES
                                                                                                                        (1, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Tacos & Burgers', 'Tacos & Burgers', 'Restauration rapide pour festivaliers', 'Fast food for festival-goers', 10.00, '{"delai_preparation": 10, "disponible": true}'::jsonb),
-                                                                                                                       (2, NULL, 'Réseau 5G', '5G Network', 'Connexion mobile et Wi-Fi sur site', 'Mobile connection and on-site Wi-Fi', 0.00, '{}'::jsonb),
-                                                                                                                       (3, NULL, 'Sécurité & prévention', 'Safety & prevention', 'Sensibilisation sécurité routière et alcool', 'Road safety and alcohol awareness', 0.00, '{}'::jsonb),
+                                                                                                                       (2, NULL, 'Réseau 5G', '5G Network', 'Connexion mobile et Wi-Fi sur site', 'Mobile connection and on-site Wi-Fi', 0.00, '{"enabled": false}'::jsonb),
+                                                                                                                       (3, NULL, 'Sécurité & prévention', 'Safety & prevention', 'Sensibilisation sécurité routière et alcool', 'Road safety and alcohol awareness', 0.00, '{"enabled": false}'::jsonb),
                                                                                                                        (4, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar principal', 'Main bar', 'Espace boisson et cocktails', 'Drinks and cocktails area', 12.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
                                                                                                                        (5, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Dégustation whisky', 'Whiskey tasting', 'Espace promotion Jack Daniel''s', 'Jack Daniel''s promotional space', 15.00, '{"disponible": true}'::jsonb),
                                                                                                                        (6, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Red Bull', 'Red Bull Bar', 'Boissons énergisantes et espace détente', 'Energy drinks and relaxation area', 8.00, '{"delai_preparation": 3, "disponible": true}'::jsonb),
-                                                                                                                       (7, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Transport VTC', 'VTC transport', 'Navettes et trajets vers le festival', 'Shuttles and trips to the festival', 15.00, '{"nombre_places": 4, "lieu": "Festival"}'::jsonb),
+                                                                                                                       (7, NULL, 'Transport VTC', 'VTC transport', 'Navettes et trajets vers le festival', 'Shuttles and trips to the festival', 0.00, '{"enabled": false}'::jsonb),
                                                                                                                        (8, (SELECT id_type_service FROM type_service WHERE nom = 'location'), 'Location matériel sportif', 'Sports equipment rental', 'Location d''équipement sportif', 'Sports equipment rental', 5.00, '{"duree_min": 1, "duree_max": 8, "caution": 20, "disponible": true}'::jsonb),
-                                                                                                                       (9, NULL, 'Gestion déchets', 'Waste management', 'Tri et recyclage des déchets', 'Waste sorting and recycling', 0.00, '{}'::jsonb),
-                                                                                                                       (10, NULL, 'Service de sécurité', 'Security service', 'Surveillance et contrôle d''accès', 'Surveillance and access control', 0.00, '{}'::jsonb),
-                                                                                                                       (11, NULL, 'Playlists officielles', 'Official playlists', 'Streaming musical du festival', 'Festival music streaming', 0.00, '{}'::jsonb),
-                                                                                                                       (12, NULL, 'Animation réseau', 'Network animation', 'Rencontres entre festivaliers', 'Meetups between festival-goers', 0.00, '{}'::jsonb),
+                                                                                                                       (9, NULL, 'Gestion déchets', 'Waste management', 'Tri et recyclage des déchets', 'Waste sorting and recycling', 0.00, '{"enabled": false}'::jsonb),
+                                                                                                                       (10, NULL, 'Service de sécurité', 'Security service', 'Surveillance et contrôle d''accès', 'Surveillance and access control', 0.00, '{"enabled": false}'::jsonb),
+                                                                                                                       (11, NULL, 'Playlists officielles', 'Official playlists', 'Streaming musical du festival', 'Festival music streaming', 0.00, '{"enabled": false}'::jsonb),
+                                                                                                                       (12, NULL, 'Animation réseau', 'Network animation', 'Rencontres entre festivaliers', 'Meetups between festival-goers', 0.00, '{"enabled": false}'::jsonb),
                                                                                                                        (13, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Jägermeister', 'Jägermeister bar', 'Dégustation et cocktails', 'Tasting and cocktails', 10.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
                                                                                                                        (14, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Ricard', 'Ricard bar', 'Pastis et cocktails anisés', 'Pastis and anise cocktails', 8.00, '{"delai_preparation": 5, "disponible": true}'::jsonb),
-                                                                                                                       (15, NULL, 'Sonorisation', 'Sound system', 'Équipement audio premium', 'Premium audio equipment', 0.00, '{}'::jsonb),
+                                                                                                                       (15, NULL, 'Sonorisation', 'Sound system', 'Équipement audio premium', 'Premium audio equipment', 0.00, '{"enabled": false}'::jsonb),
                                                                                                                        (16, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Pepsi', 'Pepsi bar', 'Boissons rafraîchissantes', 'Refreshing drinks', 5.00, '{"delai_preparation": 2, "disponible": true}'::jsonb),
                                                                                                                        (17, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bar Lipton', 'Lipton bar', 'Thés glacés et boissons', 'Iced teas and drinks', 4.00, '{"delai_preparation": 2, "disponible": true}'::jsonb),
                                                                                                                        (18, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Bagels variés', 'Varied bagels', 'Sandwichs bagels garnis', 'Stuffed bagel sandwiches', 9.00, '{"delai_preparation": 8, "disponible": true}'::jsonb),
                                                                                                                        (19, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Pizzas artisanales', 'Artisan pizzas', 'Pizzas cuites au feu de bois', 'Wood-fired pizzas', 12.00, '{"delai_preparation": 15, "disponible": true}'::jsonb),
                                                                                                                        (20, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Plats aux herbes', 'Herb dishes', 'Cuisine gastronomique', 'Gourmet cuisine', 14.00, '{"delai_preparation": 12, "disponible": true}'::jsonb),
                                                                                                                        (21, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Nouilles asiatiques', 'Asian noodles', 'Woks et nouilles sautées', 'Woks and fried noodles', 11.00, '{"delai_preparation": 10, "disponible": true}'::jsonb),
-                                                                                                                       (22, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Coupe et coiffure', 'Haircut and styling', 'Service de coiffure express', 'Express hairdressing service', 20.00, '{"nombre_places": 2, "lieu": "Stand coiffure"}'::jsonb),
+                                                                                                                       (22, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Coupe et coiffure', 'Haircut and styling', 'Service de coiffure express', 'Express hairdressing service', 20.00, '{"nombre_places": 2, "lieu": "Stand coiffure", "creneaux": [{"jour": "vendredi", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 2}, {"jour": "vendredi", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 2}, {"jour": "vendredi", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 2}, {"jour": "vendredi", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 2}, {"jour": "vendredi", "heure_debut": "19:00", "heure_fin": "20:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "13:00", "heure_fin": "14:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "14:00", "heure_fin": "15:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 2}, {"jour": "samedi", "heure_debut": "19:00", "heure_fin": "20:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "13:00", "heure_fin": "14:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "14:00", "heure_fin": "15:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 2}, {"jour": "dimanche", "heure_debut": "19:00", "heure_fin": "20:00", "nombre_places": 2}]}'::jsonb),
                                                                                                                        (23, (SELECT id_type_service FROM type_service WHERE nom = 'commande'), 'Merchandising officiel', 'Official merchandising', 'T-shirts, casquettes et goodies', 'T-shirts, caps and goodies', 25.00, '{"disponible": true}'::jsonb),
                                                                                                                        (24, (SELECT id_type_service FROM type_service WHERE nom = 'location'), 'Jeux d''arcade', 'Arcade games', 'Accès aux bornes d''arcade', 'Access to arcade machines', 2.00, '{"duree_min": 0.5, "duree_max": 2, "caution": 0, "disponible": true}'::jsonb),
-                                                                                                                       (25, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Match de basket', 'Basketball match', 'Tournoi et jeux libres', 'Tournament and free games', 0.00, '{"nombre_places": 10, "lieu": "Terrain basket 3x3"}'::jsonb);
+                                                                                                                       (25, (SELECT id_type_service FROM type_service WHERE nom = 'reservation'), 'Match de basket', 'Basketball match', 'Tournoi et jeux libres', 'Tournament and free games', 0.00, '{"nombre_places": 10, "lieu": "Terrain basket 3x3", "creneaux": [{"jour": "vendredi", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 10}, {"jour": "vendredi", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 10}, {"jour": "vendredi", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 10}, {"jour": "vendredi", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "13:00", "heure_fin": "14:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "14:00", "heure_fin": "15:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 10}, {"jour": "samedi", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "13:00", "heure_fin": "14:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "14:00", "heure_fin": "15:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "15:00", "heure_fin": "16:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "17:00", "heure_fin": "18:00", "nombre_places": 10}, {"jour": "dimanche", "heure_debut": "18:00", "heure_fin": "19:00", "nombre_places": 10}]}'::jsonb);
 
 -- ============================================
 -- ARTISTES (basés sur programmation.json et artistes existants)
@@ -857,7 +854,7 @@ INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, id_rôle) VALUES
   ('coiffure', 'coiffure@prestataire.fr', '$2b$10$placeholder.coiffure', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
   ('merch', 'merch@prestataire.fr', '$2b$10$placeholder.merch', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
   ('bornedarcade', 'bornedarcade@prestataire.fr', '$2b$10$placeholder.bornedarcade', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire')),
-  ('terraindebasket', 'terraindebasket@prestataire.fr', '$2b$10$placeholder.terraindebasket', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire'));
+  ('basket', 'basket@prestataire.fr', '$2b$10$placeholder.basket', (SELECT id_rôle FROM rôles WHERE nom_rôle = 'prestataire'));
 
 -- Relations utilisateur_prestataire
 INSERT INTO utilisateur_prestataire (id_utilisateur, id_prestataire) VALUES
@@ -878,14 +875,14 @@ INSERT INTO utilisateur_prestataire (id_utilisateur, id_prestataire) VALUES
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'jbl@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'JBL')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'lipton@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton')),
-  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bagels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels')),
-  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pizza@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bagels@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co')),
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pizza@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'ailetfinesherbes@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'nouilles@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'coiffure@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'merch@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast')),
   ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'bornedarcade@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone')),
-  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'terraindebasket@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'));
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'basket@prestataire.fr'), (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'));
 
 -- ============================================
 -- RELATIONS PRESTATAIRE-EMPLACEMENT (basées sur emplacements.json)
@@ -899,10 +896,10 @@ INSERT INTO prestataire_emplacement (id_prestataire, id_emplacement, date_demand
   ((SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'), 4, NULL, '2026-08-15 11:30:00', 'approuvé'),
   ((SELECT id_prestataire FROM prestataire WHERE nom = 'Jack Daniel''s'), 5, '2026-08-20 14:00:00', NULL, 'demandé'),
   ((SELECT id_prestataire FROM prestataire WHERE nom = 'Deezer'), 6, NULL, '2026-08-15 12:00:00', 'approuvé'),
-  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Merch'), 7, NULL, '2026-08-15 12:30:00', 'approuvé'),
-  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza'), 8, NULL, '2026-08-15 13:00:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'), 7, NULL, '2026-08-15 12:30:00', 'approuvé'),
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival'), 8, NULL, '2026-08-15 13:00:00', 'approuvé'),
   ((SELECT id_prestataire FROM prestataire WHERE nom = 'JBL'), 9, NULL, '2026-08-15 13:30:00', 'approuvé'),
-  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels'), 10, '2026-08-21 09:00:00', NULL, 'demandé')
+  ((SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'), 10, '2026-08-21 09:00:00', NULL, 'demandé')
 ON CONFLICT (id_prestataire, id_emplacement) DO NOTHING;
 
 -- ============================================
@@ -932,6 +929,124 @@ INSERT INTO avis_festival (id_utilisateur, id_festival, note, commentaire, date_
     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'poliakov@prestataire.fr'), 1, 4, 'Tres bon festival, très bonne programmation. J''ai adoré le village food avec tous les stands.', '2025-09-05 12:00:00'),
     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'pepsi@prestataire.fr'), 1, 5, 'Trois jours de folie ! Les scènes étaient bien réparties et le son était parfait partout.', '2025-09-01 23:45:00'),
     ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'lipton@prestataire.fr'), 1, 4, 'Superbe cadre, bonne programmation. J''ai particulièrement aimé la scène en forêt, une vraie pépite.', '2025-09-03 14:00:00');
+
+-- ============================================
+-- RÉSERVATIONS DE BILLETS
+-- ============================================
+INSERT INTO reservation_billet (id_utilisateur, id_billet, quantite, date_reservation, date_utilisation, statut, prix_total, transaction_id, date_paiement) VALUES
+  -- User achète 2 forfaits 1 jour pour le vendredi
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'oneDay'),
+   2, '2026-07-15 14:30:00', '2026-08-28', 'payé', 90.00, 'TXN-BIL-001', '2026-07-15 14:35:00'),
+  -- User achète 1 place de parking
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'parking'),
+   1, '2026-07-15 14:32:00', '2026-08-28', 'payé', 10.00, 'TXN-BIL-002', '2026-07-15 14:35:00'),
+  -- User achète 1 emplacement camping
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'camping'),
+   1, '2026-07-20 10:00:00', NULL, 'payé', 25.00, 'TXN-BIL-003', '2026-07-20 10:05:00'),
+  -- Admin achète 1 pass 3 jours
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'threeDays'),
+   1, '2026-07-10 09:00:00', NULL, 'payé', 110.00, 'TXN-BIL-004', '2026-07-10 09:05:00'),
+  -- Admin réserve 2 forfaits 2 jours (pas encore payé)
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'twoDays'),
+   2, '2026-08-01 16:00:00', NULL, 'réservé', 160.00, NULL, NULL),
+  -- User achète 1 forfait 1 jour pour le samedi
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'oneDay'),
+   1, '2026-08-05 11:20:00', '2026-08-29', 'payé', 45.00, 'TXN-BIL-005', '2026-08-05 11:25:00'),
+  -- Un prestataire achète 1 pass 3 jours
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'otacos@prestataire.fr'),
+   (SELECT id_billet FROM billets WHERE type_billet = 'threeDays'),
+   1, '2026-06-20 08:00:00', NULL, 'payé', 110.00, 'TXN-BIL-006', '2026-06-20 08:05:00');
+
+-- ============================================
+-- RÉSERVATIONS DE SERVICES
+-- ============================================
+INSERT INTO reservation_service (id_utilisateur, id_service, id_prestataire, quantite, details, prix_total, statut, transaction_id, date_reservation, date_paiement) VALUES
+  -- User commande 2 Tacos & Burgers chez OTacos
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Tacos & Burgers'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'OTacos'),
+   2, '{"note": "Sans sauce piquante"}'::jsonb, 20.00, 'payé', 'TXN-SRV-001', '2026-08-28 18:30:00', '2026-08-28 18:30:00'),
+  -- User commande 1 Pizza artisanale
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Pizzas artisanales'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Pizza Festival'),
+   1, '{"note": "Margherita"}'::jsonb, 12.00, 'réservé', 'TXN-SRV-002', '2026-08-28 19:00:00', NULL),
+  -- User réserve une coupe et coiffure
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Coupe et coiffure'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Coiffure Festival'),
+   1, '{"date": "2026-08-29", "heure_debut": "14:00", "heure_fin": "14:30"}'::jsonb, 20.00, 'payé', 'TXN-SRV-003', '2026-08-28 20:00:00', '2026-08-28 20:05:00'),
+  -- User loue du matériel sportif chez Decathlon
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Location matériel sportif'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Decathlon'),
+   1, '{"duree": 4, "equipement": "Raquettes de badminton"}'::jsonb, 5.00, 'réservé', 'TXN-SRV-004', '2026-08-29 10:00:00', NULL),
+  -- User commande 3 Red Bull
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar Red Bull'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Red Bull'),
+   3, '{}'::jsonb, 24.00, 'payé', 'TXN-SRV-005', '2026-08-28 22:15:00', '2026-08-28 22:15:00'),
+  -- User réserve un match de basket
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Match de basket'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Basket 3x3'),
+   1, '{"date": "2026-08-29", "heure_debut": "16:00", "heure_fin": "17:00", "nombre_places": 6}'::jsonb, 0.00, 'réservé', NULL, '2026-08-29 09:00:00', NULL),
+  -- User commande du merchandising officiel
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Merchandising officiel'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Merch Golden Coast'),
+   1, '{"article": "T-shirt Golden Coast L"}'::jsonb, 25.00, 'payé', 'TXN-SRV-006', '2026-08-28 17:00:00', '2026-08-28 17:00:00'),
+  -- User commande 2 Bagels
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bagels variés'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Bagels & Co'),
+   2, '{"note": "1 saumon, 1 poulet"}'::jsonb, 18.00, 'réservé', 'TXN-SRV-007', '2026-08-29 12:30:00', NULL),
+  -- Admin commande 1 Bar Ricard
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar Ricard'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Ricard'),
+   1, '{}'::jsonb, 8.00, 'payé', 'TXN-SRV-008', '2026-08-28 21:00:00', '2026-08-28 21:00:00'),
+  -- Admin commande 2 Nouilles asiatiques
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Nouilles asiatiques'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Nouilles Express'),
+   2, '{"note": "Extra épicé"}'::jsonb, 22.00, 'payé', 'TXN-SRV-009', '2026-08-29 19:30:00', '2026-08-29 19:30:00'),
+  -- User loue des jeux d'arcade
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Jeux d''arcade'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Arcade Zone'),
+   1, '{"duree": 1}'::jsonb, 2.00, 'payé', 'TXN-SRV-010', '2026-08-28 16:00:00', '2026-08-28 16:00:00'),
+  -- User commande au bar Jägermeister
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar Jägermeister'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Jägermeister'),
+   2, '{}'::jsonb, 20.00, 'payé', 'TXN-SRV-011', '2026-08-28 23:00:00', '2026-08-28 23:00:00'),
+  -- User commande au bar principal Poliakov
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar principal'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Poliakov'),
+   1, '{}'::jsonb, 12.00, 'payé', 'TXN-SRV-012', '2026-08-29 22:00:00', '2026-08-29 22:00:00'),
+  -- Admin commande des plats aux herbes
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'admin@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Plats aux herbes'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Ail et fines herbes'),
+   1, '{}'::jsonb, 14.00, 'réservé', 'TXN-SRV-013', '2026-08-30 13:00:00', NULL),
+  -- User commande un Pepsi
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar Pepsi'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Pepsi'),
+   2, '{}'::jsonb, 10.00, 'payé', 'TXN-SRV-014', '2026-08-29 15:00:00', '2026-08-29 15:00:00'),
+  -- User commande un Lipton
+  ((SELECT id_utilisateur FROM utilisateurs WHERE email = 'user@abc.fr'),
+   (SELECT id_service FROM services WHERE nom_service_fr = 'Bar Lipton'),
+   (SELECT id_prestataire FROM prestataire WHERE nom = 'Lipton'),
+   1, '{}'::jsonb, 4.00, 'payé', 'TXN-SRV-015', '2026-08-30 14:30:00', '2026-08-30 14:30:00');
 
 -- ============================================
 -- FIN DU SCRIPT

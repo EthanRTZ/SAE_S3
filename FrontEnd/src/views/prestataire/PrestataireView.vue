@@ -312,15 +312,28 @@ const demanderEmplacement = async (coords) => {
 
     // Trouver l'emplacement correspondant
     const empResp = await fetch('/api/emplacements', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-    if (empResp.ok) {
-      const list = await empResp.json()
-      const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
-      if (emp) {
-        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
-          method: 'PUT', headers,
-          body: JSON.stringify({ statut: 'en_attente', prestataireNom: prestataireNom.value })
-        })
-      }
+    if (!empResp.ok) {
+      alert(t('prestataireSpace.requestError'))
+      return
+    }
+
+    const list = await empResp.json()
+    const emp = (Array.isArray(list) ? list : []).find(e => (e.coordonnees_completes || e.coordonnees) === coords)
+    if (!emp) {
+      alert(t('prestataireSpace.requestError'))
+      return
+    }
+
+    const putResp = await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ statut: 'en_attente', prestataireNom: prestataireNom.value })
+    })
+
+    if (!putResp.ok) {
+      const errData = await putResp.json().catch(() => ({}))
+      console.error('Erreur PUT emplacement:', putResp.status, errData)
+      alert(t('prestataireSpace.requestError'))
+      return
     }
 
     await loadPrestataireInfo()
@@ -340,15 +353,21 @@ const annulerDemande = async () => {
 
   try {
     const token = localStorage.getItem('authToken')
+    const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
     const empId = demandePendante.value.id_emplacement || demandePendante.value.id
     if (empId) {
-      await fetch(`/api/emplacements/${empId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      const resp = await fetch(`/api/emplacements/${empId}`, {
+        method: 'PUT', headers,
         body: JSON.stringify({ statut: 'libre', prestataireNom: null })
       })
+      if (!resp.ok) {
+        console.error('Erreur annulation:', resp.status)
+        alert(t('prestataireSpace.cancelError'))
+        return
+      }
     }
     demandePendante.value = null
+    await loadPrestataireInfo()
     window.dispatchEvent(new Event('demandes-updated'))
 
     alert(t('prestataireSpace.requestCancelled'))
@@ -371,14 +390,19 @@ const libererEmplacement = async () => {
       const list = await empResp.json()
       const emp = (Array.isArray(list) ? list : []).find(e => e.prestataireNom === prestataireNom.value && e.statut === 'pris')
       if (emp) {
-        await fetch(`/api/emplacements/${emp.id_emplacement}`, {
+        const putResp = await fetch(`/api/emplacements/${emp.id_emplacement}`, {
           method: 'PUT', headers,
           body: JSON.stringify({ statut: 'libre', prestataireNom: null })
         })
+        if (!putResp.ok) {
+          alert(t('prestataireSpace.releaseError'))
+          return
+        }
       }
     }
 
     emplacementActuel.value = null
+    await loadPrestataireInfo()
     window.dispatchEvent(new Event('emplacements-updated'))
 
     alert(t('prestataireSpace.locationReleased'))
@@ -1238,6 +1262,15 @@ watch(editingLang, () => {
   loadPrestataireInfo()
 })
 
+// AJOUT: Mettre à jour automatiquement les marqueurs de la carte quand les emplacements changent
+watch(emplacements, () => {
+  if (mapInstance.value && mapLoaded.value) {
+    nextTick(() => {
+      updateMapMarkers()
+    })
+  }
+}, { deep: true })
+
 // (optionnel) Recharger aussi quand la langue d'interface change,
 // si tu utilises `locale` ailleurs dans ce composant.
 // watch(() => locale.value, () => {
@@ -1556,6 +1589,54 @@ watch(editingLang, () => {
                   </div>
                 </div>
                 <!-- ===== FIN GRILLE CRÉNEAUX 3 JOURS ===== -->
+
+                <!-- ===== CHAMPS SPÉCIFIQUES COMMANDE / LOCATION ===== -->
+                <div v-if="getTypeName(s.id_type_service) === 'commande' || getTypeName(s.id_type_service) === 'location'" class="specific-fields-section">
+                  <label class="specific-fields-title">
+                    {{ getTypeName(s.id_type_service) === 'commande' ? '🛒 Paramètres de commande' : '🔧 Paramètres de location' }}
+                  </label>
+                  <div class="specific-fields-grid">
+                    <div
+                      v-for="field in getTypeFields(s.id_type_service)"
+                      :key="field.key"
+                      class="specific-field-group"
+                    >
+                      <label class="creneau-mini-label">{{ getFieldLabel(field) }}</label>
+                      <!-- Champ boolean -->
+                      <label v-if="field.type === 'boolean'" class="toggle-label specific-toggle">
+                        <input
+                          type="checkbox"
+                          :checked="!!s.champs_specifiques?.[field.key]"
+                          @change="updateSpecificField(s, field.key, $event)"
+                        />
+                        <span :class="{ active: !!s.champs_specifiques?.[field.key] }">
+                          {{ s.champs_specifiques?.[field.key] ? '✅ Oui' : '❌ Non' }}
+                        </span>
+                      </label>
+                      <!-- Champ nombre -->
+                      <input
+                        v-else-if="field.type === 'number'"
+                        type="number"
+                        class="input input-specific"
+                        :value="s.champs_specifiques?.[field.key] || ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                        :placeholder="getFieldLabel(field)"
+                        min="0"
+                        step="any"
+                      />
+                      <!-- Champ texte -->
+                      <input
+                        v-else
+                        type="text"
+                        class="input input-specific"
+                        :value="s.champs_specifiques?.[field.key] || ''"
+                        @input="updateSpecificField(s, field.key, $event)"
+                        :placeholder="getFieldLabel(field)"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <!-- ===== FIN CHAMPS SPÉCIFIQUES ===== -->
 
 
               </div>
@@ -2420,6 +2501,25 @@ input.input:focus, textarea.textarea:focus, select.input:focus {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.specific-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.specific-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.specific-toggle input[type="checkbox"] {
+  accent-color: #FCDC1E;
+  width: 18px;
+  height: 18px;
 }
 
 .specific-field-label {

@@ -215,7 +215,7 @@ router.post('/', requireRole('admin', 'organisateur'), ctrl.createEmplacement);
  *       401:
  *         description: Non authentifié
  */
-router.put('/:id', requireRole('admin', 'organisateur'), ctrl.updateEmplacement);
+router.put('/:id', requireRole('admin', 'organisateur', 'prestataire'), ctrl.updateEmplacement);
 
 /**
  * @openapi

@@ -140,9 +140,9 @@
                   value="card"
                   v-model="paymentMethod"
                 />
-                <span class="method-content">
+                <div class="method-content">
                   <span class="method-name">{{ $t('payment.creditCard') }}</span>
-                </span>
+                </div>
               </label>
 
               <label class="payment-method" :class="{ active: paymentMethod === 'paypal' }">
@@ -152,9 +152,9 @@
                   value="paypal"
                   v-model="paymentMethod"
                 />
-                <span class="method-content">
+                <div class="method-content">
                   <span class="method-name">{{ $t('payment.paypal') }}</span>
-                </span>
+                </div>
               </label>
             </div>
 
@@ -259,6 +259,7 @@ import { useRouter } from 'vue-router'
 import { usePanierStore } from '@/stores/panier'
 import { useI18n } from 'vue-i18n'
 import { billetsService } from '@/services/billetsService'
+import { reservationServiceService } from '@/services/reservationServiceService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -338,8 +339,6 @@ const formatItemTitle = (item) => {
       return t('panier.basket')
     case 'service':
       return item.nom || item.label || t('panier.service')
-    case 'merch':
-      return item.nom || item.displayLabel || item.label || t('panier.merch')
     default:
       return t('panier.item')
   }
@@ -531,21 +530,41 @@ const onSubmit = async () => {
 
       // Sauvegarder chaque article du panier comme réservation via l'API
       for (const item of panierStore.items) {
-        const billet = billetsByType.value[normalizeType(item.type)]
-        if (!billet) {
-          console.warn('Billet introuvable pour le type', item.type)
-          continue
+        if (item.type === 'service') {
+          // Réservation de service
+          await reservationServiceService.createReservation({
+            id_utilisateur: authUser.value.id,
+            id_service: item.id_service,
+            id_prestataire: item.id_prestataire,
+            quantite: Number(item.quantity) || 1,
+            prix_total: Number(item.prix) || 0,
+            transaction_id: order.id,
+            details: {
+              ...item.details,
+              serviceType: item.serviceType,
+              label: item.label,
+              nom: item.nom,
+              prestataire: item.prestataire
+            }
+          })
+        } else {
+          // Réservation de billet
+          const billet = billetsByType.value[normalizeType(item.type)]
+          if (!billet) {
+            console.warn('Billet introuvable pour le type', item.type)
+            continue
+          }
+          const quantity = Number(item.quantity) || 1
+          const prixUnitaire = Number(billet.prix) || 0
+          await billetsService.createReservation({
+            id_utilisateur: authUser.value.id,
+            id_billet: billet.id_billet,
+            quantite: quantity,
+            prix_total: prixUnitaire * quantity,
+            transaction_id: order.id,
+            date_utilisation: item.date || null
+          })
         }
-        const quantity = Number(item.quantity) || 1
-        const prixUnitaire = Number(billet.prix) || 0
-        await billetsService.createReservation({
-          id_utilisateur: authUser.value.id,
-          id_billet: billet.id_billet,
-          quantite: quantity,
-          prix_total: prixUnitaire * quantity,
-          transaction_id: order.id,
-          date_utilisation: item.date || null
-        })
       }
 
       panierStore.clearPanierAfterPayment()
@@ -799,6 +818,10 @@ h1 {
   align-items: center;
   gap: 10px;
   width: 100%;
+}
+
+.method-icon {
+  font-size: 1.5rem;
 }
 
 .method-name {

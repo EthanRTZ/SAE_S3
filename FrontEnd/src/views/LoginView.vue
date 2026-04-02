@@ -73,8 +73,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/stores/auth.js'
 
 const { t } = useI18n()
 const email = ref('')
@@ -82,7 +83,9 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 const router = useRouter()
+const route = useRoute()
 const showPwd = ref(false)
+const authStore = useAuthStore()
 
 const onSubmit = async () => {
   error.value = ''
@@ -128,10 +131,15 @@ const onSubmit = async () => {
       ts: Date.now()
     }
     localStorage.setItem('authUser', JSON.stringify(authPayload))
+    // Mettre à jour le store Pinia pour que le router guard fonctionne immédiatement
+    authStore.setUser(authPayload)
     window.dispatchEvent(new Event('auth-changed'))
 
-    // Redirection selon le rôle
-    if (user.role === 'organisateur' || user.role === 'admin') {
+    // Redirection selon le rôle (ou vers la page demandée)
+    const redirectTo = route.query.redirect
+    if (redirectTo) {
+      router.push(redirectTo)
+    } else if (user.role === 'organisateur' || user.role === 'admin') {
       router.push({ path: '/admin' })
     } else if (user.role === 'prestataire') {
       router.push({ path: '/prestataire-espace' })

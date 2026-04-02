@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch, nextTick, toRaw } from 'vue'
+import { ref, onMounted, computed, watch, nextTick, toRaw, onBeforeUnmount } from 'vue'
 import { useAdminAuth } from '@/composables/admin/useAdminAuth'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminDashboard from '@/components/admin/AdminDashboard.vue'
@@ -905,26 +905,8 @@ const handleAvisUpdated = async (event) => {
   console.log('✅ Statistiques rechargées')
 }
 
-onMounted(() => {
-  loadAuthFromStorage()
-  if (!checkAdminAccess()) return
-
-  loadData().then(async () => {
-    await computeAvisStatsForPrestataires()
-  })
-
-  // MODIFICATION: Écouter les mises à jour en temps réel
-  window.addEventListener('demandes-updated', loadDemandesEmplacement)
-  window.addEventListener('emplacements-updated', loadEmplacementsAttribues)
-  window.addEventListener('avis-updated', handleAvisUpdated)
-
-  // AJOUT: Écouter les changements d'authentification (création de compte)
-  window.addEventListener('auth-changed', reloadUsers)
-  window.addEventListener('storage', reloadUsers)
-})
 
 // AJOUT: Nettoyer les écouteurs d'événements au démontage
-import { onBeforeUnmount } from 'vue'
 
 onBeforeUnmount(() => {
   window.removeEventListener('demandes-updated', loadDemandesEmplacement)
@@ -1328,7 +1310,7 @@ const computeAvisStatsForPrestataires = async () => {
         const nom = a.prestataire?.nom
         if (!nom) return
         if (!allAvisMap[nom]) allAvisMap[nom] = []
-        allAvisMap[nom].push({ note: a.note, commentaire: a.commentaire, date: a.date_avis })
+        allAvisMap[nom].push({ note: a.note, commentaire: a.commentaire, date: a.date_avis, nom_utilisateur: a.utilisateur?.nom_utilisateur || 'Anonyme' })
       })
     }
   } catch (e) {
@@ -1365,7 +1347,8 @@ const computeAvisStatsForPrestataires = async () => {
       nbAvis,
       moyenne,
       parNote,
-      dernierAvis
+      dernierAvis,
+      avis: avisArray
     })
   }
 

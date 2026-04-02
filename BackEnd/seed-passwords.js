@@ -36,7 +36,7 @@ const USERS_PASSWORDS = [
   { email: 'coiffure@prestataire.fr', password: 'coiffure12' },
   { email: 'merch@prestataire.fr', password: 'merch12' },
   { email: 'bornedarcade@prestataire.fr', password: 'bornedarcade12' },
-  { email: 'terraindebasket@prestataire.fr', password: 'terraindebasket12' },
+  { email: 'basket@prestataire.fr', password: 'basket12' },
 ];
 
 async function seedPasswords() {

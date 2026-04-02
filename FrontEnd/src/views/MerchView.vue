@@ -318,6 +318,7 @@ onMounted(fetchProducts)
           type="commande"
           embedded
           :open-service-id="merchOpenByType.commande"
+          :exclude-prestataire-types="['Merchandising']"
         />
         <ServicesByTypeSection
           type="location"

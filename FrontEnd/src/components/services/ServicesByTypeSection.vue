@@ -383,6 +383,11 @@ const props = defineProps({
   openServiceId: {
     type: [String, Number],
     default: null
+  },
+  /** Types de prestataires à exclure de la liste (ex: ['Merchandising']) */
+  excludePrestataireTypes: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -559,9 +564,16 @@ const localizedServiceDesc = (service) => {
 }
 
 const filteredServices = computed(() => {
-  if (!searchQuery.value.trim()) return servicesList.value
+  let list = servicesList.value
+  // Exclure les services de prestataires dont le type est dans la liste d'exclusion
+  if (props.excludePrestataireTypes.length) {
+    list = list.filter(s =>
+      !s.prestataire?.type_prestataire || !props.excludePrestataireTypes.includes(s.prestataire.type_prestataire)
+    )
+  }
+  if (!searchQuery.value.trim()) return list
   const q = searchQuery.value.trim().toLowerCase()
-  return servicesList.value.filter(s => {
+  return list.filter(s => {
     const name = localizedServiceName(s).toLowerCase()
     const desc = (localizedServiceDesc(s) || '').toLowerCase()
     const presta = (s.prestataire?.nom || '').toLowerCase()

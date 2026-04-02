@@ -21,7 +21,8 @@ export function setToken(token) {
 
 export function removeToken() {
   localStorage.removeItem('authToken')
-  localStorage.removeItem('authUser')
+  // Ne pas supprimer authUser pour préserver l'info de rôle
+  // L'utilisateur sera redirigé vers login pour se reconnecter
 }
 
 // ─── Client HTTP ────────────────────────────────────────────────────────────

@@ -153,6 +153,7 @@ const closeUserMenu = () => {
 const logout = () => {
   try {
     localStorage.removeItem('authUser')
+    localStorage.removeItem('authToken')
   } catch (e) {
     // ignore
   }

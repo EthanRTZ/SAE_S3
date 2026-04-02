@@ -205,7 +205,7 @@ router.put('/:id', requireRole('admin', 'organisateur'), async (req, res, next) 
  *       401:
  *         description: Non authentifié
  */
-router.delete('/:id', requireRole('admin', 'organisateur'), async (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const row = await Festival.findByPk(req.params.id);
     if (!row) return res.status(404).json({ error: 'Manifestation non trouvée' });

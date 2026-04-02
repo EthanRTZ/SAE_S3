@@ -62,14 +62,7 @@
               <button
                 v-if="service.champs_specifiques?.enabled !== false"
                 class="btn-buy-service"
-                :class="{
-                  'btn-type-reservation': service.typeName === 'reservation',
-                  'btn-type-commande': service.typeName === 'commande',
-                  'btn-type-location': service.typeName === 'location',
-                  'btn-type-default':
-                    !service.typeName ||
-                    !['reservation', 'commande', 'location'].includes(service.typeName)
-                }"
+                :class="service.typeName ? 'btn-type-' + service.typeName : 'btn-type-default'"
                 @click="goToServicePage(service)"
               >
                 <span v-if="service.typeName === 'reservation'">📅 {{ $t('prestataireDetail.bookNow') }}</span>
@@ -450,17 +443,17 @@ const formatFieldValue = (val) => {
 }
 
 // ---- Modal d'achat ----
-// Redirection vers la boutique Merch (services intégrés) avec ouverture du bon service
+// Redirigé vers ServicesByTypeView via goToServicePage()
 
+// Rediriger vers la page du type de service
 const goToServicePage = (service) => {
   const type = service.typeName || 'commande'
   router.push({
-    path: '/merch',
+    path: `/services/${type}`,
     query: {
-      service: String(service.id_service ?? ''),
-      type
-    },
-    hash: '#boutique-services-externes'
+      service: service.id_service || '',
+      prestataire: prestataire.value?.nom || ''
+    }
   })
 }
 </script>
@@ -600,6 +593,13 @@ const goToServicePage = (service) => {
   margin-bottom: 16px;
 }
 
+.prestataire-description-header {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 800px;
+}
+
 .detail-content {
   padding: 0 20px 40px;
 }
@@ -699,6 +699,34 @@ const goToServicePage = (service) => {
   width: fit-content;
 }
 
+.service-specific-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.specific-detail-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.06);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.specific-key {
+  color: rgba(255,255,255,0.6);
+}
+
+.specific-val {
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Bouton d'achat */
 .btn-buy-service {
   display: block;
@@ -738,6 +766,156 @@ const goToServicePage = (service) => {
 .btn-buy-service.btn-disabled:hover {
   transform: none;
   box-shadow: none;
+}
+
+/* Modal */
+.service-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.service-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(252,220,30,0.3);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.modal-close:hover { background: rgba(255,255,255,0.2); }
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(252,220,30,0.2);
+}
+.modal-type-icon {
+  font-size: 2.5rem;
+  background: rgba(252,220,30,0.1);
+  width: 64px; height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+.modal-title {
+  color: #FCDC1E;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+}
+.modal-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #FCDC1E;
+  box-shadow: 0 0 0 3px rgba(252,220,30,0.1);
+}
+.form-hint {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+}
+.modal-price-recap {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.95rem;
+}
+.price-total {
+  border-top: 1px solid rgba(252,220,30,0.3);
+  margin-top: 8px;
+  padding-top: 12px;
+  color: #FCDC1E;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.btn-validate-modal {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #1a1a2e;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-validate-modal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(252,220,30,0.4);
 }
 
 .contact-info {
@@ -1049,6 +1227,97 @@ const goToServicePage = (service) => {
   color: #FCDC1E;
 }
 
+/* Section de réservation mise en avant */
+.reservation-highlight-section {
+  background: linear-gradient(135deg, rgba(252, 220, 30, 0.18) 0%, rgba(252, 220, 30, 0.08) 100%) !important;
+  border: 2px solid rgba(252, 220, 30, 0.45) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.reservation-highlight-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(252, 220, 30, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.reservation-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.reservation-highlight-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.reservation-highlight-icon {
+  font-size: 3.5rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.reservation-highlight-text h2 {
+  color: #FCDC1E;
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.reservation-highlight-text p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.reservation-highlight-text strong {
+  color: #FCDC1E;
+  font-weight: 800;
+}
+
+.btn-reserve-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 36px;
+  background: linear-gradient(135deg, #FCDC1E 0%, #ffe676 100%);
+  color: #0a0a0a;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 900;
+  font-size: 1.15rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(252, 220, 30, 0.4);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-reserve-large:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(252, 220, 30, 0.55);
+}
+
+.btn-reserve-large span {
+  font-size: 1.3rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .prestataire-main-info {
@@ -1067,6 +1336,32 @@ const goToServicePage = (service) => {
 
   .detail-section {
     padding: 20px;
+  }
+
+  /* Responsive Reservation Highlight */
+  .reservation-highlight {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .reservation-highlight-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .reservation-highlight-icon {
+    font-size: 3rem;
+  }
+
+  .reservation-highlight-text h2 {
+    font-size: 1.4rem;
+  }
+
+  .btn-reserve-large {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 28px;
+    font-size: 1.05rem;
   }
 }
 </style>
