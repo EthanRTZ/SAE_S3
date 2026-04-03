@@ -162,6 +162,49 @@ router.post('/reservations', simpleAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * @openapi
+ * /billets/reservations/{id}:
+ *   delete:
+ *     tags:
+ *       - Billets
+ *     summary: Supprime une réservation de billet
+ *     description: L'utilisateur peut supprimer ses propres réservations. Les admins peuvent supprimer n'importe quelle réservation.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la réservation
+ *     responses:
+ *       200:
+ *         description: Réservation supprimée
+ *       403:
+ *         description: Accès refusé
+ *       404:
+ *         description: Réservation non trouvée
+ */
+// DELETE /api/billets/reservations/:id - Supprimer une réservation
+router.delete('/reservations/:id', simpleAuth, async (req, res, next) => {
+  try {
+    const resa = await ReservationBillet.findByPk(req.params.id);
+    if (!resa) return res.status(404).json({ error: 'Réservation non trouvée' });
+
+    // Vérifier que l'utilisateur supprime sa propre réservation (ou est admin)
+    const isOwner = resa.id_utilisateur === req.user?.id;
+    const isAdmin = ['admin', 'organisateur'].includes(req.user?.role);
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Vous ne pouvez supprimer que vos propres réservations.' });
+    }
+
+    await resa.destroy();
+    res.json({ message: 'Réservation supprimée' });
+  } catch (err) { next(err); }
+});
+
 // ─── Billets/Forfaits ─────────────────────────────────────────────────────────
 
 /**

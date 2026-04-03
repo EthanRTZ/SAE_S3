@@ -57,6 +57,7 @@ const loadAllData = async () => {
         if (!dejaPresente) {
           demandes.push({
             id: `api-${e.id}`,
+            id_emplacement: e.id_emplacement || e.id,
             prestataireNom: e.prestataireNom,
             coordonnees: e.coordonnees,
             statut: 'en_attente',

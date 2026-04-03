@@ -514,17 +514,31 @@ const onDeleteSelectedReservations = async () => {
     const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
     const idsToDelete = new Set(selectedReservationIds.value)
 
+    const deletedIds = new Set()
     for (const id of idsToDelete) {
       // Vérifier si c'est une réservation de service (id commence par "svc-")
       const resa = reservations.value.find(r => r.id === id)
-      if (resa && resa._source === 'service' && resa._serviceResaId) {
-        await reservationServiceService.deleteReservation(resa._serviceResaId)
-      } else {
-        await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+      try {
+        if (resa && resa._source === 'service' && resa._serviceResaId) {
+          await reservationServiceService.deleteReservation(resa._serviceResaId)
+        } else {
+          const resp = await fetch(`/api/billets/reservations/${id}`, { method: 'DELETE', headers })
+          if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}))
+            throw new Error(body.error || `Erreur ${resp.status}`)
+          }
+        }
+        deletedIds.add(id)
+      } catch (e) {
+        console.error(`Erreur suppression réservation ${id}:`, e)
       }
     }
 
-    reservations.value = reservations.value.filter((r) => !idsToDelete.has(r.id))
+    if (deletedIds.size === 0) {
+      throw new Error('Aucune réservation n\'a pu être supprimée')
+    }
+
+    reservations.value = reservations.value.filter((r) => !deletedIds.has(r.id))
     selectedReservationIds.value = []
   } catch (e) {
     reservationsError.value = t('mesReservations.deleteError')

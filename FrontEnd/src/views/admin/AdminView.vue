@@ -117,12 +117,14 @@ const loadEmplacementsAttribues = async () => {
 
 // AJOUT: Accepter une demande (fonctionnel) - UNE SEULE VERSION
 const accepterDemande = async (demande) => {
-  if (!confirm(`Accepter la demande de ${demande.prestataireNom} pour l'emplacement ${demande.coordonnees} ?`)) return
+  const coordsDisplay = demande.coordonnees_completes || demande.coordonnees || ''
+  if (!confirm(`Accepter la demande de ${demande.prestataireNom} pour l'emplacement ${coordsDisplay} ?`)) return
 
   try {
     // Mettre à jour l'emplacement via l'API
-    if (demande.id_emplacement) {
-      await authFetch(`/api/emplacements/${demande.id_emplacement}`, {
+    const empId = demande.id_emplacement
+    if (empId) {
+      await authFetch(`/api/emplacements/${empId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statut: 'pris', prestataireNom: demande.prestataireNom })
@@ -136,7 +138,7 @@ const accepterDemande = async (demande) => {
     window.dispatchEvent(new Event('demandes-updated'))
 
 
-    alert(`✅ Demande acceptée !\n\nL'emplacement ${demande.coordonnees} a été attribué à ${demande.prestataireNom}.`)
+    alert(`✅ Demande acceptée !\n\nL'emplacement ${coordsDisplay} a été attribué à ${demande.prestataireNom}.`)
   } catch (e) {
     console.error('Erreur acceptation demande', e)
     alert('❌ Erreur lors de l\'acceptation de la demande')
@@ -149,8 +151,9 @@ const refuserDemande = async (demande) => {
   if (raison === null) return
 
   try {
-    if (demande.id_emplacement) {
-      await authFetch(`/api/emplacements/${demande.id_emplacement}`, {
+    const empId = demande.id_emplacement
+    if (empId) {
+      await authFetch(`/api/emplacements/${empId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statut: 'libre', raison_refus: raison })
